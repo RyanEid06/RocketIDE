@@ -36,18 +36,18 @@ Change only `Status`, `Completed`, and `Evidence` after the WP gate passes.
 | IDE-WP00 | Repository baseline + CI | DONE | 2026-09-10 | GitHub Actions `windows-ci` run `34501119792` passed on commit `788e990`; Verify and portable artifact upload succeeded |
 | IDE-WP01 | Native shell + layout | DONE | 2026-09-10 | Windows CI run `34504712942` passed on commit `0c741d7`; user launched the published `RocketIDE.exe` and accepted the native shell/editor smoke test |
 | IDE-WP02 | Editor/document foundation | DONE | 2026-09-10 | Same Windows CI run `34504712942` passed; user exercised real multi-tab editing/saving in the published app and accepted the smoke test |
-| IDE-WP03 | Workspace + project explorer | IN PROGRESS |  | Windows CI run `34512050226` passed; first real-app smoke test exposed New-file UX and editor-open crash regressions, repair pending re-verification |
-| IDE-WP04 | Rocket syntax + editor ergonomics | IN PROGRESS |  | Windows CI run `34512050226` passed; smoke test exposed invalid AvalonEdit XSHD structure on `.rocket` open, regression test + repair pending re-verification |
-| IDE-WP05 | Rocket tool discovery + validation | READY |  | WP00 dependency satisfied |
-| IDE-WP06 | LSP transport + lifecycle | BLOCKED by WP05 |  |  |
-| IDE-WP07 | Live diagnostics + Problems | BLOCKED by WP06 |  | WP02 dependency satisfied |
-| IDE-WP08 | IntelliSense + semantic tokens | BLOCKED by WP06 |  | WP02 dependency satisfied |
-| IDE-WP09 | Navigation + refactoring + fixes | BLOCKED by WP06,WP03 |  |  |
-| IDE-WP10 | Check/build/run/test/output | BLOCKED by WP05,WP03 |  |  |
-| IDE-WP11 | Search + productivity | BLOCKED by WP03 |  |  |
-| IDE-WP12 | Large-file + performance hardening | BLOCKED by WP06,WP11 |  | WP02 dependency satisfied |
+| IDE-WP03 | Workspace + project explorer | DONE | 2026-09-10 | Repairs re-verified on Windows; current Windows CI passed on commit `ee0ee1e`; real Rocket workspace smoke test opened/browsed the full repository and files successfully |
+| IDE-WP04 | Rocket syntax + editor ergonomics | DONE | 2026-09-10 | AvalonEdit XSHD/comment-regex regressions repaired with runtime `DocumentHighlighter` coverage; current Windows CI passed on commit `ee0ee1e`; real `.rocket` editing/highlighting smoke test passed |
+| IDE-WP05 | Rocket tool discovery + validation | DONE | 2026-09-10 | Local `verify.ps1` passed with 77/77 tests; Windows CI passed on commit `ee0ee1e`; real Rocket checkout smoke found `rocketc 2.1.0` and `rocket-lsp 1.0.0` without source edits |
+| IDE-WP06 | LSP transport + lifecycle | DONE | 2026-09-10 | Local `verify.ps1` passed with 77/77 tests; Windows CI passed on commit `ee0ee1e`; real `rocket-lsp 1.0.0` initialized, synchronized an open Rocket file, and shut down cleanly with no lingering process |
+| IDE-WP07 | Live diagnostics + Problems | READY |  | WP02 and WP06 dependencies satisfied |
+| IDE-WP08 | IntelliSense + semantic tokens | READY |  | WP02 and WP06 dependencies satisfied |
+| IDE-WP09 | Navigation + refactoring + fixes | READY |  | WP03 and WP06 dependencies satisfied |
+| IDE-WP10 | Check/build/run/test/output | READY |  | WP03 and WP05 dependencies satisfied |
+| IDE-WP11 | Search + productivity | READY |  | WP03 dependency satisfied |
+| IDE-WP12 | Large-file + performance hardening | BLOCKED by WP11 |  | WP02 and WP06 dependencies satisfied |
 | IDE-WP13 | Advanced Rocket tooling | BLOCKED by WP10 |  |  |
-| IDE-WP14 | Reliability + recovery | BLOCKED by WP03,WP10 |  |  |
+| IDE-WP14 | Reliability + recovery | BLOCKED by WP10 |  | WP03 dependency satisfied |
 | IDE-WP15 | Distribution | BLOCKED by WP14 |  |  |
 | IDE-WP16 | Polish + accessibility | BLOCKED by WP15 |  |  |
 | IDE-WP17 | Standalone debugger feasibility/optional | BLOCKED by WP16 |  |  |
@@ -278,9 +278,9 @@ public interface IRocketTargetDiscovery
 - [x] Prefer Recycle Bin for user-initiated delete; no silent permanent-delete fallback is used.
 - [x] Add file watcher coalescing/debounce and tests for external modify/create/delete/rename notifications.
 - [x] On an externally modified clean open document, offer reload; on a dirty document, never overwrite silently. External delete/rename is surfaced without discarding the editor buffer.
-- [ ] Run verification and CI.
+- [x] Run verification and CI.
 
-**Local implementation note (2026-09-10):** workspace/project explorer, lazy enumeration, persisted recent projects, direct file operations, nearest-manifest target discovery, debounced file watching, and safe external-change handling are implemented. Windows CI and a real workspace smoke test remain required before IDE-WP03 can be marked DONE.
+**Completion note (2026-09-10):** workspace/project explorer, lazy enumeration, persisted recent projects, direct file operations, nearest-manifest target discovery, debounced file watching, and safe external-change handling are implemented. Windows verification, current CI, and real workspace smoke testing passed; IDE-WP03 is complete.
 
 **Acceptance:** real multi-file project editing works, direct explorer operations are reflected on disk, and target discovery matches Rocket's existing editor behavior.
 
@@ -309,9 +309,9 @@ public interface IRocketTargetDiscovery
 - [x] Evaluate matching-bracket visualization. It is deferred to IDE-WP16 instead of shipping an unverified custom background renderer in this phase; WP04 still provides the authoritative bracket auto-close/surround behavior.
 - [x] Add auto-close/surround pairs using Rocket's language configuration; pure rules cover selection wrapping and the balanced-pair decision used by backspace deletion.
 - [x] Ensure syntax highlighting remains available when `rocket-lsp.exe` cannot be found; the XSHD layer has no LSP dependency.
-- [ ] Run verification and CI.
+- [x] Run verification and CI.
 
-**Local implementation note (2026-09-10):** lexical Rocket highlighting, four-space indentation, selection indent/outdent, smart block newline/dedent, and Rocket-configured auto-close/surround pairs are implemented without any LSP dependency. Windows CI and a real typing/highlighting smoke test remain required before IDE-WP04 can be marked DONE.
+**Completion note (2026-09-10):** lexical Rocket highlighting, four-space indentation, selection indent/outdent, smart block newline/dedent, and Rocket-configured auto-close/surround pairs are implemented without any LSP dependency. The repaired AvalonEdit highlighting path, Windows verification/current CI, and real typing/highlighting smoke testing passed; IDE-WP04 is complete.
 
 **Acceptance:** a Rocket file is readable and editing respects Rocket indentation rules even with LSP fully disabled.
 
@@ -342,16 +342,18 @@ public interface IRocketToolLocator
 
 ### Tasks
 
-- [ ] Port discovery concepts from the Rocket Visual Studio reference; write tests using temporary fake executable files/paths instead of the developer machine.
-- [ ] Support explicit settings and `ROCKET_COMPILER` / `ROCKET_LANGUAGE_SERVER`.
-- [ ] Prefer an LSP sibling of the selected compiler when present.
-- [ ] Support recognized active Rocket checkout build/package output candidates without hard-coded checkout paths.
-- [ ] Support PATH lookup.
-- [ ] Add bundled SDK candidate location under RocketIDE installation directory but do not require bundled SDK during development.
-- [ ] Execute `--version` safely with timeout/cancellation and capture output.
-- [ ] Add Tools > Validate Rocket Environment that displays selected paths, versions, and discovery problems in Output plus a user-facing summary.
-- [ ] Add settings UI for compiler path, LSP path, automatic discovery reset, and optional pinned-repository environment loading only if the behavior is safely ported/tested.
-- [ ] Run verification and CI.
+- [x] Port discovery concepts from the Rocket Visual Studio reference; write tests using temporary fake executable files/paths instead of the developer machine.
+- [x] Support explicit settings and `ROCKET_COMPILER` / `ROCKET_LANGUAGE_SERVER`.
+- [x] Prefer an LSP sibling of the selected compiler when present.
+- [x] Support recognized active Rocket checkout build/package output candidates without hard-coded checkout paths.
+- [x] Support PATH lookup.
+- [x] Add bundled SDK candidate location under RocketIDE installation directory but do not require bundled SDK during development.
+- [x] Execute `--version` safely with timeout/cancellation and capture output.
+- [x] Add Tools > Validate Rocket Environment that displays selected paths, versions, and discovery problems in Output plus a user-facing summary.
+- [x] Add settings UI for compiler path, LSP path, automatic discovery reset, and optional pinned-repository environment loading only if the behavior is safely ported/tested.
+- [x] Run verification and CI.
+
+**Completion note (2026-09-10):** discovery/settings/version validation passed automated tests and real Windows smoke testing. With the Rocket checkout open, RocketIDE resolved `rocketc 2.1.0` and `rocket-lsp 1.0.0`, displayed a valid environment, and required no source-controlled machine path.
 
 **Acceptance:** the same repo can run on two Windows machines with different checkout locations without source edits.
 
@@ -389,24 +391,26 @@ Implementation may introduce typed higher-level methods later, but transport rem
 
 ### Tasks
 
-- [ ] Write byte-stream tests for one valid `Content-Length` frame split at every practical boundary (header fragmented, body fragmented, back-to-back frames).
-- [ ] Test malformed header, duplicate/invalid Content-Length, header >16 KiB, body >16 MiB, premature EOF.
-- [ ] Implement bounded frame reader without `ReadLineAsync` assumptions that can allocate unbounded attacker-controlled lines.
-- [ ] Implement frame writer with exact UTF-8 byte Content-Length, not character count.
-- [ ] Write JSON-RPC tests for incrementing request IDs, notification no-response behavior, response correlation, error responses, unknown response ID, cancellation, and server notification dispatch.
-- [ ] Implement one reader loop per connection and thread-safe pending-request table.
-- [ ] Spawn `rocket-lsp.exe` hidden with redirected stdin/stdout/stderr; stdout only feeds protocol parser; stderr feeds Output log channel.
-- [ ] Implement initialize -> initialized lifecycle and capture server capabilities.
-- [ ] Implement shutdown -> exit with forced process-tree cleanup fallback.
-- [ ] Negotiate UTF-16 positions and incremental sync.
-- [ ] Implement `didOpen`, versioned `didChange`, optional `didSave`, `didClose` mapping from open document lifecycle.
-- [ ] Never send a source document >4 MiB. Expose a typed `LargeFileUnsupportedByLsp` state before transport.
-- [ ] Implement `$/cancelRequest` for cancelled outstanding requests when appropriate.
-- [ ] Implement `workspace/didChangeConfiguration` for current Rocket max project files/bytes and telemetry settings if exposed by IDE.
-- [ ] Implement `rocket/projectStatus` and `rocket/analysisStatus` parsing into typed status models.
-- [ ] Run all transport tests repeatedly to expose race/flakiness.
-- [ ] Optional real-tool integration smoke: initialize current `rocket-lsp`, open a fixture, receive response, clean shutdown.
-- [ ] Run verification and CI.
+- [x] Write byte-stream tests for one valid `Content-Length` frame split at every practical boundary (header fragmented, body fragmented, back-to-back frames).
+- [x] Test malformed header, duplicate/invalid Content-Length, header >16 KiB, body >16 MiB, premature EOF.
+- [x] Implement bounded frame reader without `ReadLineAsync` assumptions that can allocate unbounded attacker-controlled lines.
+- [x] Implement frame writer with exact UTF-8 byte Content-Length, not character count.
+- [x] Write JSON-RPC tests for incrementing request IDs, notification no-response behavior, response correlation, error responses, unknown response ID, cancellation, and server notification dispatch.
+- [x] Implement one reader loop per connection and thread-safe pending-request table.
+- [x] Spawn `rocket-lsp.exe` hidden with redirected stdin/stdout/stderr; stdout only feeds protocol parser; stderr feeds Output log channel.
+- [x] Implement initialize -> initialized lifecycle and capture server capabilities.
+- [x] Implement shutdown -> exit with forced process-tree cleanup fallback.
+- [x] Negotiate UTF-16 positions and incremental sync.
+- [x] Implement `didOpen`, versioned `didChange`, optional `didSave`, `didClose` mapping from open document lifecycle.
+- [x] Never send a source document >4 MiB. Expose a typed `LargeFileUnsupportedByLsp` state before transport.
+- [x] Implement `$/cancelRequest` for cancelled outstanding requests when appropriate.
+- [x] Implement `workspace/didChangeConfiguration` for current Rocket max project files/bytes and telemetry settings if exposed by IDE.
+- [x] Implement `rocket/projectStatus` and `rocket/analysisStatus` parsing into typed status models.
+- [x] Run all transport tests repeatedly to expose race/flakiness.
+- [x] Optional real-tool integration smoke: initialize current `rocket-lsp`, open a fixture, receive response, clean shutdown.
+- [x] Run verification and CI.
+
+**Completion note (2026-09-10):** transport/lifecycle/document-sync tests passed as part of the 77-test Windows verification suite. Real `rocket-lsp 1.0.0` initialized against the Rocket checkout, reported online, synchronized an open `.rocket` document, and terminated cleanly after normal IDE shutdown. The conditional `workspace/didChangeConfiguration` item remains dormant because RocketIDE does not yet expose project-limit/telemetry settings in the UI.
 
 **Acceptance:** protocol tests pass deterministically and a real Rocket LSP can initialize without any protocol bytes being mixed with logs.
 
