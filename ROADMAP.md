@@ -1,6 +1,6 @@
-# RocketIDE Implementation Plan
+# RocketIDE Roadmap
 
-> **For agentic workers:** Execute this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Do not skip acceptance gates. Update the progress ledger only after verification evidence exists.
+> Execute work packages in dependency order. Checklist items use (`- [ ]`) tracking. Do not skip acceptance gates, and update the progress ledger only after verification evidence exists.
 
 **Goal:** Build a fast, reliable, Windows-only desktop IDE dedicated to Rocket, with multi-file editing, compiler-accurate live errors and fixes, project navigation, build/run/test/output workflows, and large-file-safe behavior.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** C# 14, .NET 10, WPF, AvalonEdit 6.3.1.120, MSTest 4.4.0, Microsoft.NET.Test.Sdk 18.9.0, System.Text.Json, Windows Job Objects.
 
-**Spec:** `docs/ROCKET_IDE_DESIGN_SPEC.md`
+**Design specification:** `docs/ROCKET_IDE_DESIGN_SPEC.md`
 
 ## Global Constraints
 
@@ -33,8 +33,8 @@ Change only `Status`, `Completed`, and `Evidence` after the WP gate passes.
 
 | WP | Name | Status | Completed | Evidence |
 |---|---|---|---|---|
-| IDE-WP00 | Repository baseline + CI | IN PROGRESS — Windows CI pending |  | Local structural audit passed; Windows CI not yet run |
-| IDE-WP01 | Native shell + layout | BLOCKED by WP00 |  |  |
+| IDE-WP00 | Repository baseline + CI | DONE | 2026-09-10 | GitHub Actions `windows-ci` run `34501119792` passed on commit `788e990`; Verify and portable artifact upload succeeded |
+| IDE-WP01 | Native shell + layout | READY |  | WP00 dependency satisfied |
 | IDE-WP02 | Editor/document foundation | BLOCKED by WP01 |  |  |
 | IDE-WP03 | Workspace + project explorer | BLOCKED by WP02 |  |  |
 | IDE-WP04 | Rocket syntax + editor ergonomics | BLOCKED by WP02 |  |  |
@@ -109,9 +109,9 @@ RocketIDE/
   Directory.Build.props
   Directory.Packages.props
   RocketIDE.sln
-  GEMINI.md
+  CONTRIBUTING.md
   README.md
-  ROCKET_IDE_IMPLEMENTATION_PLAN.md
+  ROADMAP.md
 ```
 
 Do not create a monolithic `Services` folder where unrelated responsibilities accumulate.
@@ -120,7 +120,7 @@ Do not create a monolithic `Services` folder where unrelated responsibilities ac
 
 # IDE-WP00 — Repository baseline + Windows CI
 
-**Outcome:** The repository has a reproducible .NET 10 solution, project boundaries, test harness, verification script, and Windows CI. The starter already contains most scaffolding; this WP validates and repairs it rather than blindly recreating files.
+**Outcome:** The repository has a reproducible .NET 10 solution, project boundaries, test harness, verification script, and Windows CI. The repository baseline already contains the required scaffolding; this WP validates and repairs it rather than blindly recreating files.
 
 **Files:**
 - Review/modify: `Directory.Build.props`
@@ -140,9 +140,11 @@ Do not create a monolithic `Services` folder where unrelated responsibilities ac
 - [x] Confirm central package management pins AvalonEdit `6.3.1.120`, MSTest `4.4.0`, and Microsoft.NET.Test.Sdk `18.9.0`.
 - [x] Confirm project-reference direction is one-way: App -> Rocket/Core/Infrastructure; Rocket -> Core; Infrastructure -> Core; Core -> nothing repository-owned.
 - [x] Add baseline tests that prove each test project resolves and loads its intended production assembly.
-- [ ] Run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1` on Windows.
-- [ ] Push and require `.github/workflows/windows-ci.yml` to pass.
-- [ ] Record the CI run/commit in the progress ledger and set IDE-WP00 `DONE`.
+- [x] Run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1` on Windows.
+- [x] Push and require `.github/workflows/windows-ci.yml` to pass.
+- [x] Record the CI run/commit in the progress ledger and set IDE-WP00 `DONE`.
+
+**Completion evidence (2026-09-10):** GitHub Actions `windows-ci` run `34501119792` completed successfully for commit `788e990`. The `build-test-publish` job passed Setup .NET 10, Verify, and portable verification artifact upload.
 
 **Acceptance:** clean restore, build, tests, and publish smoke artifact on GitHub Actions Windows runner.
 
@@ -759,7 +761,7 @@ public interface IProcessRunner
 
 # Final 1.0 Acceptance Matrix
 
-Gemini must not call RocketIDE 1.0 ready until every non-deferred row passes on a clean Windows x64 environment.
+RocketIDE 1.0 must not be declared ready until every non-deferred row passes on a clean Windows x64 environment.
 
 - [ ] Launch RocketIDE without Visual Studio/VS Code.
 - [ ] Open standalone `.rocket` file.

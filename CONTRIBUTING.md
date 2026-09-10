@@ -1,12 +1,12 @@
-# Gemini Engineering Contract — RocketIDE
+# Contributing to RocketIDE
 
-This file is mandatory. Read it before editing any code.
+These engineering rules apply to every contributor and coding agent. Read them before editing code.
 
 ## Mission
 
-Build a production-quality Windows desktop IDE for the Rocket programming language by executing `ROCKET_IDE_IMPLEMENTATION_PLAN.md` in order.
+Build a production-quality Windows desktop IDE for the Rocket programming language by executing `ROADMAP.md` in dependency order.
 
-The user is intentionally vibe-coding this project. That means **you are responsible for engineering discipline**. Do not substitute optimistic claims for verification.
+Engineering discipline is evidence-based. Do not substitute optimistic claims, visual polish, or generated code volume for verification.
 
 ## Absolute rules
 
@@ -30,10 +30,10 @@ The user is intentionally vibe-coding this project. That means **you are respons
    - Run the full solution verification gate before claiming the WP complete.
 
 4. **Windows CI is the authority.**
-   Google AI Studio is allowed to generate/edit the repository, but it is not proof that a WPF `.exe` works. A WP that affects buildable code is not `[x]` until the Windows GitHub Actions workflow passes, or the same commands have been run successfully on a real Windows development machine and the evidence is recorded.
+   Editing or generating code is not proof that a WPF `.exe` works. A WP that affects buildable code is not complete until the Windows GitHub Actions workflow passes, or the same verification commands have run successfully on a real Windows development machine and the evidence is recorded.
 
 5. **Do not modify the Rocket compiler repository from this repository.**
-   If an IDE feature requires a missing Rocket capability, add an entry under `Upstream Rocket requests` in the implementation plan with prefix `ROCKET-UPSTREAM-REQUEST:`. Continue with graceful degradation where possible. Do not invent incompatible IDE-only behavior.
+   If an IDE feature requires a missing Rocket capability, add an entry under `Upstream Rocket requests` in `ROADMAP.md` with prefix `ROCKET-UPSTREAM-REQUEST:`. Continue with graceful degradation where possible. Do not invent incompatible IDE-only behavior.
 
 6. **Preserve project boundaries.**
    - `RocketIDE.Core`: domain models and interfaces; no WPF, no process APIs.
@@ -107,7 +107,7 @@ Read these snapshots under `references/rocket-current/`:
 - `editors/vscode/syntaxes/rocket.tmLanguage.json`
 - selected Visual Studio integration sources under `editors/visualstudio/CoreReference/`
 
-These files are reference snapshots from the Rocket repo version used to design this starter. They are not to be edited as RocketIDE source.
+These files are reference snapshots from the Rocket repo version used to design this repository baseline. They are not to be edited as RocketIDE source.
 
 ## Required completion wording
 
