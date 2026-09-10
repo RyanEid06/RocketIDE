@@ -1,0 +1,97 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Rocket",
+  "fileTypes": ["rocket"],
+  "scopeName": "source.rocket",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#declarations" },
+    { "include": "#keywords" },
+    { "include": "#types" },
+    { "include": "#constants" },
+    { "include": "#operators" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        { "name": "comment.line.number-sign.rocket", "match": "#.*$" }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.rocket",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            { "name": "constant.character.escape.rocket", "match": "\\\\[nt\\\"\\\\]" }
+          ]
+        },
+        {
+          "name": "string.quoted.single.rocket",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            { "name": "constant.character.escape.rocket", "match": "\\\\[nt'\\\\]" }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        { "name": "constant.numeric.float.rocket", "match": "\\b[0-9]+\\.[0-9]+\\b" },
+        { "name": "constant.numeric.integer.rocket", "match": "\\b[0-9]+\\b" }
+      ]
+    },
+    "declarations": {
+      "patterns": [
+        {
+          "match": "\\b(fn)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "storage.type.function.rocket" },
+            "2": { "name": "entity.name.function.rocket" }
+          }
+        },
+        {
+          "match": "\\b(struct|enum|impl)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "storage.type.rocket" },
+            "2": { "name": "entity.name.type.rocket" }
+          }
+        },
+        {
+          "match": "\\b(import)\\s+([A-Za-z_][A-Za-z0-9_.]*)",
+          "captures": {
+            "1": { "name": "keyword.control.import.rocket" },
+            "2": { "name": "entity.name.namespace.rocket" }
+          }
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        { "name": "keyword.control.rocket", "match": "\\b(if|else|while|for|in|break|continue|return|match|case)\\b" },
+        { "name": "storage.modifier.rocket", "match": "\\b(pub|let|var)\\b" },
+        { "name": "keyword.operator.logical.rocket", "match": "\\b(and|or|not)\\b" }
+      ]
+    },
+    "types": {
+      "patterns": [
+        { "name": "support.type.primitive.rocket", "match": "\\b(Int|Float|Bool|Char|String|Unit|Array|Slice|Option|Result)\\b" },
+        { "name": "entity.name.type.rocket", "match": "\\b[A-Z][A-Za-z0-9_]*\\b" }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        { "name": "constant.language.boolean.rocket", "match": "\\b(true|false)\\b" }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        { "name": "keyword.operator.rocket", "match": "->|\\.\\.|==|!=|<=|>=|[+\\-*/=<>?]" }
+      ]
+    }
+  }
+}

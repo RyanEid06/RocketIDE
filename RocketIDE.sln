@@ -1,0 +1,54 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RocketIDE.App", "src\RocketIDE.App\RocketIDE.App.csproj", "{A8100240-6D1A-4A87-9144-1800D10CDE01}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RocketIDE.Core", "src\RocketIDE.Core\RocketIDE.Core.csproj", "{A8100240-6D1A-4A87-9144-1800D10CDE02}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RocketIDE.Rocket", "src\RocketIDE.Rocket\RocketIDE.Rocket.csproj", "{A8100240-6D1A-4A87-9144-1800D10CDE03}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RocketIDE.Infrastructure", "src\RocketIDE.Infrastructure\RocketIDE.Infrastructure.csproj", "{A8100240-6D1A-4A87-9144-1800D10CDE04}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RocketIDE.Core.Tests", "tests\RocketIDE.Core.Tests\RocketIDE.Core.Tests.csproj", "{A8100240-6D1A-4A87-9144-1800D10CDE05}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RocketIDE.Rocket.Tests", "tests\RocketIDE.Rocket.Tests\RocketIDE.Rocket.Tests.csproj", "{A8100240-6D1A-4A87-9144-1800D10CDE06}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RocketIDE.Infrastructure.Tests", "tests\RocketIDE.Infrastructure.Tests\RocketIDE.Infrastructure.Tests.csproj", "{A8100240-6D1A-4A87-9144-1800D10CDE07}"
+EndProject
+Global
+  GlobalSection(SolutionConfigurationPlatforms) = preSolution
+    Debug|Any CPU = Debug|Any CPU
+    Release|Any CPU = Release|Any CPU
+  EndGlobalSection
+  GlobalSection(ProjectConfigurationPlatforms) = postSolution
+    {A8100240-6D1A-4A87-9144-1800D10CDE01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE01}.Release|Any CPU.Build.0 = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE02}.Release|Any CPU.Build.0 = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE03}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE03}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE03}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE03}.Release|Any CPU.Build.0 = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE04}.Release|Any CPU.Build.0 = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE05}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE05}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE05}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE05}.Release|Any CPU.Build.0 = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE06}.Release|Any CPU.Build.0 = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE07}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE07}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE07}.Release|Any CPU.Build.0 = Release|Any CPU
+  EndGlobalSection
+EndGlobal

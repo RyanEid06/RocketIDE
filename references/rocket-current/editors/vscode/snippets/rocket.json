@@ -1,0 +1,49 @@
+{
+  "Main function": {
+    "prefix": "main",
+    "body": [
+      "fn main() -> Int:",
+      "    ${1:print(\"Hello, Rocket!\")}",
+      "    return 0"
+    ],
+    "description": "Create a Rocket entry point"
+  },
+  "Function": {
+    "prefix": "fn",
+    "body": [
+      "fn ${1:name}(${2:value}: ${3:Int}) -> ${4:Int}:",
+      "    ${5:return value}"
+    ],
+    "description": "Create a typed Rocket function"
+  },
+  "Implementation block": {
+    "prefix": "impl",
+    "body": [
+      "impl ${1:Type}:",
+      "    fn ${2:method}(self: ${1:Type}) -> ${3:Int}:",
+      "        ${4:return 0}"
+    ],
+    "description": "Create a Rocket method implementation"
+  },
+  "Exhaustive match": {
+    "prefix": "match",
+    "body": [
+      "match ${1:value}:",
+      "    case ${2:Some}(value):",
+      "        ${3:return value}",
+      "    case ${4:None}:",
+      "        ${5:return 0}"
+    ],
+    "description": "Create a match statement"
+  },
+  "Test entry": {
+    "prefix": "testmain",
+    "body": [
+      "fn main() -> Int:",
+      "    if ${1:condition}:",
+      "        return 0",
+      "    return 1"
+    ],
+    "description": "Create a Rocket test-runner entry point"
+  }
+}

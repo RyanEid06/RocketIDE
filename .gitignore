@@ -1,0 +1,37 @@
+# .NET / Visual Studio
+bin/
+obj/
+.vs/
+TestResults/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+*.DotSettings.user
+
+# Build / package artifacts
+artifacts/
+out/
+publish/
+*.nupkg
+*.snupkg
+
+# Rocket project generated state when fixtures are added
+.rocketc/
+
+# Local SDK/tool overrides
+.local/
+tools/local/
+
+# OS/editor noise
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+
+# Recovery/logs must be per-user, never repo state
+recovery/
+logs/

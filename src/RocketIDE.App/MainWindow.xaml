@@ -1,0 +1,91 @@
+<Window x:Class="RocketIDE.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
+        Title="RocketIDE"
+        Width="1280"
+        Height="800"
+        MinWidth="900"
+        MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        Background="#1E1E1E"
+        Foreground="#E6E6E6">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top" Background="#252526" Foreground="#E6E6E6">
+            <MenuItem Header="_File" />
+            <MenuItem Header="_Edit" />
+            <MenuItem Header="_Selection" />
+            <MenuItem Header="_View" />
+            <MenuItem Header="_Navigate" />
+            <MenuItem Header="_Build" />
+            <MenuItem Header="_Run" />
+            <MenuItem Header="_Tools" />
+            <MenuItem Header="_Help" />
+        </Menu>
+
+        <ToolBarTray DockPanel.Dock="Top" Background="#252526">
+            <ToolBar Background="#252526">
+                <Button Content="Open" IsEnabled="False" ToolTip="Implemented in IDE-WP02/03" />
+                <Button Content="Save" IsEnabled="False" ToolTip="Implemented in IDE-WP02" />
+                <Separator />
+                <Button Content="Build" IsEnabled="False" ToolTip="Implemented in IDE-WP10" />
+                <Button Content="Run" IsEnabled="False" ToolTip="Implemented in IDE-WP10" />
+                <Button Content="Stop" IsEnabled="False" ToolTip="Implemented in IDE-WP10" />
+                <Button Content="Test" IsEnabled="False" ToolTip="Implemented in IDE-WP10" />
+            </ToolBar>
+        </ToolBarTray>
+
+        <StatusBar DockPanel.Dock="Bottom" Background="#252526" Foreground="#CFCFCF">
+            <StatusBarItem Content="Rocket SDK: not configured" />
+            <Separator />
+            <StatusBarItem Content="LSP: offline" />
+            <Separator />
+            <StatusBarItem Content="Ln 1, Col 1" HorizontalAlignment="Right" />
+        </StatusBar>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="240" MinWidth="160" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="*" MinWidth="420" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="#252526" BorderBrush="#333333" BorderThickness="0,0,1,0">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="EXPLORER" Margin="12,10" FontWeight="SemiBold" FontSize="12" />
+                    <TextBlock Text="Workspace explorer begins in IDE-WP03" Margin="12" Foreground="#999999" TextWrapping="Wrap" />
+                </DockPanel>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#2D2D30" />
+
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" MinHeight="260" />
+                    <RowDefinition Height="5" />
+                    <RowDefinition Height="190" MinHeight="100" />
+                </Grid.RowDefinitions>
+
+                <TabControl Grid.Row="0" Background="#1E1E1E" Foreground="#E6E6E6">
+                    <TabItem Header="Welcome">
+                        <Grid Background="#1E1E1E">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="520">
+                                <TextBlock Text="RocketIDE" FontSize="34" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                <TextBlock Margin="0,12,0,0" Text="Native Windows IDE for the Rocket language" Foreground="#B7B7B7" FontSize="16" HorizontalAlignment="Center" />
+                                <TextBlock Margin="0,24,0,0" Text="This starter shell intentionally contains no fake editor intelligence. Follow ROCKET_IDE_IMPLEMENTATION_PLAN.md." Foreground="#8F8F8F" TextWrapping="Wrap" TextAlignment="Center" />
+                            </StackPanel>
+                        </Grid>
+                    </TabItem>
+                </TabControl>
+
+                <GridSplitter Grid.Row="1" Height="5" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="#2D2D30" />
+
+                <TabControl Grid.Row="2" Background="#1E1E1E" Foreground="#E6E6E6">
+                    <TabItem Header="PROBLEMS"><TextBlock Margin="12" Text="Live diagnostics begin in IDE-WP07." Foreground="#999999" /></TabItem>
+                    <TabItem Header="OUTPUT"><TextBlock Margin="12" Text="Compiler and program output begin in IDE-WP10." Foreground="#999999" /></TabItem>
+                    <TabItem Header="TESTS"><TextBlock Margin="12" Text="Structured Rocket test results begin in IDE-WP10." Foreground="#999999" /></TabItem>
+                </TabControl>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</Window>
