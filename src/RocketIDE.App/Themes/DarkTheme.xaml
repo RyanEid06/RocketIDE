@@ -59,23 +59,59 @@
         <Setter Property="BorderThickness" Value="0" />
     </Style>
 
-    <Style x:Key="IDE.ToolbarButtonStyle" TargetType="{x:Type Button}">
-        <Setter Property="Background" Value="Transparent" />
+    <Style x:Key="IDE.ButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="{DynamicResource IDE.ChromeRaisedBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
-        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource IDE.BorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="10,5" />
-        <Setter Property="Margin" Value="1" />
         <Setter Property="Cursor" Value="Hand" />
-        <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="{DynamicResource IDE.HoverBrush}" />
-            </Trigger>
-            <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="Foreground" Value="{DynamicResource IDE.TextMutedBrush}" />
-                <Setter Property="Opacity" Value="0.55" />
-                <Setter Property="Cursor" Value="Arrow" />
-            </Trigger>
-        </Style.Triggers>
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="ButtonBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="3"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          RecognizesAccessKey="True" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource IDE.HoverBrush}" />
+                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource IDE.AccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource IDE.SelectionBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="{DynamicResource IDE.AccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource IDE.TextMutedBrush}" />
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="Transparent" />
+                            <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="Transparent" />
+                            <Setter Property="Opacity" Value="0.55" />
+                            <Setter Property="Cursor" Value="Arrow" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource IDE.ButtonStyle}" />
+
+    <Style x:Key="IDE.ToolbarButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource IDE.ButtonStyle}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Margin" Value="1" />
     </Style>
 
     <Style x:Key="IDE.SmallButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource IDE.ToolbarButtonStyle}">

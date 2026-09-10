@@ -157,23 +157,62 @@ public partial class MainWindow : Window
     private async void NewFile_Click(object sender, RoutedEventArgs e)
     {
         var directory = GetSelectedDirectory();
+        string? path;
+
         if (directory is null)
         {
-            return;
-        }
+            var saveDialog = new SaveFileDialog
+            {
+                Title = "Create Rocket file",
+                FileName = "untitled.rocket",
+                DefaultExt = ".rocket",
+                AddExtension = true,
+                Filter = "Rocket source (*.rocket)|*.rocket|All files (*.*)|*.*",
+                CheckPathExists = true,
+                OverwritePrompt = false,
+            };
 
-        var dialog = new NameInputDialog("New File", "File name:", "untitled.rocket") { Owner = this };
-        if (dialog.ShowDialog() != true)
+            if (saveDialog.ShowDialog(this) != true)
+            {
+                return;
+            }
+
+            path = saveDialog.FileName;
+            if (File.Exists(path) || Directory.Exists(path))
+            {
+                MessageBox.Show(
+                    this,
+                    $"'{path}' already exists. Choose a new file name.",
+                    "Create file",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+        }
+        else
         {
-            return;
+            var dialog = new NameInputDialog("New File", "File name:", "untitled.rocket") { Owner = this };
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            path = Path.Combine(directory, dialog.Value);
         }
 
-        var path = Path.Combine(directory, dialog.Value);
         try
         {
-            SuppressWorkspaceChange(path);
+            if (_viewModel.HasWorkspace)
+            {
+                SuppressWorkspaceChange(path);
+            }
+
             await _workspaceFileSystem.CreateFileAsync(path, CancellationToken.None);
-            await _viewModel.Explorer.RefreshAsync(CancellationToken.None);
+            if (_viewModel.HasWorkspace)
+            {
+                await _viewModel.Explorer.RefreshAsync(CancellationToken.None);
+            }
+
             await OpenDocumentAsync(path);
         }
         catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
@@ -543,7 +582,7 @@ public partial class MainWindow : Window
 
         switch (e.Key)
         {
-            case Key.N when _viewModel.HasWorkspace:
+            case Key.N:
                 e.Handled = true;
                 NewFile_Click(sender, e);
                 break;

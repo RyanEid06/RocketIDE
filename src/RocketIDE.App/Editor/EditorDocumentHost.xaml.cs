@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -56,7 +57,19 @@ public partial class EditorDocumentHost : UserControl
             Editor.Document = document.EditorDocument;
             if (IsRocketDocument(document))
             {
-                Editor.SyntaxHighlighting = RocketSyntaxHighlighting.Definition;
+                try
+                {
+                    Editor.SyntaxHighlighting = RocketSyntaxHighlighting.Definition;
+                }
+                catch (Exception exception)
+                {
+                    // Syntax coloring is optional editor presentation. A broken highlighting
+                    // definition must never make opening a source file fatal. CI directly tests
+                    // the definition so this fallback is defense in depth, not a hidden failure.
+                    Trace.TraceError($"Rocket syntax highlighting failed to load: {exception}");
+                    Editor.SyntaxHighlighting = null;
+                }
+
                 RocketIndentationStrategy.Configure(Editor);
             }
             else

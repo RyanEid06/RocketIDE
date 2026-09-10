@@ -1,0 +1,31 @@
+[1mdiff --git a/tests/RocketIDE.Rocket.Tests/Language/RocketEditorRulesTests.cs b/tests/RocketIDE.Rocket.Tests/Language/RocketEditorRulesTests.cs[m
+[1mindex dea29bc..69e14c1 100644[m
+[1m--- a/tests/RocketIDE.Rocket.Tests/Language/RocketEditorRulesTests.cs[m
+[1m+++ b/tests/RocketIDE.Rocket.Tests/Language/RocketEditorRulesTests.cs[m
+[36m@@ -5,7 +5,7 @@[m [mnamespace RocketIDE.Rocket.Tests.Language;[m
+ [TestClass][m
+ public sealed class RocketEditorRulesTests[m
+ {[m
+[31m-    [DataTestMethod][m
+[32m+[m[32m    [TestMethod][m
+     [DataRow("fn main() -> Int:", 4)][m
+     [DataRow("    if ready: # comment", 8)][m
+     [DataRow("    let text = \"value:\"", 4)][m
+[36m@@ -15,7 +15,7 @@[m [mpublic sealed class RocketEditorRulesTests[m
+         Assert.AreEqual(expectedSpaces, RocketEditorRules.GetNewLineIndentation(line));[m
+     }[m
+ [m
+[31m-    [DataTestMethod][m
+[32m+[m[32m    [TestMethod][m
+     [DataRow("else:", true)][m
+     [DataRow("case value:", true)][m
+     [DataRow("  case value: # comment", true)][m
+[36m@@ -26,7 +26,7 @@[m [mpublic sealed class RocketEditorRulesTests[m
+     }[m
+ [m
+ [m
+[31m-    [DataTestMethod][m
+[32m+[m[32m    [TestMethod][m
+     [DataRow("        else:", "        return 1", 4)][m
+     [DataRow("    else:", "        return 1", 0)][m
+     [DataRow("        case value:", "        return 1", 4)][m

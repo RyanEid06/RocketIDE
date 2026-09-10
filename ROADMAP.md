@@ -36,8 +36,8 @@ Change only `Status`, `Completed`, and `Evidence` after the WP gate passes.
 | IDE-WP00 | Repository baseline + CI | DONE | 2026-09-10 | GitHub Actions `windows-ci` run `34501119792` passed on commit `788e990`; Verify and portable artifact upload succeeded |
 | IDE-WP01 | Native shell + layout | DONE | 2026-09-10 | Windows CI run `34504712942` passed on commit `0c741d7`; user launched the published `RocketIDE.exe` and accepted the native shell/editor smoke test |
 | IDE-WP02 | Editor/document foundation | DONE | 2026-09-10 | Same Windows CI run `34504712942` passed; user exercised real multi-tab editing/saving in the published app and accepted the smoke test |
-| IDE-WP03 | Workspace + project explorer | IN PROGRESS |  | Implementation prepared locally; Windows CI + workspace smoke test pending |
-| IDE-WP04 | Rocket syntax + editor ergonomics | IN PROGRESS |  | Batched with WP03; Windows CI + syntax/typing smoke test pending |
+| IDE-WP03 | Workspace + project explorer | IN PROGRESS |  | Windows CI run `34512050226` passed; first real-app smoke test exposed New-file UX and editor-open crash regressions, repair pending re-verification |
+| IDE-WP04 | Rocket syntax + editor ergonomics | IN PROGRESS |  | Windows CI run `34512050226` passed; smoke test exposed invalid AvalonEdit XSHD structure on `.rocket` open, regression test + repair pending re-verification |
 | IDE-WP05 | Rocket tool discovery + validation | READY |  | WP00 dependency satisfied |
 | IDE-WP06 | LSP transport + lifecycle | BLOCKED by WP05 |  |  |
 | IDE-WP07 | Live diagnostics + Problems | BLOCKED by WP06 |  | WP02 dependency satisfied |
@@ -103,6 +103,7 @@ RocketIDE/
       Recovery/
       Logging/
   tests/
+    RocketIDE.App.Tests/
     RocketIDE.Core.Tests/
     RocketIDE.Rocket.Tests/
     RocketIDE.Infrastructure.Tests/

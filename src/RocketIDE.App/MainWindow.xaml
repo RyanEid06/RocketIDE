@@ -14,7 +14,7 @@
     <DockPanel LastChildFill="True">
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
-                <MenuItem Header="_New File" InputGestureText="Ctrl+N" IsEnabled="{Binding HasWorkspace}" Click="NewFile_Click" />
+                <MenuItem Header="_New File" InputGestureText="Ctrl+N" Click="NewFile_Click" />
                 <MenuItem Header="New _Folder" IsEnabled="{Binding HasWorkspace}" Click="NewFolder_Click" />
                 <Separator />
                 <MenuItem Header="_Open File..." InputGestureText="Ctrl+O" Click="OpenFile_Click" />
@@ -55,7 +55,7 @@
 
         <Border DockPanel.Dock="Top" Background="{DynamicResource IDE.ChromeBrush}" BorderBrush="{DynamicResource IDE.BorderBrush}" BorderThickness="0,0,0,1" Padding="5,2">
             <StackPanel Orientation="Horizontal">
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="New" IsEnabled="{Binding HasWorkspace}" ToolTip="New file" Click="NewFile_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="New" ToolTip="New file" Click="NewFile_Click" />
                 <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Open" ToolTip="Open file" Click="OpenFile_Click" />
                 <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Folder" ToolTip="Open folder" Click="OpenFolder_Click" />
                 <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Save" IsEnabled="{Binding HasDocuments}" ToolTip="Save active file" Click="Save_Click" />
