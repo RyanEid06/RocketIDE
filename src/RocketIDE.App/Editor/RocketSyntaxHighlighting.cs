@@ -27,7 +27,7 @@ public static class RocketSyntaxHighlighting
               <Color name="Operator" foreground="#D4D4D4" />
               <Color name="Punctuation" foreground="#D4D4D4" />
               <RuleSet>
-                <Rule color="Comment">#.*$</Rule>
+                <Rule color="Comment">[#].*$</Rule>
                 <Span color="String">
                   <Begin>&quot;</Begin>
                   <End>&quot;</End>

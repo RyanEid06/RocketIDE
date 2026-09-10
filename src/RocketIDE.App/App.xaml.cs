@@ -7,8 +7,21 @@ namespace RocketIDE.App;
 
 public partial class App : Application
 {
+    private bool _handlingFatalDispatcherException;
+
     private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
+        // MessageBox.Show runs a nested dispatcher loop. If the main window keeps throwing
+        // while that dialog is visible, DispatcherUnhandledException can re-enter and create
+        // an error-dialog storm. Claim the exception immediately and ignore re-entry; the
+        // first handler invocation owns logging, the single user-facing dialog, and shutdown.
+        e.Handled = true;
+        if (_handlingFatalDispatcherException)
+        {
+            return;
+        }
+
+        _handlingFatalDispatcherException = true;
         var logPath = TryWriteCrashLog(e.Exception);
         var location = logPath is null
             ? "RocketIDE could not write a crash log."
@@ -20,9 +33,7 @@ public partial class App : Application
             MessageBoxButton.OK,
             MessageBoxImage.Error);
 
-        // Do not mark the exception handled. Continuing after an unknown UI exception can
-        // corrupt editor state; the log gives the next debugging pass the real stack trace.
-        e.Handled = false;
+        Shutdown(-1);
     }
 
     private static string? TryWriteCrashLog(Exception exception)
