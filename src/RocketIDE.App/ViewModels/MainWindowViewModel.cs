@@ -2,6 +2,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using RocketIDE.Core.Documents;
+using RocketIDE.Infrastructure.Files;
+using RocketIDE.App.ViewModels.Explorer;
 
 namespace RocketIDE.App.ViewModels;
 
@@ -14,14 +16,29 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private string _caretStatus = "Ln 1, Col 1";
     private string _encodingStatus = "UTF-8";
 
-    public MainWindowViewModel()
+    public MainWindowViewModel(WorkspaceFileSystem workspaceFileSystem)
     {
+        ArgumentNullException.ThrowIfNull(workspaceFileSystem);
+        Explorer = new WorkspaceExplorerViewModel(workspaceFileSystem);
+        Explorer.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(WorkspaceExplorerViewModel.HasWorkspace))
+            {
+                OnPropertyChanged(nameof(HasWorkspace));
+            }
+        };
         Documents.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasDocuments));
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public ObservableCollection<DocumentTabViewModel> Documents { get; } = new();
+
+    public WorkspaceExplorerViewModel Explorer { get; }
+
+    public ObservableCollection<string> RecentWorkspaces { get; } = new();
+
+    public bool HasWorkspace => Explorer.HasWorkspace;
 
     public bool HasDocuments => Documents.Count > 0;
 
@@ -100,6 +117,33 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         return tab;
     }
 
+
+    public void SetRecentWorkspaces(IEnumerable<string> paths)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+        RecentWorkspaces.Clear();
+        foreach (var path in paths.Take(8))
+        {
+            RecentWorkspaces.Add(NormalizeWorkspacePath(path));
+        }
+    }
+
+    public void AddRecentWorkspace(string path)
+    {
+        var fullPath = NormalizeWorkspacePath(path);
+        var existing = RecentWorkspaces.FirstOrDefault(item => string.Equals(item, fullPath, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null)
+        {
+            RecentWorkspaces.Remove(existing);
+        }
+
+        RecentWorkspaces.Insert(0, fullPath);
+        while (RecentWorkspaces.Count > 8)
+        {
+            RecentWorkspaces.RemoveAt(RecentWorkspaces.Count - 1);
+        }
+    }
+
     public void Remove(DocumentTabViewModel tab)
     {
         var index = Documents.IndexOf(tab);
@@ -117,6 +161,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 ? null
                 : Documents[Math.Min(index, Documents.Count - 1)];
         }
+    }
+
+    private static string NormalizeWorkspacePath(string path)
+    {
+        var fullPath = System.IO.Path.GetFullPath(path);
+        var root = System.IO.Path.GetPathRoot(fullPath);
+        return string.Equals(fullPath, root, StringComparison.OrdinalIgnoreCase)
+            ? fullPath
+            : fullPath.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
     }
 
     private void ActiveDocument_CaretChanged(object? sender, EventArgs e) => UpdateCaretStatus();

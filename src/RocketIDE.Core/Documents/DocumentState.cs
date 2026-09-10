@@ -51,6 +51,26 @@ public sealed class DocumentState
         return Snapshot;
     }
 
+    public DocumentSnapshot ReplaceFromDisk(string text, long byteLength)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (byteLength < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(byteLength));
+        }
+
+        if (!string.Equals(_text, text, StringComparison.Ordinal))
+        {
+            _text = text;
+            _version = checked(_version + 1);
+        }
+
+        _savedText = text;
+        _byteLength = byteLength;
+        _isDirty = false;
+        return Snapshot;
+    }
+
     public DocumentSnapshot MarkSaved(long byteLength)
     {
         if (byteLength < 0)

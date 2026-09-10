@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -6,23 +7,51 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Win32;
 using RocketIDE.App.Editor;
+using RocketIDE.App.Interop;
 using RocketIDE.App.ViewModels;
+using RocketIDE.App.ViewModels.Explorer;
 using RocketIDE.Core.Documents;
+using RocketIDE.Core.Workspaces;
 using RocketIDE.Infrastructure.Files;
+using RocketIDE.Infrastructure.Settings;
+using RocketIDE.Rocket.Projects;
 
 namespace RocketIDE.App;
 
 public partial class MainWindow : Window
 {
     private readonly FileDocumentStore _documentStore = new();
-    private readonly MainWindowViewModel _viewModel = new();
+    private readonly WorkspaceFileSystem _workspaceFileSystem = new();
+    private readonly RocketTargetDiscovery _targetDiscovery = new();
+    private readonly RecentWorkspaceStore _recentWorkspaceStore = RecentWorkspaceStore.CreateDefault();
+    private readonly MainWindowViewModel _viewModel;
+    private readonly Dictionary<string, DateTime> _suppressedWorkspaceChanges = new(StringComparer.OrdinalIgnoreCase);
+    private WorkspaceFileWatcher? _workspaceWatcher;
+    private ExplorerNodeViewModel? _selectedExplorerNode;
     private bool _allowWindowClose;
 
     public MainWindow()
     {
         InitializeComponent();
+        _viewModel = new MainWindowViewModel(_workspaceFileSystem);
+        _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         DataContext = _viewModel;
     }
+
+    private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var recent = await _recentWorkspaceStore.LoadAsync(CancellationToken.None);
+            _viewModel.SetRecentWorkspaces(recent);
+        }
+        catch (Exception exception) when (IsExpectedFileException(exception))
+        {
+            Trace.TraceWarning($"RocketIDE could not load recent projects: {exception.Message}");
+        }
+    }
+
+    private void MainWindow_SourceInitialized(object? sender, EventArgs e) => WindowsTitleBar.ApplyDarkMode(this);
 
     private async void OpenFile_Click(object sender, RoutedEventArgs e) => await OpenFilesAsync();
 
@@ -43,14 +72,289 @@ public partial class MainWindow : Window
 
         foreach (var path in dialog.FileNames)
         {
+            await OpenDocumentAsync(path);
+        }
+    }
+
+    private async Task OpenDocumentAsync(string path)
+    {
+        try
+        {
+            var snapshot = await _documentStore.OpenAsync(path, CancellationToken.None);
+            _viewModel.AddOrActivate(_documentStore, snapshot);
+        }
+        catch (Exception exception) when (IsExpectedFileException(exception))
+        {
+            ShowFileError("Open failed", path, exception);
+        }
+    }
+
+    private async void OpenFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = "Open Rocket project or folder",
+            Multiselect = false,
+        };
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            await OpenWorkspaceAsync(dialog.FolderName);
+        }
+    }
+
+    private async Task OpenWorkspaceAsync(string path)
+    {
+        try
+        {
+            DisposeWorkspaceWatcher();
+            await _viewModel.Explorer.OpenAsync(path, CancellationToken.None);
+
+            _workspaceWatcher = new WorkspaceFileWatcher(path);
+            _workspaceWatcher.ChangesAvailable += WorkspaceWatcher_ChangesAvailable;
+            _workspaceWatcher.Start();
+
+            _viewModel.AddRecentWorkspace(path);
+            await PersistRecentWorkspacesAsync();
+        }
+        catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
+        {
+            DisposeWorkspaceWatcher();
+            ShowFileError("Open folder failed", path, exception);
+        }
+    }
+
+
+    private async Task PersistRecentWorkspacesAsync()
+    {
+        try
+        {
+            await _recentWorkspaceStore.SaveAsync(_viewModel.RecentWorkspaces, CancellationToken.None);
+        }
+        catch (Exception exception) when (IsExpectedFileException(exception))
+        {
+            Trace.TraceWarning($"RocketIDE could not save recent projects: {exception.Message}");
+        }
+    }
+
+    private void RecentProjects_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        RecentProjectsMenu.Items.Clear();
+        if (_viewModel.RecentWorkspaces.Count == 0)
+        {
+            RecentProjectsMenu.Items.Add(new MenuItem { Header = "No recent projects", IsEnabled = false });
+            return;
+        }
+
+        foreach (var path in _viewModel.RecentWorkspaces)
+        {
+            var item = new MenuItem { Header = path, ToolTip = path };
+            item.Click += async (_, _) => await OpenWorkspaceAsync(path);
+            RecentProjectsMenu.Items.Add(item);
+        }
+    }
+
+    private async void NewFile_Click(object sender, RoutedEventArgs e)
+    {
+        var directory = GetSelectedDirectory();
+        if (directory is null)
+        {
+            return;
+        }
+
+        var dialog = new NameInputDialog("New File", "File name:", "untitled.rocket") { Owner = this };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        var path = Path.Combine(directory, dialog.Value);
+        try
+        {
+            SuppressWorkspaceChange(path);
+            await _workspaceFileSystem.CreateFileAsync(path, CancellationToken.None);
+            await _viewModel.Explorer.RefreshAsync(CancellationToken.None);
+            await OpenDocumentAsync(path);
+        }
+        catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
+        {
+            ShowFileError("Create file failed", path, exception);
+        }
+    }
+
+    private async void NewFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var directory = GetSelectedDirectory();
+        if (directory is null)
+        {
+            return;
+        }
+
+        var dialog = new NameInputDialog("New Folder", "Folder name:", "NewFolder") { Owner = this };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        var path = Path.Combine(directory, dialog.Value);
+        try
+        {
+            SuppressWorkspaceChange(path);
+            _workspaceFileSystem.CreateDirectory(path);
+            await _viewModel.Explorer.RefreshAsync(CancellationToken.None);
+        }
+        catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
+        {
+            ShowFileError("Create folder failed", path, exception);
+        }
+    }
+
+    private async void RenameExplorerItem_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetSelectedRealExplorerNode();
+        if (node is null || IsWorkspaceRoot(node.Path))
+        {
+            return;
+        }
+
+        var dialog = new NameInputDialog("Rename", "New name:", node.Name) { Owner = this };
+        if (dialog.ShowDialog() != true || string.Equals(dialog.Value, node.Name, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var affected = GetDocumentsUnderPath(node.Path);
+        if (!await PrepareDocumentsForFileOperationAsync(affected))
+        {
+            return;
+        }
+
+        try
+        {
+            var oldPath = node.Path;
+            var newPath = _workspaceFileSystem.Rename(oldPath, dialog.Value);
+            SuppressWorkspaceChange(oldPath);
+            SuppressWorkspaceChange(newPath);
+            CloseTabsWithoutPrompt(affected);
+            await _viewModel.Explorer.RefreshAsync(CancellationToken.None);
+
+            foreach (var tab in affected)
+            {
+                var mappedPath = MapRenamedPath(tab.Path, oldPath, newPath);
+                if (File.Exists(mappedPath))
+                {
+                    await OpenDocumentAsync(mappedPath);
+                }
+            }
+        }
+        catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
+        {
+            ShowFileError("Rename failed", node.Path, exception);
+        }
+    }
+
+    private async void DeleteExplorerItem_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetSelectedRealExplorerNode();
+        if (node is null || IsWorkspaceRoot(node.Path))
+        {
+            return;
+        }
+
+        var choice = MessageBox.Show(
+            this,
+            $"Move '{node.Name}' to the Recycle Bin?",
+            "Delete",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.No);
+        if (choice != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        var affected = GetDocumentsUnderPath(node.Path);
+        if (!await PrepareDocumentsForFileOperationAsync(affected))
+        {
+            return;
+        }
+
+        try
+        {
+            SuppressWorkspaceChange(node.Path);
+            CloseTabsWithoutPrompt(affected);
+            _workspaceFileSystem.DeleteToRecycleBin(node.Path);
+            await _viewModel.Explorer.RefreshAsync(CancellationToken.None);
+        }
+        catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
+        {
+            ShowFileError("Delete failed", node.Path, exception);
+        }
+    }
+
+    private void CopyExplorerPath_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetSelectedRealExplorerNode();
+        if (node is not null)
+        {
+            Clipboard.SetText(node.Path);
+        }
+    }
+
+    private void RevealExplorerItem_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetSelectedRealExplorerNode();
+        if (node is null)
+        {
+            return;
+        }
+
+        var arguments = File.Exists(node.Path) ? $"/select,\"{node.Path}\"" : $"\"{node.Path}\"";
+        Process.Start(new ProcessStartInfo("explorer.exe", arguments) { UseShellExecute = true });
+    }
+
+    private async void RefreshWorkspace_Click(object sender, RoutedEventArgs e) =>
+        await _viewModel.Explorer.RefreshAsync(CancellationToken.None);
+
+    private void ExplorerTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e) =>
+        _selectedExplorerNode = e.NewValue as ExplorerNodeViewModel;
+
+    private void ExplorerTree_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        var current = e.OriginalSource as DependencyObject;
+        while (current is not null && current is not TreeViewItem)
+        {
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        if (current is TreeViewItem item)
+        {
+            item.IsSelected = true;
+            item.Focus();
+        }
+    }
+
+    private async void ExplorerTree_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        var node = GetSelectedRealExplorerNode();
+        if (node is not null && !node.IsDirectory && File.Exists(node.Path))
+        {
+            await OpenDocumentAsync(node.Path);
+            e.Handled = true;
+        }
+    }
+
+    private async void ExplorerNode_Expanded(object sender, RoutedEventArgs e)
+    {
+        if (sender is TreeViewItem { DataContext: ExplorerNodeViewModel node })
+        {
             try
             {
-                var snapshot = await _documentStore.OpenAsync(path, CancellationToken.None);
-                _viewModel.AddOrActivate(_documentStore, snapshot);
+                await node.LoadChildrenAsync(CancellationToken.None);
             }
             catch (Exception exception) when (IsExpectedFileException(exception))
             {
-                ShowFileError("Open failed", path, exception);
+                ShowFileError("Folder enumeration failed", node.Path, exception);
             }
         }
     }
@@ -78,6 +382,7 @@ public partial class MainWindow : Window
     {
         try
         {
+            SuppressWorkspaceChange(tab.Path);
             var result = await _documentStore.SaveAsync(tab.Id, overwriteExternalChanges: false, CancellationToken.None);
             if (result.Status == DocumentSaveStatus.Conflict)
             {
@@ -94,12 +399,12 @@ public partial class MainWindow : Window
                     return false;
                 }
 
+                SuppressWorkspaceChange(tab.Path);
                 result = await _documentStore.SaveAsync(tab.Id, overwriteExternalChanges: true, CancellationToken.None);
             }
 
             tab.UpdateSnapshot(result.Document);
-            return !result.Document.IsDirty &&
-                (result.Status is DocumentSaveStatus.Saved or DocumentSaveStatus.NoChanges);
+            return !result.Document.IsDirty && result.Status is DocumentSaveStatus.Saved or DocumentSaveStatus.NoChanges;
         }
         catch (Exception exception) when (IsExpectedFileException(exception))
         {
@@ -127,8 +432,7 @@ public partial class MainWindow : Window
         await TryCloseTabsAsync(_viewModel.Documents.Where(document => !ReferenceEquals(document, active)).ToArray());
     }
 
-    private async void CloseAll_Click(object sender, RoutedEventArgs e) =>
-        await TryCloseTabsAsync(_viewModel.Documents.ToArray());
+    private async void CloseAll_Click(object sender, RoutedEventArgs e) => await TryCloseTabsAsync(_viewModel.Documents.ToArray());
 
     private async void CloseTabButton_Click(object sender, RoutedEventArgs e)
     {
@@ -166,25 +470,24 @@ public partial class MainWindow : Window
             }
         }
 
+        CloseTabsWithoutPrompt(tabs);
+        return true;
+    }
+
+    private void CloseTabsWithoutPrompt(IReadOnlyList<DocumentTabViewModel> tabs)
+    {
         foreach (var tab in tabs)
         {
             _documentStore.Close(tab.Id);
             _viewModel.Remove(tab);
         }
-
-        return true;
     }
 
     private void Undo_Click(object sender, RoutedEventArgs e) => GetActiveEditor()?.Undo();
-
     private void Redo_Click(object sender, RoutedEventArgs e) => GetActiveEditor()?.Redo();
-
     private void SelectAll_Click(object sender, RoutedEventArgs e) => GetActiveEditor()?.SelectAll();
-
     private void Find_Click(object sender, RoutedEventArgs e) => GetActiveEditor()?.ShowFind(includeReplace: false);
-
     private void Replace_Click(object sender, RoutedEventArgs e) => GetActiveEditor()?.ShowFind(includeReplace: true);
-
     private void GotoLine_Click(object sender, RoutedEventArgs e) => ShowGotoLine();
 
     private void ShowGotoLine()
@@ -195,11 +498,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var dialog = new GotoLineDialog(_viewModel.ActiveDocument.CaretLine, editor.EditorLineCount)
-        {
-            Owner = this,
-        };
-
+        var dialog = new GotoLineDialog(_viewModel.ActiveDocument.CaretLine, editor.EditorLineCount) { Owner = this };
         if (dialog.ShowDialog() == true)
         {
             editor.GoToLine(dialog.LineNumber);
@@ -220,6 +519,7 @@ public partial class MainWindow : Window
     {
         if (_allowWindowClose || !_viewModel.Documents.Any(document => document.IsDirty))
         {
+            DisposeWorkspaceWatcher();
             return;
         }
 
@@ -227,6 +527,7 @@ public partial class MainWindow : Window
         if (await TryCloseTabsAsync(_viewModel.Documents.ToArray()))
         {
             _allowWindowClose = true;
+            DisposeWorkspaceWatcher();
             Close();
         }
     }
@@ -242,6 +543,14 @@ public partial class MainWindow : Window
 
         switch (e.Key)
         {
+            case Key.N when _viewModel.HasWorkspace:
+                e.Handled = true;
+                NewFile_Click(sender, e);
+                break;
+            case Key.O when shift:
+                e.Handled = true;
+                OpenFolder_Click(sender, e);
+                break;
             case Key.O:
                 e.Handled = true;
                 await OpenFilesAsync();
@@ -313,6 +622,251 @@ public partial class MainWindow : Window
         }
 
         return null;
+    }
+
+    private void WorkspaceWatcher_ChangesAvailable(object? sender, WorkspaceChangesEventArgs e)
+    {
+        _ = Dispatcher.InvokeAsync(async () => await HandleWorkspaceChangesAsync(e.Changes));
+    }
+
+    private async Task HandleWorkspaceChangesAsync(IReadOnlyList<WorkspaceChange> changes)
+    {
+        var structuralChange = false;
+        foreach (var change in changes)
+        {
+            if (IsSuppressedWorkspaceChange(change.Path) || (change.OldPath is not null && IsSuppressedWorkspaceChange(change.OldPath)))
+            {
+                continue;
+            }
+
+            structuralChange |= change.Kind is WorkspaceChangeKind.Created or WorkspaceChangeKind.Deleted or WorkspaceChangeKind.Renamed;
+            switch (change.Kind)
+            {
+                case WorkspaceChangeKind.Changed:
+                    await HandleExternallyChangedFileAsync(change.Path);
+                    break;
+                case WorkspaceChangeKind.Deleted:
+                    HandleExternallyDeletedFile(change.Path);
+                    break;
+                case WorkspaceChangeKind.Renamed when change.OldPath is not null:
+                    await HandleExternallyRenamedFileAsync(change.OldPath, change.Path);
+                    break;
+            }
+        }
+
+        if (structuralChange && _viewModel.HasWorkspace)
+        {
+            await _viewModel.Explorer.RefreshAsync(CancellationToken.None);
+        }
+
+        if (changes.Any(IsRocketManifestChange))
+        {
+            UpdateActiveTargetStatus();
+        }
+    }
+
+    private async Task HandleExternallyChangedFileAsync(string path)
+    {
+        var tab = FindOpenDocument(path);
+        if (tab is null || tab.IsDirty || !File.Exists(path))
+        {
+            return;
+        }
+
+        var choice = MessageBox.Show(
+            this,
+            $"'{tab.DisplayName}' changed outside RocketIDE. Reload it from disk?",
+            "File changed on disk",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Information,
+            MessageBoxResult.Yes);
+        if (choice != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            var snapshot = await _documentStore.ReloadAsync(tab.Id, CancellationToken.None);
+            tab.UpdateSnapshot(snapshot);
+        }
+        catch (Exception exception) when (IsExpectedFileException(exception) || exception is InvalidOperationException)
+        {
+            ShowFileError("Reload failed", tab.Path, exception);
+        }
+    }
+
+    private void HandleExternallyDeletedFile(string path)
+    {
+        var tab = FindOpenDocument(path);
+        if (tab is null)
+        {
+            return;
+        }
+
+        MessageBox.Show(
+            this,
+            $"'{tab.DisplayName}' was deleted outside RocketIDE. Its editor buffer has been kept open and will not be overwritten silently.",
+            "File deleted on disk",
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
+    }
+
+    private async Task HandleExternallyRenamedFileAsync(string oldPath, string newPath)
+    {
+        var tab = FindOpenDocument(oldPath);
+        if (tab is null)
+        {
+            return;
+        }
+
+        if (tab.IsDirty)
+        {
+            MessageBox.Show(
+                this,
+                $"'{tab.DisplayName}' was renamed outside RocketIDE while this buffer has unsaved changes. The buffer was kept on its original path so no edits are lost.",
+                "File renamed on disk",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        var choice = MessageBox.Show(
+            this,
+            $"'{tab.DisplayName}' was renamed to '{Path.GetFileName(newPath)}'. Follow the rename?",
+            "File renamed on disk",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Information,
+            MessageBoxResult.Yes);
+        if (choice == MessageBoxResult.Yes && File.Exists(newPath))
+        {
+            CloseTabsWithoutPrompt(new[] { tab });
+            await OpenDocumentAsync(newPath);
+        }
+    }
+
+    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainWindowViewModel.ActiveDocument))
+        {
+            UpdateActiveTargetStatus();
+        }
+    }
+
+    private static bool IsRocketManifestChange(WorkspaceChange change) =>
+        string.Equals(Path.GetFileName(change.Path), "rocket.toml", StringComparison.OrdinalIgnoreCase) ||
+        (change.OldPath is not null &&
+         string.Equals(Path.GetFileName(change.OldPath), "rocket.toml", StringComparison.OrdinalIgnoreCase));
+
+    private void UpdateActiveTargetStatus()
+    {
+        var activePath = _viewModel.ActiveDocument?.Path;
+        var target = activePath is null ? null : _targetDiscovery.Discover(activePath);
+        _viewModel.ActiveTargetStatus = target switch
+        {
+            null => "Target: none",
+            { IsStandalone: true } => $"Target: {Path.GetFileName(target.InputPath)} (standalone)",
+            _ => $"Target: {Path.GetFileName(target.WorkingDirectory)}",
+        };
+    }
+
+    private string? GetSelectedDirectory()
+    {
+        if (!_viewModel.HasWorkspace || _viewModel.Explorer.Workspace is null)
+        {
+            return null;
+        }
+
+        var node = GetSelectedRealExplorerNode();
+        if (node is null)
+        {
+            return _viewModel.Explorer.Workspace.Path;
+        }
+
+        return node.IsDirectory ? node.Path : Path.GetDirectoryName(node.Path);
+    }
+
+    private ExplorerNodeViewModel? GetSelectedRealExplorerNode() =>
+        _selectedExplorerNode is { IsPlaceholder: false } node ? node : null;
+
+    private bool IsWorkspaceRoot(string path) =>
+        _viewModel.Explorer.Workspace is { } workspace &&
+        string.Equals(Path.GetFullPath(path), Path.GetFullPath(workspace.Path), StringComparison.OrdinalIgnoreCase);
+
+    private IReadOnlyList<DocumentTabViewModel> GetDocumentsUnderPath(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        if (File.Exists(fullPath))
+        {
+            return _viewModel.Documents.Where(tab => string.Equals(tab.Path, fullPath, StringComparison.OrdinalIgnoreCase)).ToArray();
+        }
+
+        var prefix = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        return _viewModel.Documents.Where(tab => tab.Path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)).ToArray();
+    }
+
+    private async Task<bool> PrepareDocumentsForFileOperationAsync(IReadOnlyList<DocumentTabViewModel> tabs)
+    {
+        foreach (var tab in tabs)
+        {
+            if (tab.IsDirty && !await SaveTabAsync(tab))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private DocumentTabViewModel? FindOpenDocument(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        return _viewModel.Documents.FirstOrDefault(tab => string.Equals(tab.Path, fullPath, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string MapRenamedPath(string documentPath, string oldPath, string newPath)
+    {
+        if (string.Equals(documentPath, oldPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return newPath;
+        }
+
+        var relative = Path.GetRelativePath(oldPath, documentPath);
+        return Path.GetFullPath(Path.Combine(newPath, relative));
+    }
+
+    private void SuppressWorkspaceChange(string path)
+    {
+        _suppressedWorkspaceChanges[Path.GetFullPath(path)] = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+    }
+
+    private bool IsSuppressedWorkspaceChange(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        if (!_suppressedWorkspaceChanges.TryGetValue(fullPath, out var until))
+        {
+            return false;
+        }
+
+        if (until >= DateTime.UtcNow)
+        {
+            return true;
+        }
+
+        _suppressedWorkspaceChanges.Remove(fullPath);
+        return false;
+    }
+
+    private void DisposeWorkspaceWatcher()
+    {
+        if (_workspaceWatcher is null)
+        {
+            return;
+        }
+
+        _workspaceWatcher.ChangesAvailable -= WorkspaceWatcher_ChangesAvailable;
+        _workspaceWatcher.Dispose();
+        _workspaceWatcher = null;
     }
 
     private static bool IsExpectedFileException(Exception exception) =>

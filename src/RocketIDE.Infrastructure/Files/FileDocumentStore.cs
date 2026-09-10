@@ -67,6 +67,36 @@ public sealed class FileDocumentStore : IDocumentStore
         }
     }
 
+    public async Task<DocumentSnapshot> ReloadAsync(DocumentId id, CancellationToken cancellationToken)
+    {
+        Entry entry;
+        string path;
+        lock (_gate)
+        {
+            entry = GetEntry(id);
+            if (entry.State.Snapshot.IsDirty)
+            {
+                throw new InvalidOperationException("A document with unsaved editor changes cannot be reloaded from disk.");
+            }
+
+            path = entry.State.Path;
+        }
+
+        var loaded = await ReadTextFileAsync(path, cancellationToken).ConfigureAwait(false);
+        lock (_gate)
+        {
+            var current = GetEntry(id);
+            if (current.State.Snapshot.IsDirty)
+            {
+                throw new InvalidOperationException("A document became dirty while it was being reloaded from disk.");
+            }
+
+            current.BaselineHash = loaded.Hash;
+            current.HasUtf8Bom = loaded.HasUtf8Bom;
+            return current.State.ReplaceFromDisk(loaded.Text, StrictUtf8.GetByteCount(loaded.Text));
+        }
+    }
+
     public async Task<DocumentSaveResult> SaveAsync(
         DocumentId id,
         bool overwriteExternalChanges,
@@ -286,7 +316,7 @@ public sealed class FileDocumentStore : IDocumentStore
 
         public byte[] BaselineHash { get; set; } = baselineHash;
 
-        public bool HasUtf8Bom { get; } = hasUtf8Bom;
+        public bool HasUtf8Bom { get; set; } = hasUtf8Bom;
     }
 
     private sealed record LoadedTextFile(string Text, byte[] Bytes, byte[] Hash, bool HasUtf8Bom);

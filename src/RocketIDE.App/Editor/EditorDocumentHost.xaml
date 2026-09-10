@@ -72,6 +72,7 @@
                                ShowLineNumbers="True"
                                HorizontalScrollBarVisibility="Auto"
                                VerticalScrollBarVisibility="Auto"
-                               PreviewKeyDown="Editor_PreviewKeyDown" />
+                               PreviewKeyDown="Editor_PreviewKeyDown"
+                               PreviewTextInput="Editor_PreviewTextInput" />
     </Grid>
 </UserControl>

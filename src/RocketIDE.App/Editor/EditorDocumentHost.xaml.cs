@@ -51,9 +51,27 @@ public partial class EditorDocumentHost : UserControl
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        Editor.Document = e.NewValue is DocumentTabViewModel document
-            ? document.EditorDocument
-            : new TextDocument();
+        if (e.NewValue is DocumentTabViewModel document)
+        {
+            Editor.Document = document.EditorDocument;
+            if (IsRocketDocument(document))
+            {
+                Editor.SyntaxHighlighting = RocketSyntaxHighlighting.Definition;
+                RocketIndentationStrategy.Configure(Editor);
+            }
+            else
+            {
+                Editor.SyntaxHighlighting = null;
+                Editor.Options.ConvertTabsToSpaces = false;
+            }
+        }
+        else
+        {
+            Editor.Document = new TextDocument();
+            Editor.SyntaxHighlighting = null;
+            Editor.Options.ConvertTabsToSpaces = false;
+        }
+
         ReportCaret();
     }
 
@@ -73,8 +91,29 @@ public partial class EditorDocumentHost : UserControl
         {
             CloseFind();
             e.Handled = true;
+            return;
+        }
+
+        if (DataContext is DocumentTabViewModel document &&
+            IsRocketDocument(document) &&
+            EditorKeyBehavior.HandlePreviewKeyDown(Editor, e))
+        {
+            e.Handled = true;
         }
     }
+
+    private void Editor_PreviewTextInput(object sender, TextCompositionEventArgs e)
+    {
+        if (DataContext is DocumentTabViewModel document &&
+            IsRocketDocument(document) &&
+            EditorKeyBehavior.HandleTextInput(Editor, e.Text))
+        {
+            e.Handled = true;
+        }
+    }
+
+    private static bool IsRocketDocument(DocumentTabViewModel document) =>
+        string.Equals(System.IO.Path.GetExtension(document.Path), ".rocket", StringComparison.OrdinalIgnoreCase);
 
     private void FindTextBox_KeyDown(object sender, KeyEventArgs e)
     {

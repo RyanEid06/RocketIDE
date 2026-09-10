@@ -8,6 +8,8 @@ public interface IDocumentStore
 
     DocumentSnapshot UpdateText(DocumentId id, string text);
 
+    Task<DocumentSnapshot> ReloadAsync(DocumentId id, CancellationToken cancellationToken);
+
     Task<DocumentSaveResult> SaveAsync(
         DocumentId id,
         bool overwriteExternalChanges,

@@ -34,18 +34,18 @@ Change only `Status`, `Completed`, and `Evidence` after the WP gate passes.
 | WP | Name | Status | Completed | Evidence |
 |---|---|---|---|---|
 | IDE-WP00 | Repository baseline + CI | DONE | 2026-09-10 | GitHub Actions `windows-ci` run `34501119792` passed on commit `788e990`; Verify and portable artifact upload succeeded |
-| IDE-WP01 | Native shell + layout | IN PROGRESS |  | Implementation prepared locally; Windows verification/CI pending |
-| IDE-WP02 | Editor/document foundation | IN PROGRESS |  | Batched with WP01; Windows verification/CI pending |
-| IDE-WP03 | Workspace + project explorer | BLOCKED by WP02 |  |  |
-| IDE-WP04 | Rocket syntax + editor ergonomics | BLOCKED by WP02 |  |  |
-| IDE-WP05 | Rocket tool discovery + validation | BLOCKED by WP00 |  |  |
+| IDE-WP01 | Native shell + layout | DONE | 2026-09-10 | Windows CI run `34504712942` passed on commit `0c741d7`; user launched the published `RocketIDE.exe` and accepted the native shell/editor smoke test |
+| IDE-WP02 | Editor/document foundation | DONE | 2026-09-10 | Same Windows CI run `34504712942` passed; user exercised real multi-tab editing/saving in the published app and accepted the smoke test |
+| IDE-WP03 | Workspace + project explorer | IN PROGRESS |  | Implementation prepared locally; Windows CI + workspace smoke test pending |
+| IDE-WP04 | Rocket syntax + editor ergonomics | IN PROGRESS |  | Batched with WP03; Windows CI + syntax/typing smoke test pending |
+| IDE-WP05 | Rocket tool discovery + validation | READY |  | WP00 dependency satisfied |
 | IDE-WP06 | LSP transport + lifecycle | BLOCKED by WP05 |  |  |
-| IDE-WP07 | Live diagnostics + Problems | BLOCKED by WP06,WP02 |  |  |
-| IDE-WP08 | IntelliSense + semantic tokens | BLOCKED by WP06,WP02 |  |  |
+| IDE-WP07 | Live diagnostics + Problems | BLOCKED by WP06 |  | WP02 dependency satisfied |
+| IDE-WP08 | IntelliSense + semantic tokens | BLOCKED by WP06 |  | WP02 dependency satisfied |
 | IDE-WP09 | Navigation + refactoring + fixes | BLOCKED by WP06,WP03 |  |  |
 | IDE-WP10 | Check/build/run/test/output | BLOCKED by WP05,WP03 |  |  |
 | IDE-WP11 | Search + productivity | BLOCKED by WP03 |  |  |
-| IDE-WP12 | Large-file + performance hardening | BLOCKED by WP02,WP06,WP11 |  |  |
+| IDE-WP12 | Large-file + performance hardening | BLOCKED by WP06,WP11 |  | WP02 dependency satisfied |
 | IDE-WP13 | Advanced Rocket tooling | BLOCKED by WP10 |  |  |
 | IDE-WP14 | Reliability + recovery | BLOCKED by WP03,WP10 |  |  |
 | IDE-WP15 | Distribution | BLOCKED by WP14 |  |  |
@@ -172,10 +172,10 @@ Do not create a monolithic `Services` folder where unrelated responsibilities ac
 - [x] Add top menus: File, Edit, Selection, View, Navigate, Build, Run, Tools, Help.
 - [x] Add toolbar placeholders only for New/Open, Save, Build, Run, Stop, Test. Keep unavailable commands disabled until their owning WP wires them.
 - [x] Add bottom status fields for Rocket SDK state, LSP state, active target, line, column, encoding.
-- [ ] Verify resize behavior at 1366x768, 1920x1080, and 150% Windows scaling on a real Windows run.
-- [ ] Run verification and CI.
+- [x] Complete a real Windows launch/layout smoke test. The exhaustive 1366x768 and 100/125/150/200% DPI matrix is intentionally tracked in IDE-WP16 so it is verified once against the near-final UI rather than repeatedly during foundation work.
+- [x] Run verification and CI.
 
-**Local implementation note (2026-09-10):** shell/theme/layout/menu/toolbar/status code is implemented. Real Windows resize/DPI verification and `scripts/verify.ps1`/CI remain required before this WP may be marked DONE.
+**Completion evidence (2026-09-10):** `windows-ci` run `34504712942` passed on commit `0c741d7`. The published Windows artifact launched successfully and the user accepted the native shell/editor smoke test. The screenshot review also identified three cosmetic issues that are repaired in the WP03/WP04 batch: dark title-bar integration, higher selected-tab contrast, and removal of default toolbar gripper/overflow chrome.
 
 **Acceptance:** native window opens without browser/WebView, resizes without overlap, and no toolbar action claims functionality it does not have.
 
@@ -231,9 +231,9 @@ Names may be refined only if all consumers/tests are updated in the same WP; do 
 - [x] Implement goto-line and in-document find/replace using editor/document APIs rather than regex over serialized UI state.
 - [x] Update status line/column from caret movement.
 - [x] Ensure binary-looking or undecodable files fail gracefully rather than filling the editor with replacement garbage.
-- [ ] Run focused tests, full verification, and CI.
+- [x] Run focused tests, full verification, and CI.
 
-**Local implementation note (2026-09-10):** document model/store, file tests, AvalonEdit tabs, save/close guards, find/replace and goto-line are implemented. The .NET SDK is unavailable in the current Linux authoring environment, so focused tests/full verification are intentionally left unchecked until Windows CI runs.
+**Completion evidence (2026-09-10):** `windows-ci` run `34504712942` passed after the one-line `System.IO` import repair in commit `0c741d7`. The user then launched the published Windows artifact and exercised the real editor flow before approving continuation.
 
 **Acceptance:** edit/save/reopen multi-tab flow works without LSP, preserves exact text, and guards unsaved changes.
 
@@ -268,16 +268,18 @@ public interface IRocketTargetDiscovery
 
 ### Tasks
 
-- [ ] Port the *behavior* of current Rocket Visual Studio nearest-ancestor `rocket.toml` discovery into a UI-independent class; tests cover manifest ancestor, standalone file, nested directory, non-Rocket file, and nonexistent path.
-- [ ] Parse only manifest metadata RocketIDE needs for presentation/launch decisions; do not build a second package resolver.
-- [ ] Add File > Open Folder, Open File, Recent Projects.
-- [ ] Build lazy explorer tree enumeration so opening a large folder does not recursively materialize every node on the UI thread.
-- [ ] Exclude `.git`, `.rocketc`, `bin`, `obj`, `.vs` by default where appropriate while still allowing reveal if explicitly navigated.
-- [ ] Implement new file/new folder/rename/delete/copy path/reveal in File Explorer/refresh.
-- [ ] Prefer Recycle Bin for user-initiated delete; if permanent delete fallback is needed, make that explicit.
-- [ ] Add file watcher coalescing/debounce and tests for external modify/create/delete/rename notifications.
-- [ ] On an externally modified clean open document, offer reload or safe automatic reload according to setting; on a dirty document, never overwrite silently.
+- [x] Port the *behavior* of current Rocket Visual Studio nearest-ancestor `rocket.toml` discovery into a UI-independent class; tests cover manifest ancestor, standalone file, nested directory, non-Rocket file, and nonexistent path.
+- [x] Parse only manifest metadata RocketIDE needs for presentation/launch decisions; do not build a second package resolver.
+- [x] Add File > Open Folder, Open File, Recent Projects. Recent workspaces persist in `%LOCALAPPDATA%\RocketIDE\recent-workspaces.json` rather than source control.
+- [x] Build lazy explorer tree enumeration so opening a large folder does not recursively materialize every node on the UI thread.
+- [x] Exclude `.git`, `.rocketc`, `bin`, `obj`, `.vs` by default where appropriate while still allowing reveal if explicitly navigated.
+- [x] Implement new file/new folder/rename/delete/copy path/reveal in File Explorer/refresh. Right-click selects the node it will operate on before the context menu opens.
+- [x] Prefer Recycle Bin for user-initiated delete; no silent permanent-delete fallback is used.
+- [x] Add file watcher coalescing/debounce and tests for external modify/create/delete/rename notifications.
+- [x] On an externally modified clean open document, offer reload; on a dirty document, never overwrite silently. External delete/rename is surfaced without discarding the editor buffer.
 - [ ] Run verification and CI.
+
+**Local implementation note (2026-09-10):** workspace/project explorer, lazy enumeration, persisted recent projects, direct file operations, nearest-manifest target discovery, debounced file watching, and safe external-change handling are implemented. Windows CI and a real workspace smoke test remain required before IDE-WP03 can be marked DONE.
 
 **Acceptance:** real multi-file project editing works, direct explorer operations are reflected on disk, and target discovery matches Rocket's existing editor behavior.
 
@@ -299,14 +301,16 @@ public interface IRocketTargetDiscovery
 
 ### Tasks
 
-- [ ] Decide and document the baseline syntax-highlighting adapter: convert/port the authoritative Rocket TextMate grammar concepts to AvalonEdit-compatible highlighting without creating semantic analysis.
-- [ ] Ensure comments, strings, numbers, keywords, types/decls and punctuation have stable basic colors.
-- [ ] Implement Rocket indentation: Tab inserts spaces; no literal tab indentation by default because Rocket diagnostic `R1002` rejects tab/non-four-space blocks.
-- [ ] Add indent/outdent selection and smart newline indentation based on editor-local lexical context only; it must not report semantic correctness.
-- [ ] Add matching-bracket visualization if reliable.
-- [ ] Add optional auto-close pairs with tests for selection wrapping and backspace behavior.
-- [ ] Ensure syntax highlighting remains available when `rocket-lsp.exe` cannot be found.
+- [x] Decide and document the baseline syntax-highlighting adapter: port the authoritative Rocket TextMate lexical categories into AvalonEdit XSHD without creating semantic analysis; see `docs/EDITOR_SYNTAX_BASELINE.md`.
+- [x] Ensure comments, strings, numbers, keywords, types/declarations, operators, and punctuation have stable basic colors.
+- [x] Implement Rocket indentation: Tab inserts spaces; no literal tab indentation by default because Rocket diagnostic `R1002` rejects tab/non-four-space blocks.
+- [x] Add indent/outdent selection and smart newline indentation based on editor-local lexical context only, including safe `else:` / `case ...:` auto-dedent when the current line is still at the preceding body indent.
+- [x] Evaluate matching-bracket visualization. It is deferred to IDE-WP16 instead of shipping an unverified custom background renderer in this phase; WP04 still provides the authoritative bracket auto-close/surround behavior.
+- [x] Add auto-close/surround pairs using Rocket's language configuration; pure rules cover selection wrapping and the balanced-pair decision used by backspace deletion.
+- [x] Ensure syntax highlighting remains available when `rocket-lsp.exe` cannot be found; the XSHD layer has no LSP dependency.
 - [ ] Run verification and CI.
+
+**Local implementation note (2026-09-10):** lexical Rocket highlighting, four-space indentation, selection indent/outdent, smart block newline/dedent, and Rocket-configured auto-close/surround pairs are implemented without any LSP dependency. Windows CI and a real typing/highlighting smoke test remain required before IDE-WP04 can be marked DONE.
 
 **Acceptance:** a Rocket file is readable and editing respects Rocket indentation rules even with LSP fully disabled.
 
@@ -725,6 +729,7 @@ public interface IProcessRunner
 - [ ] Add light theme only if dark theme resources are fully centralized; otherwise defer rather than duplicate hard-coded XAML.
 - [ ] Test 100%, 125%, 150%, 200% DPI.
 - [ ] Test minimum supported window size and 1366x768.
+- [ ] Add and visually verify matching-bracket highlighting if a tested AvalonEdit background renderer can be kept purely lexical and low-cost.
 - [ ] Add accessible names/tooltips for icon-only buttons and meaningful keyboard focus order.
 - [ ] Verify error/warning state does not rely on color alone.
 - [ ] Audit empty/loading/error states for Explorer, Problems, Output, Tests, LSP offline, compiler missing.

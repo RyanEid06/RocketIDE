@@ -1,4 +1,5 @@
 using System.Windows;
+using RocketIDE.App.Interop;
 
 namespace RocketIDE.App.Editor;
 
@@ -9,6 +10,7 @@ public partial class GotoLineDialog : Window
     public GotoLineDialog(int currentLine, int maximumLine)
     {
         InitializeComponent();
+        SourceInitialized += (_, _) => WindowsTitleBar.ApplyDarkMode(this);
         _maximumLine = Math.Max(1, maximumLine);
         PromptText.Text = $"Line number (1–{_maximumLine})";
         LineTextBox.Text = Math.Clamp(currentLine, 1, _maximumLine).ToString();
