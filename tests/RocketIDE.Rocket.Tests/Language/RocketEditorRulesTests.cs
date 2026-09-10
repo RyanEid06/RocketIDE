@@ -5,7 +5,7 @@ namespace RocketIDE.Rocket.Tests.Language;
 [TestClass]
 public sealed class RocketEditorRulesTests
 {
-    [DataTestMethod]
+    [TestMethod]
     [DataRow("fn main() -> Int:", 4)]
     [DataRow("    if ready: # comment", 8)]
     [DataRow("    let text = \"value:\"", 4)]
@@ -15,7 +15,7 @@ public sealed class RocketEditorRulesTests
         Assert.AreEqual(expectedSpaces, RocketEditorRules.GetNewLineIndentation(line));
     }
 
-    [DataTestMethod]
+    [TestMethod]
     [DataRow("else:", true)]
     [DataRow("case value:", true)]
     [DataRow("  case value: # comment", true)]
@@ -26,7 +26,7 @@ public sealed class RocketEditorRulesTests
     }
 
 
-    [DataTestMethod]
+    [TestMethod]
     [DataRow("        else:", "        return 1", 4)]
     [DataRow("    else:", "        return 1", 0)]
     [DataRow("        case value:", "        return 1", 4)]
