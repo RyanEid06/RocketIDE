@@ -9,6 +9,8 @@ public sealed class RocketToolLocator : IRocketToolLocator
         Path.Combine("out", "package", "bin"),
     ];
 
+    private static readonly string[] AdjacentCheckoutNames = ["Rocket", "rocket"];
+
     private readonly RocketToolDiscoveryOptions _options;
     private readonly IRocketToolVersionProbe _versionProbe;
     private readonly Func<string, string?> _environmentVariable;
@@ -64,6 +66,7 @@ public sealed class RocketToolLocator : IRocketToolLocator
         ExplicitCandidate(_options.CompilerPath),
         ExplicitCandidate(_environmentVariable("ROCKET_COMPILER")),
         ActiveCheckoutCandidates(activePath, "rocketc.exe"),
+        AdjacentCheckoutCandidates(activePath, "rocketc.exe"),
         PathCandidates("rocketc.exe"),
         BundledCandidates("rocketc.exe"));
 
@@ -72,6 +75,7 @@ public sealed class RocketToolLocator : IRocketToolLocator
         ExplicitCandidate(_environmentVariable("ROCKET_LANGUAGE_SERVER")),
         SiblingCandidate(compilerPath, "rocket-lsp.exe"),
         ActiveCheckoutCandidates(activePath, "rocket-lsp.exe"),
+        AdjacentCheckoutCandidates(activePath, "rocket-lsp.exe"),
         PathCandidates("rocket-lsp.exe"),
         BundledCandidates("rocket-lsp.exe"));
 
@@ -152,6 +156,17 @@ public sealed class RocketToolLocator : IRocketToolLocator
         }
     }
 
+    private IEnumerable<string> AdjacentCheckoutCandidates(string? activePath, string fileName)
+    {
+        foreach (var siblingRoot in EnumerateAdjacentCheckouts(activePath))
+        {
+            foreach (var output in CheckoutOutputs)
+            {
+                yield return Path.Combine(siblingRoot, output, fileName);
+            }
+        }
+    }
+
     private IEnumerable<string> PathCandidates(string fileName)
     {
         var path = _environmentVariable("PATH") ?? string.Empty;
@@ -170,6 +185,37 @@ public sealed class RocketToolLocator : IRocketToolLocator
         yield return Path.Combine(_options.InstallationDirectory, "sdk", "bin", fileName);
         yield return Path.Combine(_options.InstallationDirectory, "sdk", fileName);
         yield return Path.Combine(_options.InstallationDirectory, fileName);
+    }
+
+    private IEnumerable<string> EnumerateAdjacentCheckouts(string? activePath)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var anchor in EnumerateAncestors(activePath).Concat(EnumerateAncestors(_options.InstallationDirectory)))
+        {
+            DirectoryInfo? parent;
+            try
+            {
+                parent = Directory.GetParent(anchor);
+            }
+            catch (Exception exception) when (exception is ArgumentException or IOException or UnauthorizedAccessException)
+            {
+                parent = null;
+            }
+
+            if (parent is null)
+            {
+                continue;
+            }
+
+            foreach (var name in AdjacentCheckoutNames)
+            {
+                var candidate = Path.Combine(parent.FullName, name);
+                if (Directory.Exists(candidate) && seen.Add(candidate))
+                {
+                    yield return candidate;
+                }
+            }
+        }
     }
 
     private static IEnumerable<string> EnumerateAncestors(string? activePath)

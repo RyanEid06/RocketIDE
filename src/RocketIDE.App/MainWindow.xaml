@@ -172,7 +172,7 @@
                     </Border>
                 </Grid>
                 <GridSplitter Grid.Row="1" Height="5" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ResizeDirection="Rows" />
-                <TabControl Grid.Row="2">
+                <TabControl x:Name="BottomTabs" Grid.Row="2">
                     <TabItem Header="PROBLEMS"><TextBlock Margin="12" Text="Live Rocket diagnostics begin in IDE-WP07." Foreground="{DynamicResource IDE.TextMutedBrush}" /></TabItem>
                     <TabItem Header="OUTPUT">
                         <Grid Margin="8">

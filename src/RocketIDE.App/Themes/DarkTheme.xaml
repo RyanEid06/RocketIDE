@@ -43,10 +43,206 @@
         <Setter Property="Padding" Value="4,2" />
     </Style>
 
+    <Style TargetType="{x:Type ContextMenu}">
+        <Setter Property="Background" Value="{DynamicResource IDE.ChromeRaisedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource IDE.BorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="2" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <ControlTemplate x:Key="IDE.TopLevelMenuItemTemplate" TargetType="{x:Type MenuItem}">
+        <Grid SnapsToDevicePixels="True">
+            <Border x:Name="OuterBorder"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="Transparent"
+                    BorderThickness="1"
+                    Padding="{TemplateBinding Padding}">
+                <ContentPresenter ContentSource="Header"
+                                  RecognizesAccessKey="True"
+                                  VerticalAlignment="Center"
+                                  HorizontalAlignment="Left" />
+            </Border>
+            <Popup x:Name="PART_Popup"
+                   AllowsTransparency="True"
+                   Focusable="False"
+                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                   Placement="Bottom"
+                   PopupAnimation="Fade">
+                <Border Background="{DynamicResource IDE.ChromeRaisedBrush}"
+                        BorderBrush="{DynamicResource IDE.BorderBrush}"
+                        BorderThickness="1"
+                        Padding="2">
+                    <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                    </ScrollViewer>
+                </Border>
+            </Popup>
+        </Grid>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="OuterBorder" Property="Background" Value="{DynamicResource IDE.HoverBrush}" />
+                <Setter TargetName="OuterBorder" Property="BorderBrush" Value="{DynamicResource IDE.BorderBrush}" />
+            </Trigger>
+            <Trigger Property="IsSubmenuOpen" Value="True">
+                <Setter TargetName="OuterBorder" Property="Background" Value="{DynamicResource IDE.HoverBrush}" />
+                <Setter TargetName="OuterBorder" Property="BorderBrush" Value="{DynamicResource IDE.AccentBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource IDE.TextMutedBrush}" />
+                <Setter TargetName="OuterBorder" Property="Opacity" Value="0.6" />
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <ControlTemplate x:Key="IDE.TopLevelMenuItemNoPopupTemplate" TargetType="{x:Type MenuItem}">
+        <Border x:Name="OuterBorder"
+                Background="{TemplateBinding Background}"
+                BorderBrush="Transparent"
+                BorderThickness="1"
+                Padding="{TemplateBinding Padding}"
+                SnapsToDevicePixels="True">
+            <ContentPresenter ContentSource="Header"
+                              RecognizesAccessKey="True"
+                              VerticalAlignment="Center"
+                              HorizontalAlignment="Left" />
+        </Border>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="OuterBorder" Property="Background" Value="{DynamicResource IDE.HoverBrush}" />
+                <Setter TargetName="OuterBorder" Property="BorderBrush" Value="{DynamicResource IDE.BorderBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource IDE.TextMutedBrush}" />
+                <Setter TargetName="OuterBorder" Property="Opacity" Value="0.6" />
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <ControlTemplate x:Key="IDE.SubmenuItemTemplate" TargetType="{x:Type MenuItem}">
+        <Border x:Name="OuterBorder"
+                Background="{TemplateBinding Background}"
+                BorderBrush="Transparent"
+                BorderThickness="1"
+                Padding="{TemplateBinding Padding}"
+                SnapsToDevicePixels="True">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ContentPresenter ContentSource="Header"
+                                  RecognizesAccessKey="True"
+                                  VerticalAlignment="Center"
+                                  HorizontalAlignment="Left" />
+                <TextBlock Grid.Column="1"
+                           Margin="24,0,0,0"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource IDE.TextMutedBrush}"
+                           Text="{TemplateBinding InputGestureText}" />
+            </Grid>
+        </Border>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="OuterBorder" Property="Background" Value="{DynamicResource IDE.HoverBrush}" />
+                <Setter TargetName="OuterBorder" Property="BorderBrush" Value="{DynamicResource IDE.AccentBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource IDE.TextMutedBrush}" />
+                <Setter TargetName="OuterBorder" Property="Opacity" Value="0.6" />
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <ControlTemplate x:Key="IDE.SubmenuHeaderTemplate" TargetType="{x:Type MenuItem}">
+        <Grid SnapsToDevicePixels="True">
+            <Border x:Name="OuterBorder"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="Transparent"
+                    BorderThickness="1"
+                    Padding="{TemplateBinding Padding}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ContentPresenter ContentSource="Header"
+                                      RecognizesAccessKey="True"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Left" />
+                    <Path Grid.Column="1"
+                          Margin="20,0,0,0"
+                          VerticalAlignment="Center"
+                          Fill="{DynamicResource IDE.TextMutedBrush}"
+                          Data="M 0 0 L 6 5 L 0 10 Z" />
+                </Grid>
+            </Border>
+            <Popup x:Name="PART_Popup"
+                   AllowsTransparency="True"
+                   Focusable="False"
+                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                   Placement="Right"
+                   PopupAnimation="Fade">
+                <Border Background="{DynamicResource IDE.ChromeRaisedBrush}"
+                        BorderBrush="{DynamicResource IDE.BorderBrush}"
+                        BorderThickness="1"
+                        Padding="2">
+                    <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                    </ScrollViewer>
+                </Border>
+            </Popup>
+        </Grid>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="OuterBorder" Property="Background" Value="{DynamicResource IDE.HoverBrush}" />
+                <Setter TargetName="OuterBorder" Property="BorderBrush" Value="{DynamicResource IDE.AccentBrush}" />
+            </Trigger>
+            <Trigger Property="IsSubmenuOpen" Value="True">
+                <Setter TargetName="OuterBorder" Property="Background" Value="{DynamicResource IDE.HoverBrush}" />
+                <Setter TargetName="OuterBorder" Property="BorderBrush" Value="{DynamicResource IDE.AccentBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource IDE.TextMutedBrush}" />
+                <Setter TargetName="OuterBorder" Property="Opacity" Value="0.6" />
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
     <Style TargetType="{x:Type MenuItem}">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
-        <Setter Property="Padding" Value="7,4" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="Template" Value="{StaticResource IDE.SubmenuItemTemplate}" />
+        <Style.Triggers>
+            <Trigger Property="Role" Value="TopLevelHeader">
+                <Setter Property="Template" Value="{StaticResource IDE.TopLevelMenuItemTemplate}" />
+                <Setter Property="Padding" Value="7,4" />
+            </Trigger>
+            <Trigger Property="Role" Value="TopLevelItem">
+                <Setter Property="Template" Value="{StaticResource IDE.TopLevelMenuItemNoPopupTemplate}" />
+                <Setter Property="Padding" Value="7,4" />
+            </Trigger>
+            <Trigger Property="Role" Value="SubmenuHeader">
+                <Setter Property="Template" Value="{StaticResource IDE.SubmenuHeaderTemplate}" />
+            </Trigger>
+            <Trigger Property="Role" Value="SubmenuItem">
+                <Setter Property="Template" Value="{StaticResource IDE.SubmenuItemTemplate}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="{x:Type Separator}">
+        <Setter Property="Margin" Value="4,3" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Separator}">
+                    <Border Height="1" Background="{DynamicResource IDE.BorderBrush}" SnapsToDevicePixels="True" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style TargetType="{x:Type ToolBarTray}">
@@ -187,7 +383,6 @@
         <Setter Property="Padding" Value="2" />
     </Style>
 
-
     <Style TargetType="{x:Type ScrollBar}">
         <Setter Property="Background" Value="{DynamicResource IDE.EditorBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource IDE.ChromeRaisedBrush}" />
@@ -250,7 +445,40 @@
         <Setter Property="CaretBrush" Value="{DynamicResource IDE.TextBrush}" />
         <Setter Property="SelectionBrush" Value="{DynamicResource IDE.SelectionBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource IDE.BorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="6,4" />
+    </Style>
+
+    <Style TargetType="{x:Type ListBox}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource IDE.BorderBrush}" />
+    </Style>
+
+    <Style TargetType="{x:Type ListBoxItem}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+        <Setter Property="Padding" Value="4,2" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border x:Name="ItemBorder"
+                            Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource IDE.SelectionBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource IDE.HoverBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style TargetType="{x:Type CheckBox}">

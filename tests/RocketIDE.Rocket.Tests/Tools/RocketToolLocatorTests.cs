@@ -93,6 +93,25 @@ public sealed class RocketToolLocatorTests
     }
 
 
+
+    [TestMethod]
+    public async Task DiscoverAsync_FindsAdjacentRocketCheckoutNearInstallationDirectory()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(System.IO.Path.Combine(temp.Path, "RocketIDE-Build"));
+        var compiler = temp.CreateFile("Rocket/out/build/windows-debug/rocketc.exe");
+        var lsp = temp.CreateFile("Rocket/out/build/windows-debug/rocket-lsp.exe");
+        var locator = new RocketToolLocator(
+            new RocketToolDiscoveryOptions(null, null, System.IO.Path.Combine(temp.Path, "RocketIDE-Build")),
+            new FakeProbe(),
+            _ => null);
+
+        var result = await locator.DiscoverAsync(null, CancellationToken.None);
+
+        Assert.AreEqual(Path.GetFullPath(compiler), result.CompilerPath);
+        Assert.AreEqual(Path.GetFullPath(lsp), result.LanguageServerPath);
+    }
+
     [TestMethod]
     public async Task DiscoverAsync_UsesEnvironmentOverridesWhenExplicitSettingsAreEmpty()
     {

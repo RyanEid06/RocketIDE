@@ -5,6 +5,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>RocketIDE</AssemblyName>
     <RootNamespace>RocketIDE.App</RootNamespace>
+    <ApplicationIcon>Assets\RocketIDE.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AvalonEdit" />

@@ -46,9 +46,10 @@ public partial class MainWindow
             }
             else
             {
+                ShowOutputPanel();
                 MessageBox.Show(
                     this,
-                    "Rocket environment validation found problems. Open the Output panel for the selected paths and details.",
+                    "Rocket environment validation found problems. The Output panel was selected with the chosen paths and details.",
                     "Rocket Environment",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -114,6 +115,10 @@ public partial class MainWindow
         if (result.Problems.Count == 0)
         {
             AppendRocketOutput("Environment validation passed.");
+        }
+        else
+        {
+            ShowOutputPanel();
         }
         return result;
     }
@@ -283,6 +288,7 @@ public partial class MainWindow
                 {
                     AppendRocketOutput($"Rocket tool discovery: {item}");
                 }
+                ShowOutputPanel();
             }
             return;
         }
@@ -466,6 +472,18 @@ public partial class MainWindow
         else
         {
             _ = Dispatcher.InvokeAsync(() => _viewModel.AppendOutput(line));
+        }
+    }
+
+    private void ShowOutputPanel()
+    {
+        if (Dispatcher.CheckAccess())
+        {
+            BottomTabs.SelectedIndex = 1;
+        }
+        else
+        {
+            _ = Dispatcher.InvokeAsync(() => BottomTabs.SelectedIndex = 1);
         }
     }
 
