@@ -9,7 +9,7 @@ The goal is not to clone Visual Studio or VS Code. RocketIDE aims to provide a f
 RocketIDE is under active development through the work packages tracked in [`ROADMAP.md`](ROADMAP.md).
 
 - IDE-WP00 — Repository baseline + Windows CI: **DONE**
-- Current next milestone: **IDE-WP01 — Native shell + layout**
+- Current implementation batch: **IDE-WP01 + IDE-WP02 — native shell and editor/document foundation** (Windows verification pending)
 
 A work package is not considered complete because its UI looks finished. Focused tests, `scripts/verify.ps1`, and the Windows CI gate must pass before its status is changed to `DONE`.
 

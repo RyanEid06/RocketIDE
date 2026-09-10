@@ -1,0 +1,135 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Color x:Key="IDE.Color.Window">#FF181A1F</Color>
+    <Color x:Key="IDE.Color.Chrome">#FF20232A</Color>
+    <Color x:Key="IDE.Color.ChromeRaised">#FF282C34</Color>
+    <Color x:Key="IDE.Color.Editor">#FF16181D</Color>
+    <Color x:Key="IDE.Color.Border">#FF343944</Color>
+    <Color x:Key="IDE.Color.Text">#FFE7EAF0</Color>
+    <Color x:Key="IDE.Color.TextMuted">#FF98A0AD</Color>
+    <Color x:Key="IDE.Color.Selection">#FF264F78</Color>
+    <Color x:Key="IDE.Color.Hover">#FF323744</Color>
+    <Color x:Key="IDE.Color.Accent">#FF6CB6FF</Color>
+    <Color x:Key="IDE.Color.Error">#FFFF6B6B</Color>
+    <Color x:Key="IDE.Color.Warning">#FFFFC857</Color>
+    <Color x:Key="IDE.Color.Info">#FF6CB6FF</Color>
+    <Color x:Key="IDE.Color.Success">#FF62D39B</Color>
+
+    <SolidColorBrush x:Key="IDE.WindowBrush" Color="{StaticResource IDE.Color.Window}" />
+    <SolidColorBrush x:Key="IDE.ChromeBrush" Color="{StaticResource IDE.Color.Chrome}" />
+    <SolidColorBrush x:Key="IDE.ChromeRaisedBrush" Color="{StaticResource IDE.Color.ChromeRaised}" />
+    <SolidColorBrush x:Key="IDE.EditorBrush" Color="{StaticResource IDE.Color.Editor}" />
+    <SolidColorBrush x:Key="IDE.BorderBrush" Color="{StaticResource IDE.Color.Border}" />
+    <SolidColorBrush x:Key="IDE.TextBrush" Color="{StaticResource IDE.Color.Text}" />
+    <SolidColorBrush x:Key="IDE.TextMutedBrush" Color="{StaticResource IDE.Color.TextMuted}" />
+    <SolidColorBrush x:Key="IDE.SelectionBrush" Color="{StaticResource IDE.Color.Selection}" />
+    <SolidColorBrush x:Key="IDE.HoverBrush" Color="{StaticResource IDE.Color.Hover}" />
+    <SolidColorBrush x:Key="IDE.AccentBrush" Color="{StaticResource IDE.Color.Accent}" />
+    <SolidColorBrush x:Key="IDE.ErrorBrush" Color="{StaticResource IDE.Color.Error}" />
+    <SolidColorBrush x:Key="IDE.WarningBrush" Color="{StaticResource IDE.Color.Warning}" />
+    <SolidColorBrush x:Key="IDE.InfoBrush" Color="{StaticResource IDE.Color.Info}" />
+    <SolidColorBrush x:Key="IDE.SuccessBrush" Color="{StaticResource IDE.Color.Success}" />
+
+    <Style TargetType="{x:Type Window}">
+        <Setter Property="Background" Value="{DynamicResource IDE.WindowBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+        <Setter Property="FontFamily" Value="Segoe UI" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+
+    <Style TargetType="{x:Type Menu}">
+        <Setter Property="Background" Value="{DynamicResource IDE.ChromeBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+        <Setter Property="Padding" Value="4,2" />
+    </Style>
+
+    <Style TargetType="{x:Type MenuItem}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+        <Setter Property="Padding" Value="7,4" />
+    </Style>
+
+    <Style TargetType="{x:Type ToolBarTray}">
+        <Setter Property="Background" Value="{DynamicResource IDE.ChromeBrush}" />
+    </Style>
+
+    <Style TargetType="{x:Type ToolBar}">
+        <Setter Property="Background" Value="{DynamicResource IDE.ChromeBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style x:Key="IDE.ToolbarButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Padding" Value="10,5" />
+        <Setter Property="Margin" Value="1" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource IDE.HoverBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource IDE.TextMutedBrush}" />
+                <Setter Property="Opacity" Value="0.55" />
+                <Setter Property="Cursor" Value="Arrow" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="IDE.SmallButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource IDE.ToolbarButtonStyle}">
+        <Setter Property="Padding" Value="7,3" />
+        <Setter Property="MinWidth" Value="28" />
+    </Style>
+
+    <Style TargetType="{x:Type StatusBar}">
+        <Setter Property="Background" Value="{DynamicResource IDE.ChromeBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextMutedBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource IDE.BorderBrush}" />
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
+    </Style>
+
+    <Style TargetType="{x:Type StatusBarItem}">
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextMutedBrush}" />
+        <Setter Property="Padding" Value="8,2" />
+    </Style>
+
+    <Style TargetType="{x:Type GridSplitter}">
+        <Setter Property="Background" Value="{DynamicResource IDE.BorderBrush}" />
+        <Setter Property="ShowsPreview" Value="True" />
+    </Style>
+
+    <Style TargetType="{x:Type TabControl}">
+        <Setter Property="Background" Value="{DynamicResource IDE.EditorBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource IDE.BorderBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style TargetType="{x:Type TabItem}">
+        <Setter Property="Background" Value="{DynamicResource IDE.ChromeBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextMutedBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource IDE.BorderBrush}" />
+        <Setter Property="Padding" Value="10,5" />
+        <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{DynamicResource IDE.EditorBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="{x:Type TextBox}">
+        <Setter Property="Background" Value="{DynamicResource IDE.ChromeRaisedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource IDE.TextBrush}" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource IDE.SelectionBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource IDE.BorderBrush}" />
+        <Setter Property="Padding" Value="6,4" />
+    </Style>
+
+    <Style TargetType="{x:Type CheckBox}">
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+    </Style>
+</ResourceDictionary>

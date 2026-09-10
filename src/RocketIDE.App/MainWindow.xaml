@@ -1,63 +1,123 @@
 <Window x:Class="RocketIDE.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
-        Title="RocketIDE"
+        xmlns:editor="clr-namespace:RocketIDE.App.Editor"
+        xmlns:viewModels="clr-namespace:RocketIDE.App.ViewModels"
+        Title="{Binding WindowTitle}"
         Width="1280"
         Height="800"
         MinWidth="900"
         MinHeight="600"
         WindowStartupLocation="CenterScreen"
-        Background="#1E1E1E"
-        Foreground="#E6E6E6">
-    <DockPanel>
-        <Menu DockPanel.Dock="Top" Background="#252526" Foreground="#E6E6E6">
-            <MenuItem Header="_File" />
-            <MenuItem Header="_Edit" />
-            <MenuItem Header="_Selection" />
-            <MenuItem Header="_View" />
-            <MenuItem Header="_Navigate" />
-            <MenuItem Header="_Build" />
-            <MenuItem Header="_Run" />
-            <MenuItem Header="_Tools" />
-            <MenuItem Header="_Help" />
+        PreviewKeyDown="MainWindow_PreviewKeyDown"
+        Closing="MainWindow_Closing">
+    <DockPanel LastChildFill="True">
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="_New File" IsEnabled="False" InputGestureText="Ctrl+N" ToolTip="File creation is implemented with workspace support in IDE-WP03." />
+                <MenuItem Header="_Open File..." InputGestureText="Ctrl+O" Click="OpenFile_Click" />
+                <Separator />
+                <MenuItem Header="_Save" InputGestureText="Ctrl+S" IsEnabled="{Binding HasDocuments}" Click="Save_Click" />
+                <MenuItem Header="Save _All" InputGestureText="Ctrl+Shift+S" IsEnabled="{Binding HasDocuments}" Click="SaveAll_Click" />
+                <Separator />
+                <MenuItem Header="_Close" InputGestureText="Ctrl+W" IsEnabled="{Binding HasDocuments}" Click="Close_Click" />
+                <MenuItem Header="Close _Others" IsEnabled="{Binding HasDocuments}" Click="CloseOthers_Click" />
+                <MenuItem Header="Close A_ll" InputGestureText="Ctrl+Shift+W" IsEnabled="{Binding HasDocuments}" Click="CloseAll_Click" />
+                <Separator />
+                <MenuItem Header="E_xit" Click="Exit_Click" />
+            </MenuItem>
+
+            <MenuItem Header="_Edit">
+                <MenuItem Header="_Undo" InputGestureText="Ctrl+Z" IsEnabled="{Binding HasDocuments}" Click="Undo_Click" />
+                <MenuItem Header="_Redo" InputGestureText="Ctrl+Y" IsEnabled="{Binding HasDocuments}" Click="Redo_Click" />
+                <Separator />
+                <MenuItem Header="_Find..." InputGestureText="Ctrl+F" IsEnabled="{Binding HasDocuments}" Click="Find_Click" />
+                <MenuItem Header="_Replace..." InputGestureText="Ctrl+H" IsEnabled="{Binding HasDocuments}" Click="Replace_Click" />
+            </MenuItem>
+
+            <MenuItem Header="_Selection">
+                <MenuItem Header="Select _All" InputGestureText="Ctrl+A" IsEnabled="{Binding HasDocuments}" Click="SelectAll_Click" />
+            </MenuItem>
+
+            <MenuItem Header="_View">
+                <MenuItem Header="Explorer" IsEnabled="False" IsCheckable="True" IsChecked="True" ToolTip="Panel visibility persistence is implemented in a later UI reliability WP." />
+                <MenuItem Header="Bottom Panel" IsEnabled="False" IsCheckable="True" IsChecked="True" ToolTip="Panel visibility persistence is implemented in a later UI reliability WP." />
+            </MenuItem>
+
+            <MenuItem Header="_Navigate">
+                <MenuItem Header="_Go to Line..." InputGestureText="Ctrl+G" IsEnabled="{Binding HasDocuments}" Click="GotoLine_Click" />
+            </MenuItem>
+
+            <MenuItem Header="_Build">
+                <MenuItem Header="Build Project" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
+            </MenuItem>
+
+            <MenuItem Header="_Run">
+                <MenuItem Header="Run" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
+                <MenuItem Header="Stop" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
+                <MenuItem Header="Test" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
+            </MenuItem>
+
+            <MenuItem Header="_Tools">
+                <MenuItem Header="Rocket SDK Settings" IsEnabled="False" ToolTip="Implemented after Rocket tool discovery." />
+            </MenuItem>
+
+            <MenuItem Header="_Help">
+                <MenuItem Header="About RocketIDE" Click="About_Click" />
+            </MenuItem>
         </Menu>
 
-        <ToolBarTray DockPanel.Dock="Top" Background="#252526">
-            <ToolBar Background="#252526">
-                <Button Content="Open" IsEnabled="False" ToolTip="Implemented in IDE-WP02/03" />
-                <Button Content="Save" IsEnabled="False" ToolTip="Implemented in IDE-WP02" />
+        <ToolBarTray DockPanel.Dock="Top">
+            <ToolBar>
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="New" IsEnabled="False" ToolTip="File creation is implemented with workspace support in IDE-WP03." />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Open" ToolTip="Open file" Click="OpenFile_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Save" IsEnabled="{Binding HasDocuments}" ToolTip="Save active file" Click="Save_Click" />
                 <Separator />
-                <Button Content="Build" IsEnabled="False" ToolTip="Implemented in IDE-WP10" />
-                <Button Content="Run" IsEnabled="False" ToolTip="Implemented in IDE-WP10" />
-                <Button Content="Stop" IsEnabled="False" ToolTip="Implemented in IDE-WP10" />
-                <Button Content="Test" IsEnabled="False" ToolTip="Implemented in IDE-WP10" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Build" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Run" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Stop" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Test" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
             </ToolBar>
         </ToolBarTray>
 
-        <StatusBar DockPanel.Dock="Bottom" Background="#252526" Foreground="#CFCFCF">
-            <StatusBarItem Content="Rocket SDK: not configured" />
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem Content="{Binding RocketSdkStatus}" />
             <Separator />
-            <StatusBarItem Content="LSP: offline" />
+            <StatusBarItem Content="{Binding LspStatus}" />
             <Separator />
-            <StatusBarItem Content="Ln 1, Col 1" HorizontalAlignment="Right" />
+            <StatusBarItem Content="{Binding ActiveTargetStatus}" />
+            <Separator />
+            <StatusBarItem Content="{Binding CaretStatus}" />
+            <Separator />
+            <StatusBarItem Content="{Binding EncodingStatus}" />
         </StatusBar>
 
-        <Grid>
+        <Grid Background="{DynamicResource IDE.WindowBrush}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="240" MinWidth="160" />
                 <ColumnDefinition Width="5" />
                 <ColumnDefinition Width="*" MinWidth="420" />
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0" Background="#252526" BorderBrush="#333333" BorderThickness="0,0,1,0">
+            <Border Grid.Column="0"
+                    Background="{DynamicResource IDE.ChromeBrush}"
+                    BorderBrush="{DynamicResource IDE.BorderBrush}"
+                    BorderThickness="0,0,1,0">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Text="EXPLORER" Margin="12,10" FontWeight="SemiBold" FontSize="12" />
-                    <TextBlock Text="Workspace explorer begins in IDE-WP03" Margin="12" Foreground="#999999" TextWrapping="Wrap" />
+                    <Border DockPanel.Dock="Top" Padding="12,9" BorderBrush="{DynamicResource IDE.BorderBrush}" BorderThickness="0,0,0,1">
+                        <TextBlock Text="EXPLORER" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource IDE.TextMutedBrush}" />
+                    </Border>
+                    <StackPanel Margin="12">
+                        <TextBlock Text="No workspace open" FontWeight="SemiBold" />
+                        <TextBlock Margin="0,6,0,0"
+                                   Foreground="{DynamicResource IDE.TextMutedBrush}"
+                                   Text="Project and folder browsing begins in IDE-WP03. You can already open individual files with Ctrl+O."
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
                 </DockPanel>
             </Border>
 
-            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#2D2D30" />
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" ResizeDirection="Columns" />
 
             <Grid Grid.Column="2">
                 <Grid.RowDefinitions>
@@ -66,24 +126,74 @@
                     <RowDefinition Height="190" MinHeight="100" />
                 </Grid.RowDefinitions>
 
-                <TabControl Grid.Row="0" Background="#1E1E1E" Foreground="#E6E6E6">
-                    <TabItem Header="Welcome">
-                        <Grid Background="#1E1E1E">
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="520">
-                                <TextBlock Text="RocketIDE" FontSize="34" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                                <TextBlock Margin="0,12,0,0" Text="Native Windows IDE for the Rocket language" Foreground="#B7B7B7" FontSize="16" HorizontalAlignment="Center" />
-                                <TextBlock Margin="0,24,0,0" Text="RocketIDE is implemented incrementally without fake editor intelligence. Follow ROADMAP.md." Foreground="#8F8F8F" TextWrapping="Wrap" TextAlignment="Center" />
-                            </StackPanel>
-                        </Grid>
+                <Grid Grid.Row="0" Background="{DynamicResource IDE.EditorBrush}">
+                    <TabControl x:Name="EditorTabs"
+                                ItemsSource="{Binding Documents}"
+                                SelectedItem="{Binding ActiveDocument, Mode=TwoWay}">
+                        <TabControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type viewModels:DocumentTabViewModel}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock VerticalAlignment="Center" Text="{Binding HeaderText}" />
+                                    <Button Margin="7,0,0,0"
+                                            Padding="2,0"
+                                            MinWidth="18"
+                                            Height="18"
+                                            Background="Transparent"
+                                            BorderBrush="Transparent"
+                                            Foreground="{DynamicResource IDE.TextMutedBrush}"
+                                            Content="×"
+                                            ToolTip="Close"
+                                            Tag="{Binding}"
+                                            Click="CloseTabButton_Click" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </TabControl.ItemTemplate>
+                        <TabControl.ContentTemplate>
+                            <DataTemplate DataType="{x:Type viewModels:DocumentTabViewModel}">
+                                <editor:EditorDocumentHost />
+                            </DataTemplate>
+                        </TabControl.ContentTemplate>
+                    </TabControl>
+
+                    <Border Background="{DynamicResource IDE.EditorBrush}">
+                        <Border.Style>
+                            <Style TargetType="{x:Type Border}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasDocuments}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="520">
+                            <TextBlock Text="RocketIDE" FontSize="34" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                            <TextBlock Margin="0,10,0,0"
+                                       Text="Native Windows IDE for the Rocket language"
+                                       Foreground="{DynamicResource IDE.TextMutedBrush}"
+                                       FontSize="16"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Margin="0,24,0,0"
+                                       Text="Open a Rocket or UTF-8 text file with Ctrl+O. Workspace support, Rocket language intelligence, build and run arrive in their owning roadmap phases."
+                                       Foreground="{DynamicResource IDE.TextMutedBrush}"
+                                       TextWrapping="Wrap"
+                                       TextAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <GridSplitter Grid.Row="1" Height="5" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ResizeDirection="Rows" />
+
+                <TabControl Grid.Row="2">
+                    <TabItem Header="PROBLEMS">
+                        <TextBlock Margin="12" Text="Live Rocket diagnostics begin in IDE-WP07." Foreground="{DynamicResource IDE.TextMutedBrush}" />
                     </TabItem>
-                </TabControl>
-
-                <GridSplitter Grid.Row="1" Height="5" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="#2D2D30" />
-
-                <TabControl Grid.Row="2" Background="#1E1E1E" Foreground="#E6E6E6">
-                    <TabItem Header="PROBLEMS"><TextBlock Margin="12" Text="Live diagnostics begin in IDE-WP07." Foreground="#999999" /></TabItem>
-                    <TabItem Header="OUTPUT"><TextBlock Margin="12" Text="Compiler and program output begin in IDE-WP10." Foreground="#999999" /></TabItem>
-                    <TabItem Header="TESTS"><TextBlock Margin="12" Text="Structured Rocket test results begin in IDE-WP10." Foreground="#999999" /></TabItem>
+                    <TabItem Header="OUTPUT">
+                        <TextBlock Margin="12" Text="Compiler and program output begin in IDE-WP10." Foreground="{DynamicResource IDE.TextMutedBrush}" />
+                    </TabItem>
+                    <TabItem Header="TESTS">
+                        <TextBlock Margin="12" Text="Structured Rocket test results begin in IDE-WP10." Foreground="{DynamicResource IDE.TextMutedBrush}" />
+                    </TabItem>
                 </TabControl>
             </Grid>
         </Grid>

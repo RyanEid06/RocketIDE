@@ -34,8 +34,8 @@ Change only `Status`, `Completed`, and `Evidence` after the WP gate passes.
 | WP | Name | Status | Completed | Evidence |
 |---|---|---|---|---|
 | IDE-WP00 | Repository baseline + CI | DONE | 2026-09-10 | GitHub Actions `windows-ci` run `34501119792` passed on commit `788e990`; Verify and portable artifact upload succeeded |
-| IDE-WP01 | Native shell + layout | READY |  | WP00 dependency satisfied |
-| IDE-WP02 | Editor/document foundation | BLOCKED by WP01 |  |  |
+| IDE-WP01 | Native shell + layout | IN PROGRESS |  | Implementation prepared locally; Windows verification/CI pending |
+| IDE-WP02 | Editor/document foundation | IN PROGRESS |  | Batched with WP01; Windows verification/CI pending |
 | IDE-WP03 | Workspace + project explorer | BLOCKED by WP02 |  |  |
 | IDE-WP04 | Rocket syntax + editor ergonomics | BLOCKED by WP02 |  |  |
 | IDE-WP05 | Rocket tool discovery + validation | BLOCKED by WP00 |  |  |
@@ -166,14 +166,16 @@ Do not create a monolithic `Services` folder where unrelated responsibilities ac
 
 ### Tasks
 
-- [ ] Define reusable theme resources for backgrounds, borders, text, selection, error/warning/info accents, editor chrome, splitter, toolbar, tabs, and status bar. Avoid hard-coded colors scattered across XAML.
-- [ ] Build the three-zone layout: Explorer left, Editor center, Problems/Output/Tests bottom.
-- [ ] Add splitters with sane minimum widths/heights so panels cannot collapse the editor to zero.
-- [ ] Add top menus: File, Edit, Selection, View, Navigate, Build, Run, Tools, Help.
-- [ ] Add toolbar placeholders only for New/Open, Save, Build, Run, Stop, Test. Keep unavailable commands disabled until their owning WP wires them.
-- [ ] Add bottom status fields for Rocket SDK state, LSP state, active target, line, column, encoding.
+- [x] Define reusable theme resources for backgrounds, borders, text, selection, error/warning/info accents, editor chrome, splitter, toolbar, tabs, and status bar. Avoid hard-coded colors scattered across XAML.
+- [x] Build the three-zone layout: Explorer left, Editor center, Problems/Output/Tests bottom.
+- [x] Add splitters with sane minimum widths/heights so panels cannot collapse the editor to zero.
+- [x] Add top menus: File, Edit, Selection, View, Navigate, Build, Run, Tools, Help.
+- [x] Add toolbar placeholders only for New/Open, Save, Build, Run, Stop, Test. Keep unavailable commands disabled until their owning WP wires them.
+- [x] Add bottom status fields for Rocket SDK state, LSP state, active target, line, column, encoding.
 - [ ] Verify resize behavior at 1366x768, 1920x1080, and 150% Windows scaling on a real Windows run.
 - [ ] Run verification and CI.
+
+**Local implementation note (2026-09-10):** shell/theme/layout/menu/toolbar/status code is implemented. Real Windows resize/DPI verification and `scripts/verify.ps1`/CI remain required before this WP may be marked DONE.
 
 **Acceptance:** native window opens without browser/WebView, resizes without overlap, and no toolbar action claims functionality it does not have.
 
@@ -188,16 +190,21 @@ Do not create a monolithic `Services` folder where unrelated responsibilities ac
 **Core interfaces to produce:**
 
 ```csharp
-public sealed record DocumentId(Guid Value);
+public readonly record struct DocumentId(Guid Value);
 public sealed record DocumentSnapshot(DocumentId Id, string Path, string Text, int Version, bool IsDirty, long ByteLength);
+
+public enum DocumentSaveStatus { Saved, NoChanges, Conflict }
+public sealed record DocumentSaveResult(DocumentSaveStatus Status, DocumentSnapshot Document, string? Message = null);
 
 public interface IDocumentStore
 {
     IReadOnlyList<DocumentSnapshot> OpenDocuments { get; }
     Task<DocumentSnapshot> OpenAsync(string path, CancellationToken cancellationToken);
-    Task SaveAsync(DocumentId id, CancellationToken cancellationToken);
-    Task SaveAllAsync(CancellationToken cancellationToken);
+    DocumentSnapshot UpdateText(DocumentId id, string text);
+    Task<DocumentSaveResult> SaveAsync(DocumentId id, bool overwriteExternalChanges, CancellationToken cancellationToken);
+    Task<IReadOnlyList<DocumentSaveResult>> SaveAllAsync(CancellationToken cancellationToken);
     bool TryGet(DocumentId id, out DocumentSnapshot? document);
+    bool Close(DocumentId id);
 }
 ```
 
@@ -213,18 +220,20 @@ Names may be refined only if all consumers/tests are updated in the same WP; do 
 
 ### Tasks
 
-- [ ] Write tests for normalized document identity so opening the same Windows path twice activates one tab rather than duplicating buffers.
-- [ ] Implement document state with monotonically increasing edit version.
-- [ ] Write tests for dirty state transitions: open clean -> edit dirty -> save clean -> external edit conflict does not silently clear dirty state.
-- [ ] Implement async UTF-8 file open/save with byte-length tracking and atomic save where appropriate.
-- [ ] Bind each open document to one AvalonEdit instance or a safe recyclable editor host; do not share one mutable text document across unrelated tabs.
-- [ ] Implement tabs with filename, dirty marker, close button, middle-click close optional.
-- [ ] Implement Save, Save All, Close, Close All, Close Others and unsaved-change prompts.
-- [ ] Add line numbers, current-line highlight, editor font settings baseline, selection, undo/redo.
-- [ ] Implement goto-line and in-document find/replace using editor/document APIs rather than regex over serialized UI state.
-- [ ] Update status line/column from caret movement.
-- [ ] Ensure binary-looking or undecodable files fail gracefully rather than filling the editor with replacement garbage.
+- [x] Write tests for normalized document identity so opening the same Windows path twice activates one tab rather than duplicating buffers.
+- [x] Implement document state with monotonically increasing edit version.
+- [x] Write tests for dirty state transitions: open clean -> edit dirty -> save clean -> external edit conflict does not silently clear dirty state.
+- [x] Implement async UTF-8 file open/save with byte-length tracking and atomic save where appropriate.
+- [x] Bind each open document to one AvalonEdit instance or a safe recyclable editor host; do not share one mutable text document across unrelated tabs.
+- [x] Implement tabs with filename, dirty marker, close button, middle-click close optional.
+- [x] Implement Save, Save All, Close, Close All, Close Others and unsaved-change prompts.
+- [x] Add line numbers, current-line highlight, editor font settings baseline, selection, undo/redo.
+- [x] Implement goto-line and in-document find/replace using editor/document APIs rather than regex over serialized UI state.
+- [x] Update status line/column from caret movement.
+- [x] Ensure binary-looking or undecodable files fail gracefully rather than filling the editor with replacement garbage.
 - [ ] Run focused tests, full verification, and CI.
+
+**Local implementation note (2026-09-10):** document model/store, file tests, AvalonEdit tabs, save/close guards, find/replace and goto-line are implemented. The .NET SDK is unavailable in the current Linux authoring environment, so focused tests/full verification are intentionally left unchecked until Windows CI runs.
 
 **Acceptance:** edit/save/reopen multi-tab flow works without LSP, preserves exact text, and guards unsaved changes.
 
