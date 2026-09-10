@@ -38,6 +38,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public ObservableCollection<string> RecentWorkspaces { get; } = new();
 
+    public ObservableCollection<string> OutputLines { get; } = new();
+
     public bool HasWorkspace => Explorer.HasWorkspace;
 
     public bool HasDocuments => Documents.Count > 0;
@@ -117,6 +119,22 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         return tab;
     }
 
+
+
+    public void AppendOutput(string line)
+    {
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return;
+        }
+
+        OutputLines.Add(line);
+        const int maxLines = 2000;
+        while (OutputLines.Count > maxLines)
+        {
+            OutputLines.RemoveAt(0);
+        }
+    }
 
     public void SetRecentWorkspaces(IEnumerable<string> paths)
     {

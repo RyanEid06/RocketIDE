@@ -36,6 +36,7 @@ public partial class MainWindow : Window
         _viewModel = new MainWindowViewModel(_workspaceFileSystem);
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         DataContext = _viewModel;
+        InitializeRocketIntegration();
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -556,19 +557,30 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Closing(object? sender, CancelEventArgs e)
     {
-        if (_allowWindowClose || !_viewModel.Documents.Any(document => document.IsDirty))
+        if (_allowWindowClose)
         {
             DisposeWorkspaceWatcher();
             return;
         }
 
         e.Cancel = true;
-        if (await TryCloseTabsAsync(_viewModel.Documents.ToArray()))
+        if (_viewModel.Documents.Any(document => document.IsDirty) &&
+            !await TryCloseTabsAsync(_viewModel.Documents.ToArray()))
         {
-            _allowWindowClose = true;
-            DisposeWorkspaceWatcher();
-            Close();
+            return;
         }
+
+        try
+        {
+            await ShutdownRocketIntegrationAsync(CancellationToken.None);
+        }
+        catch (Exception exception) when (IsExpectedRocketIntegrationException(exception))
+        {
+            AppendRocketOutput($"Rocket LSP shutdown failed: {exception.Message}");
+        }
+        _allowWindowClose = true;
+        DisposeWorkspaceWatcher();
+        Close();
     }
 
     private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)

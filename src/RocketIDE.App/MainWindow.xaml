@@ -49,7 +49,10 @@
                 <MenuItem Header="Stop" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
                 <MenuItem Header="Test" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
             </MenuItem>
-            <MenuItem Header="_Tools"><MenuItem Header="Rocket SDK Settings" IsEnabled="False" ToolTip="Implemented after Rocket tool discovery." /></MenuItem>
+            <MenuItem Header="_Tools">
+                <MenuItem Header="Validate Rocket _Environment" Click="ValidateRocketEnvironment_Click" />
+                <MenuItem Header="Rocket SDK _Settings..." Click="RocketSdkSettings_Click" />
+            </MenuItem>
             <MenuItem Header="_Help"><MenuItem Header="About RocketIDE" Click="About_Click" /></MenuItem>
         </Menu>
 
@@ -171,7 +174,12 @@
                 <GridSplitter Grid.Row="1" Height="5" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ResizeDirection="Rows" />
                 <TabControl Grid.Row="2">
                     <TabItem Header="PROBLEMS"><TextBlock Margin="12" Text="Live Rocket diagnostics begin in IDE-WP07." Foreground="{DynamicResource IDE.TextMutedBrush}" /></TabItem>
-                    <TabItem Header="OUTPUT"><TextBlock Margin="12" Text="Compiler and program output begin in IDE-WP10." Foreground="{DynamicResource IDE.TextMutedBrush}" /></TabItem>
+                    <TabItem Header="OUTPUT">
+                        <Grid Margin="8">
+                            <TextBlock Text="Rocket environment and language-server logs appear here. Compiler/program output is added in IDE-WP10." Foreground="{DynamicResource IDE.TextMutedBrush}" Margin="4,2,4,6" VerticalAlignment="Top" />
+                            <ListBox ItemsSource="{Binding OutputLines}" Margin="0,28,0,0" BorderThickness="0" Background="Transparent" FontFamily="Consolas" FontSize="12" ScrollViewer.HorizontalScrollBarVisibility="Auto" />
+                        </Grid>
+                    </TabItem>
                     <TabItem Header="TESTS"><TextBlock Margin="12" Text="Structured Rocket test results begin in IDE-WP10." Foreground="{DynamicResource IDE.TextMutedBrush}" /></TabItem>
                 </TabControl>
             </Grid>

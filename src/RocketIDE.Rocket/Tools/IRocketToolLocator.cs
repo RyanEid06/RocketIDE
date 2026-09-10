@@ -1,0 +1,6 @@
+namespace RocketIDE.Rocket.Tools;
+
+public interface IRocketToolLocator
+{
+    Task<RocketToolchain?> LocateAsync(string? activePath, CancellationToken cancellationToken);
+}
