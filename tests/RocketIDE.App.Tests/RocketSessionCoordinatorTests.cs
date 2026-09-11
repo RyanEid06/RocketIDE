@@ -1,5 +1,7 @@
 using System.IO;
 using System.Collections.Concurrent;
+using System.Text.Json;
+using RocketIDE.Rocket.Diagnostics;
 using RocketIDE.App.Integration;
 using RocketIDE.Infrastructure.Settings;
 using RocketIDE.Rocket.LanguageServer;
@@ -113,6 +115,143 @@ public sealed class RocketSessionCoordinatorTests
         Assert.IsTrue(output.Any(line => line.Contains("server died", StringComparison.Ordinal)));
     }
 
+    [TestMethod]
+    public async Task PublishDiagnostics_IsMappedWithCurrentSessionGenerationAndObserverFailuresAreIsolated()
+    {
+        using var temp = new TempDirectory();
+        var source = Path.Combine(temp.Path, "main.rocket");
+        var fakeClient = new FakeLanguageClient();
+        var discovery = new RocketToolDiscoveryResult(
+            Path.Combine(temp.Path, "rocketc.exe"),
+            Path.Combine(temp.Path, "rocket-lsp.exe"),
+            "rocketc 2.1.0",
+            "rocket-lsp 1.0.0",
+            []);
+        await using var coordinator = CreateCoordinator(fakeClient, discovery);
+        var sessions = new List<RocketDiagnosticSessionChangedEventArgs>();
+        var publications = new List<RocketDiagnosticPublication>();
+        coordinator.DiagnosticSessionChanged += (_, args) => sessions.Add(args);
+        coordinator.DiagnosticsPublished += (_, _) => throw new InvalidOperationException("broken UI observer");
+        coordinator.DiagnosticsPublished += (_, args) => publications.Add(args.Publication);
+
+        await coordinator.EnsureAsync(source, temp.Path, CancellationToken.None);
+        fakeClient.RaiseNotification("textDocument/publishDiagnostics", $$"""
+        {
+          "uri": {{JsonSerializer.Serialize(new Uri(source).AbsoluteUri)}},
+          "version": 0,
+          "diagnostics": [
+            {
+              "range": { "start": {"line":0,"character":1}, "end": {"line":0,"character":3} },
+              "severity": 1,
+              "code": "R2001",
+              "source": "rocketc",
+              "message": "bad"
+            }
+          ]
+        }
+        """);
+
+        Assert.IsTrue(sessions.Count > 0);
+        Assert.IsTrue(sessions[^1].IsOnline);
+        Assert.AreEqual(1, publications.Count);
+        Assert.AreEqual(sessions[^1].Generation, publications[0].Generation);
+        Assert.AreEqual("R2001", publications[0].Diagnostics.Single().Code);
+    }
+
+    [TestMethod]
+    public async Task RestartAndFault_AdvanceDiagnosticGenerationAndInvalidateOldPublications()
+    {
+        using var temp = new TempDirectory();
+        var first = new FakeLanguageClient();
+        var second = new FakeLanguageClient();
+        var clients = new Queue<FakeLanguageClient>([first, second]);
+        var discovery = new RocketToolDiscoveryResult(
+            Path.Combine(temp.Path, "rocketc.exe"),
+            Path.Combine(temp.Path, "rocket-lsp.exe"),
+            "rocketc 2.1.0",
+            "rocket-lsp 1.0.0",
+            []);
+        await using var coordinator = new RocketSessionCoordinator(
+            _ => Task.FromResult(RocketToolSettings.Automatic),
+            _ => new FakeLocator(discovery),
+            () => clients.Dequeue(),
+            () => [],
+            _ => { },
+            _ => { },
+            _ => { },
+            () => { });
+        var sessions = new List<RocketDiagnosticSessionChangedEventArgs>();
+        coordinator.DiagnosticSessionChanged += (_, args) => sessions.Add(args);
+
+        await coordinator.EnsureAsync(temp.Path, temp.Path, CancellationToken.None);
+        var firstOnline = sessions.Last(item => item.IsOnline);
+        await coordinator.RestartAsync(temp.Path, temp.Path, CancellationToken.None);
+        var secondOnline = sessions.Last(item => item.IsOnline);
+
+        Assert.IsTrue(secondOnline.Generation > firstOnline.Generation);
+        second.RaiseFault(new IOException("server died"));
+        await WaitUntilAsync(() => sessions.Count > 0 && !sessions[^1].IsOnline && sessions[^1].Generation > secondOnline.Generation);
+    }
+
+    [TestMethod]
+    public async Task FaultedSession_IgnoresLateNotificationsFromDeadClient()
+    {
+        using var temp = new TempDirectory();
+        var fakeClient = new FakeLanguageClient();
+        var discovery = new RocketToolDiscoveryResult(
+            Path.Combine(temp.Path, "rocketc.exe"),
+            Path.Combine(temp.Path, "rocket-lsp.exe"),
+            "rocketc 2.1.0",
+            "rocket-lsp 1.0.0",
+            []);
+        await using var coordinator = CreateCoordinator(fakeClient, discovery);
+        var forwarded = 0;
+        coordinator.NotificationReceived += (_, _) => forwarded++;
+        await coordinator.EnsureAsync(temp.Path, temp.Path, CancellationToken.None);
+
+        fakeClient.RaiseFault(new IOException("server died"));
+        fakeClient.RaiseNotification("rocket/analysisStatus", "{\"files\":1}");
+
+        Assert.AreEqual(0, forwarded);
+    }
+
+    [TestMethod]
+    public async Task DocumentSynchronization_ReportsLargeFileSupportState()
+    {
+        using var temp = new TempDirectory();
+        var source = Path.Combine(temp.Path, "large.rocket");
+        var fakeClient = new FakeLanguageClient();
+        var discovery = new RocketToolDiscoveryResult(
+            Path.Combine(temp.Path, "rocketc.exe"),
+            Path.Combine(temp.Path, "rocket-lsp.exe"),
+            "rocketc 2.1.0",
+            "rocket-lsp 1.0.0",
+            []);
+        await using var coordinator = CreateCoordinator(fakeClient, discovery);
+        var states = new List<RocketDocumentSyncStateChangedEventArgs>();
+        coordinator.DocumentSyncStateChanged += (_, args) => states.Add(args);
+        await coordinator.EnsureAsync(source, temp.Path, CancellationToken.None);
+
+        var text = new string('x', (4 * 1024 * 1024) + 1);
+        await coordinator.OpenDocumentAsync(new RocketSessionDocument(source, text, 9, "large.rocket"), CancellationToken.None);
+
+        var state = states.Last();
+        Assert.AreEqual(source, state.Path);
+        Assert.AreEqual(9, state.Version);
+        Assert.AreEqual(LspDocumentSyncState.LargeFileUnsupportedByLsp, state.State);
+    }
+
+    private static RocketSessionCoordinator CreateCoordinator(FakeLanguageClient client, RocketToolDiscoveryResult discovery) =>
+        new(
+            _ => Task.FromResult(RocketToolSettings.Automatic),
+            _ => new FakeLocator(discovery),
+            () => client,
+            () => [],
+            _ => { },
+            _ => { },
+            _ => { },
+            () => { });
+
     private static async Task WaitUntilAsync(Func<bool> condition)
     {
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
@@ -139,11 +278,7 @@ public sealed class RocketSessionCoordinatorTests
         public int DisposeCount { get; private set; }
         public List<(string Method, object? Parameters)> Notifications { get; } = new();
 
-        public event EventHandler<RocketServerNotificationEventArgs>? NotificationReceived
-        {
-            add { }
-            remove { }
-        }
+        public event EventHandler<RocketServerNotificationEventArgs>? NotificationReceived;
         public event EventHandler<RocketTransportFaultedEventArgs>? Faulted;
         public event EventHandler<string>? LogReceived
         {
@@ -180,6 +315,12 @@ public sealed class RocketSessionCoordinatorTests
         }
 
         public void RaiseFault(Exception exception) => Faulted?.Invoke(this, new RocketTransportFaultedEventArgs(exception));
+
+        public void RaiseNotification(string method, string parametersJson)
+        {
+            using var document = JsonDocument.Parse(parametersJson);
+            NotificationReceived?.Invoke(this, new RocketServerNotificationEventArgs(method, document.RootElement.Clone()));
+        }
     }
 
     private sealed class TempDirectory : IDisposable

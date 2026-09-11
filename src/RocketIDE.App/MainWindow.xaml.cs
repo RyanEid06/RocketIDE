@@ -79,16 +79,17 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task OpenDocumentAsync(string path)
+    private async Task<DocumentTabViewModel?> OpenDocumentAsync(string path)
     {
         try
         {
             var snapshot = await _documentStore.OpenAsync(path, CancellationToken.None);
-            _viewModel.AddOrActivate(_documentStore, snapshot);
+            return _viewModel.AddOrActivate(_documentStore, snapshot);
         }
         catch (Exception exception) when (IsExpectedFileException(exception))
         {
             ShowFileError("Open failed", path, exception);
+            return null;
         }
     }
 
@@ -576,6 +577,38 @@ public partial class MainWindow : Window
         {
             editor.GoToLine(dialog.LineNumber);
         }
+    }
+
+    private async void ProblemsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (e.OriginalSource is DependencyObject source &&
+            ItemsControl.ContainerFromElement(ProblemsList, source) is ListViewItem { DataContext: ProblemItemViewModel problem })
+        {
+            await NavigateToProblemAsync(problem);
+            e.Handled = true;
+        }
+    }
+
+    private async void ProblemsList_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter && ProblemsList.SelectedItem is ProblemItemViewModel problem)
+        {
+            e.Handled = true;
+            await NavigateToProblemAsync(problem);
+        }
+    }
+
+    private async Task NavigateToProblemAsync(ProblemItemViewModel problem)
+    {
+        ArgumentNullException.ThrowIfNull(problem);
+        var tab = FindOpenDocument(problem.FilePath) ?? await OpenDocumentAsync(problem.FilePath);
+        if (tab is null)
+        {
+            return;
+        }
+
+        _viewModel.ActiveDocument = tab;
+        tab.RequestNavigation(problem.Range);
     }
 
     private void Exit_Click(object sender, RoutedEventArgs e) => Close();

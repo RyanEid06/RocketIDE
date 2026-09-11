@@ -33,6 +33,9 @@ public partial class MainWindow
             AppendRocketOutput,
             ShowOutputPanel);
         _rocketSession.NotificationReceived += RocketSession_NotificationReceived;
+        _rocketSession.DiagnosticSessionChanged += RocketSession_DiagnosticSessionChanged;
+        _rocketSession.DiagnosticsPublished += RocketSession_DiagnosticsPublished;
+        _rocketSession.DocumentSyncStateChanged += RocketSession_DocumentSyncStateChanged;
         _viewModel.Documents.CollectionChanged += Documents_CollectionChanged;
         _viewModel.Explorer.PropertyChanged += Explorer_RocketIntegrationPropertyChanged;
     }
@@ -243,8 +246,38 @@ public partial class MainWindow
         }
     }
 
-    private Task ShutdownRocketIntegrationAsync(CancellationToken cancellationToken) =>
-        _rocketSession.ShutdownAsync(cancellationToken);
+    private async Task ShutdownRocketIntegrationAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _rocketSession.ShutdownAsync(cancellationToken);
+        }
+        finally
+        {
+            _rocketSession.NotificationReceived -= RocketSession_NotificationReceived;
+            _rocketSession.DiagnosticSessionChanged -= RocketSession_DiagnosticSessionChanged;
+            _rocketSession.DiagnosticsPublished -= RocketSession_DiagnosticsPublished;
+            _rocketSession.DocumentSyncStateChanged -= RocketSession_DocumentSyncStateChanged;
+            _viewModel.Documents.CollectionChanged -= Documents_CollectionChanged;
+            _viewModel.Explorer.PropertyChanged -= Explorer_RocketIntegrationPropertyChanged;
+            foreach (var tab in _viewModel.Documents)
+            {
+                tab.PropertyChanged -= RocketDocument_PropertyChanged;
+            }
+        }
+    }
+
+    private void RocketSession_DiagnosticSessionChanged(object? sender, RocketDiagnosticSessionChangedEventArgs e) =>
+        DispatchUi(() => _viewModel.BeginDiagnosticSession(e.Generation, e.IsOnline));
+
+    private void RocketSession_DiagnosticsPublished(object? sender, RocketDiagnosticsPublishedEventArgs e) =>
+        DispatchUi(() => _viewModel.ApplyDiagnosticPublication(e.Publication));
+
+    private void RocketSession_DocumentSyncStateChanged(object? sender, RocketDocumentSyncStateChangedEventArgs e) =>
+        DispatchUi(() => _viewModel.SetDocumentDiagnosticSupport(
+            e.Path,
+            e.Version,
+            e.State != LspDocumentSyncState.LargeFileUnsupportedByLsp));
 
     private void RocketSession_NotificationReceived(object? sender, RocketServerNotificationEventArgs e)
     {

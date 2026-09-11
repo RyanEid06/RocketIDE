@@ -1,5 +1,6 @@
 using System.IO;
 using RocketIDE.Infrastructure.Settings;
+using RocketIDE.Rocket.Diagnostics;
 using RocketIDE.Rocket.LanguageServer;
 using RocketIDE.Rocket.Tools;
 
@@ -22,6 +23,8 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
     private DocumentSynchronizer? _documentSynchronizer;
     private string? _workspacePath;
     private string? _lastDiscoveryProblem;
+    private long _diagnosticGeneration;
+    private long _activeDiagnosticGeneration;
 
     public RocketSessionCoordinator(
         Func<CancellationToken, Task<RocketToolSettings>> settingsProvider,
@@ -45,6 +48,9 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
 
     public event EventHandler<RocketServerNotificationEventArgs>? NotificationReceived;
     public event EventHandler<RocketTransportFaultedEventArgs>? Faulted;
+    public event EventHandler<RocketDiagnosticSessionChangedEventArgs>? DiagnosticSessionChanged;
+    public event EventHandler<RocketDiagnosticsPublishedEventArgs>? DiagnosticsPublished;
+    public event EventHandler<RocketDocumentSyncStateChangedEventArgs>? DocumentSyncStateChanged;
 
     public async Task EnsureAsync(string? activePath, string? workspacePath, CancellationToken cancellationToken)
     {
@@ -214,6 +220,7 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
             _setLspStatus($"LSP: online ({discovery.LanguageServerVersion})");
             _appendOutput($"rocket-lsp initialized: {discovery.LanguageServerVersion}");
             _appendOutput($"rocket-lsp path: {discovery.LanguageServerPath}");
+            StartDiagnosticSession();
             await SyncOpenDocumentsCoreAsync(openDocuments, cancellationToken).ConfigureAwait(false);
         }
         catch
@@ -226,6 +233,7 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
             }
             Unsubscribe(client);
             await client.DisposeAsync().ConfigureAwait(false);
+            InvalidateDiagnosticSession();
             _setLspStatus("LSP: offline");
             throw;
         }
@@ -242,6 +250,7 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
             return;
         }
 
+        InvalidateDiagnosticSession();
         Unsubscribe(client);
         try
         {
@@ -266,7 +275,7 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
         foreach (var document in openDocuments)
         {
             var state = await _documentSynchronizer.OpenAsync(document.Path, document.Text, document.Version, cancellationToken).ConfigureAwait(false);
-            UpdateLargeFileStatus(document, state);
+            UpdateDocumentSyncState(document, state);
         }
     }
 
@@ -284,7 +293,7 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
             }
 
             var state = await operation(_documentSynchronizer).ConfigureAwait(false);
-            UpdateLargeFileStatus(document, state);
+            UpdateDocumentSyncState(document, state);
         }
         finally
         {
@@ -292,8 +301,13 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
         }
     }
 
-    private void UpdateLargeFileStatus(RocketSessionDocument document, LspDocumentSyncState state)
+    private void UpdateDocumentSyncState(RocketSessionDocument document, LspDocumentSyncState state)
     {
+        RaiseEventSafely(
+            DocumentSyncStateChanged,
+            new RocketDocumentSyncStateChangedEventArgs(document.Path, document.Version, state),
+            "document-sync");
+
         if (state == LspDocumentSyncState.LargeFileUnsupportedByLsp)
         {
             _setLspStatus($"LSP: large-file mode ({document.DisplayName})");
@@ -303,19 +317,51 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
 
     private void Client_LogReceived(object? sender, string line) => _appendOutput($"[rocket-lsp] {line}");
 
-    private void Client_NotificationReceived(object? sender, RocketServerNotificationEventArgs e) =>
+    private void Client_NotificationReceived(object? sender, RocketServerNotificationEventArgs e)
+    {
+        if (sender is not IRocketLanguageClient client || !ReferenceEquals(client, _languageClient))
+        {
+            return;
+        }
+
+        var generation = Volatile.Read(ref _activeDiagnosticGeneration);
+        if (generation <= 0)
+        {
+            return;
+        }
+
+        if (string.Equals(e.Method, "textDocument/publishDiagnostics", StringComparison.Ordinal))
+        {
+            try
+            {
+                var publication = LspDiagnosticMapper.Map(e.Parameters, generation);
+                RaiseEventSafely(
+                    DiagnosticsPublished,
+                    new RocketDiagnosticsPublishedEventArgs(publication),
+                    "diagnostics");
+            }
+            catch (LspProtocolException exception)
+            {
+                _appendOutput($"Invalid textDocument/publishDiagnostics payload: {exception.Message}");
+            }
+        }
+
         RaiseEventSafely(NotificationReceived, e, "notification");
+    }
 
     private void Client_Faulted(object? sender, RocketTransportFaultedEventArgs e)
     {
+        if (sender is not IRocketLanguageClient client || !ReferenceEquals(client, _languageClient))
+        {
+            return;
+        }
+
+        InvalidateDiagnosticSession();
         _setLspStatus("LSP: offline");
         _appendOutput($"rocket-lsp connection failed: {e.Exception.Message}");
         _showOutput();
         RaiseEventSafely(Faulted, e, "fault");
-        if (sender is IRocketLanguageClient client)
-        {
-            _ = Task.Run(() => CleanupFaultedClientAsync(client));
-        }
+        _ = Task.Run(() => CleanupFaultedClientAsync(client));
     }
 
     private async Task CleanupFaultedClientAsync(IRocketLanguageClient client)
@@ -350,6 +396,26 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
         }
     }
 
+
+    private void StartDiagnosticSession()
+    {
+        var generation = Interlocked.Increment(ref _diagnosticGeneration);
+        Volatile.Write(ref _activeDiagnosticGeneration, generation);
+        RaiseEventSafely(
+            DiagnosticSessionChanged,
+            new RocketDiagnosticSessionChangedEventArgs(generation, isOnline: true),
+            "diagnostic-session");
+    }
+
+    private void InvalidateDiagnosticSession()
+    {
+        Volatile.Write(ref _activeDiagnosticGeneration, 0);
+        var generation = Interlocked.Increment(ref _diagnosticGeneration);
+        RaiseEventSafely(
+            DiagnosticSessionChanged,
+            new RocketDiagnosticSessionChangedEventArgs(generation, isOnline: false),
+            "diagnostic-session");
+    }
 
     private void RaiseEventSafely<TEventArgs>(EventHandler<TEventArgs>? handlers, TEventArgs args, string eventName)
         where TEventArgs : EventArgs

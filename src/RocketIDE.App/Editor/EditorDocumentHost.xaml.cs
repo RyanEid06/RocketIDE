@@ -5,15 +5,22 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ICSharpCode.AvalonEdit.Document;
 using RocketIDE.App.ViewModels;
+using RocketIDE.Core.Diagnostics;
 
 namespace RocketIDE.App.Editor;
 
 public partial class EditorDocumentHost : UserControl
 {
+    private readonly DiagnosticRenderer _diagnosticRenderer;
+    private DocumentTabViewModel? _document;
+
     public EditorDocumentHost()
     {
         InitializeComponent();
+        _diagnosticRenderer = new DiagnosticRenderer(Editor);
         DataContextChanged += OnDataContextChanged;
+        Loaded += EditorDocumentHost_Loaded;
+        Unloaded += EditorDocumentHost_Unloaded;
         Editor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
         Editor.Options.HighlightCurrentLine = true;
         Editor.TextArea.TextView.CurrentLineBackground = (Brush)FindResource("IDE.ChromeRaisedBrush");
@@ -52,40 +59,124 @@ public partial class EditorDocumentHost : UserControl
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
+        DetachDocument();
         if (e.NewValue is DocumentTabViewModel document)
         {
-            Editor.Document = document.EditorDocument;
-            if (IsRocketDocument(document))
-            {
-                try
-                {
-                    Editor.SyntaxHighlighting = RocketSyntaxHighlighting.Definition;
-                }
-                catch (Exception exception)
-                {
-                    // Syntax coloring is optional editor presentation. A broken highlighting
-                    // definition must never make opening a source file fatal. CI directly tests
-                    // the definition so this fallback is defense in depth, not a hidden failure.
-                    Trace.TraceError($"Rocket syntax highlighting failed to load: {exception}");
-                    Editor.SyntaxHighlighting = null;
-                }
-
-                RocketIndentationStrategy.Configure(Editor);
-            }
-            else
-            {
-                Editor.SyntaxHighlighting = null;
-                Editor.Options.ConvertTabsToSpaces = false;
-            }
+            AttachDocument(document);
         }
         else
         {
             Editor.Document = new TextDocument();
             Editor.SyntaxHighlighting = null;
             Editor.Options.ConvertTabsToSpaces = false;
+            _diagnosticRenderer.UpdateDiagnostics([]);
         }
 
         ReportCaret();
+    }
+
+    private void AttachDocument(DocumentTabViewModel document)
+    {
+        _document = document;
+        _document.DiagnosticsChanged += Document_DiagnosticsChanged;
+        _document.NavigationRequested += Document_NavigationRequested;
+        Editor.Document = document.EditorDocument;
+        if (IsRocketDocument(document))
+        {
+            try
+            {
+                Editor.SyntaxHighlighting = RocketSyntaxHighlighting.Definition;
+            }
+            catch (Exception exception)
+            {
+                // Syntax coloring is optional editor presentation. A broken highlighting
+                // definition must never make opening a source file fatal. CI directly tests
+                // the definition so this fallback is defense in depth, not a hidden failure.
+                Trace.TraceError($"Rocket syntax highlighting failed to load: {exception}");
+                Editor.SyntaxHighlighting = null;
+            }
+
+            RocketIndentationStrategy.Configure(Editor);
+            _diagnosticRenderer.UpdateDiagnostics(document.Diagnostics);
+        }
+        else
+        {
+            Editor.SyntaxHighlighting = null;
+            Editor.Options.ConvertTabsToSpaces = false;
+            _diagnosticRenderer.UpdateDiagnostics([]);
+        }
+
+        ApplyPendingNavigation(document);
+        ReportCaret();
+    }
+
+    private void EditorDocumentHost_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (_document is null && DataContext is DocumentTabViewModel document)
+        {
+            AttachDocument(document);
+        }
+    }
+
+    private void EditorDocumentHost_Unloaded(object sender, RoutedEventArgs e)
+    {
+        // A tab content presenter can unload and later reload the same control. Only detach
+        // subscriptions to the external view-model here; the renderer belongs to this control's
+        // own visual tree and remains valid if WPF reloads it.
+        DetachDocument();
+        _diagnosticRenderer.UpdateDiagnostics([]);
+    }
+
+    private void DetachDocument()
+    {
+        if (_document is null)
+        {
+            return;
+        }
+
+        _document.DiagnosticsChanged -= Document_DiagnosticsChanged;
+        _document.NavigationRequested -= Document_NavigationRequested;
+        _document = null;
+    }
+
+    private void Document_DiagnosticsChanged(object? sender, EventArgs e)
+    {
+        if (sender is DocumentTabViewModel document && ReferenceEquals(document, _document))
+        {
+            _diagnosticRenderer.UpdateDiagnostics(document.Diagnostics);
+        }
+    }
+
+    private void Document_NavigationRequested(object? sender, DocumentNavigationRequestedEventArgs e)
+    {
+        if (sender is DocumentTabViewModel document && ReferenceEquals(document, _document))
+        {
+            NavigateTo(e.Range);
+            _ = document.TakePendingNavigation();
+        }
+    }
+
+    private void ApplyPendingNavigation(DocumentTabViewModel document)
+    {
+        if (document.TakePendingNavigation() is { } pending)
+        {
+            NavigateTo(pending);
+        }
+    }
+
+    private void NavigateTo(SourceRange range)
+    {
+        if (!DiagnosticRenderer.TryGetOffsetRange(Editor.Document, range, out var startOffset, out var length))
+        {
+            return;
+        }
+
+        Editor.Select(startOffset, length);
+        Editor.TextArea.Caret.Offset = startOffset;
+        var location = Editor.Document.GetLocation(startOffset);
+        Editor.ScrollTo(location.Line, location.Column);
+        Editor.TextArea.Caret.BringCaretToView();
+        Editor.Focus();
     }
 
     private void Caret_PositionChanged(object? sender, EventArgs e) => ReportCaret();

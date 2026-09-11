@@ -1,9 +1,15 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using ICSharpCode.AvalonEdit.Document;
+using RocketIDE.Core.Diagnostics;
 using RocketIDE.Core.Documents;
 
 namespace RocketIDE.App.ViewModels;
+
+public sealed class DocumentNavigationRequestedEventArgs(SourceRange range) : EventArgs
+{
+    public SourceRange Range { get; } = range ?? throw new ArgumentNullException(nameof(range));
+}
 
 public sealed class DocumentTabViewModel : INotifyPropertyChanged
 {
@@ -12,6 +18,9 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
     private bool _suppressEditorDocumentChange;
     private int _caretLine = 1;
     private int _caretColumn = 1;
+    private IReadOnlyList<RocketDiagnostic> _diagnostics = [];
+    private LiveDiagnosticDocumentState _diagnosticState = LiveDiagnosticDocumentState.Offline;
+    private SourceRange? _pendingNavigation;
 
     public DocumentTabViewModel(IDocumentStore documentStore, DocumentSnapshot snapshot)
     {
@@ -25,6 +34,10 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public event EventHandler? CaretChanged;
+
+    public event EventHandler? DiagnosticsChanged;
+
+    public event EventHandler<DocumentNavigationRequestedEventArgs>? NavigationRequested;
 
     public DocumentId Id => _snapshot.Id;
 
@@ -47,6 +60,10 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
     public int CaretColumn => _caretColumn;
 
     public TextDocument EditorDocument { get; }
+
+    public IReadOnlyList<RocketDiagnostic> Diagnostics => _diagnostics;
+
+    public LiveDiagnosticDocumentState DiagnosticState => _diagnosticState;
 
     public void UpdateSnapshot(DocumentSnapshot snapshot)
     {
@@ -94,6 +111,30 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(CaretLine));
         OnPropertyChanged(nameof(CaretColumn));
         CaretChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void SetDiagnostics(IReadOnlyList<RocketDiagnostic> diagnostics, LiveDiagnosticDocumentState state)
+    {
+        ArgumentNullException.ThrowIfNull(diagnostics);
+        _diagnostics = diagnostics.ToArray();
+        _diagnosticState = state;
+        OnPropertyChanged(nameof(Diagnostics));
+        OnPropertyChanged(nameof(DiagnosticState));
+        DiagnosticsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void RequestNavigation(SourceRange range)
+    {
+        ArgumentNullException.ThrowIfNull(range);
+        _pendingNavigation = range;
+        NavigationRequested?.Invoke(this, new DocumentNavigationRequestedEventArgs(range));
+    }
+
+    public SourceRange? TakePendingNavigation()
+    {
+        var pending = _pendingNavigation;
+        _pendingNavigation = null;
+        return pending;
     }
 
     private void EditorDocument_Changed(object? sender, DocumentChangeEventArgs e)

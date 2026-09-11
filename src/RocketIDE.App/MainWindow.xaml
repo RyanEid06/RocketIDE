@@ -173,7 +173,81 @@
                 </Grid>
                 <GridSplitter Grid.Row="1" Height="5" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ResizeDirection="Rows" />
                 <TabControl x:Name="BottomTabs" Grid.Row="2">
-                    <TabItem Header="PROBLEMS"><TextBlock Margin="12" Text="Live Rocket diagnostics begin in IDE-WP07." Foreground="{DynamicResource IDE.TextMutedBrush}" /></TabItem>
+                    <TabItem Header="{Binding Problems.HeaderText}">
+                        <Grid Margin="8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <DockPanel Grid.Row="0" Margin="0,0,0,6" LastChildFill="True">
+                                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <CheckBox Margin="2,0,10,0" Content="Errors" IsChecked="{Binding Problems.ShowErrors}" />
+                                    <CheckBox Margin="0,0,10,0" Content="Warnings" IsChecked="{Binding Problems.ShowWarnings}" />
+                                    <CheckBox Margin="0,0,10,0" Content="Info" IsChecked="{Binding Problems.ShowInformation}" />
+                                    <CheckBox Margin="0,0,14,0" Content="Hints" IsChecked="{Binding Problems.ShowHints}" />
+                                    <CheckBox Margin="0,0,14,0" Content="Group by file" IsChecked="{Binding Problems.GroupByFile}" />
+                                </StackPanel>
+                                <TextBox MinWidth="160" MaxWidth="320" Margin="6,0,2,0" Padding="5,2"
+                                         Text="{Binding Problems.FilterText, UpdateSourceTrigger=PropertyChanged}"
+                                         ToolTip="Filter Problems by code, message, source, or file" />
+                            </DockPanel>
+                            <ListView x:Name="ProblemsList" Grid.Row="1" ItemsSource="{Binding Problems.ItemsView}"
+                                      BorderThickness="0" Background="Transparent"
+                                      Foreground="{DynamicResource IDE.TextBrush}"
+                                      MouseDoubleClick="ProblemsList_MouseDoubleClick"
+                                      PreviewKeyDown="ProblemsList_PreviewKeyDown">
+                                <ListView.GroupStyle>
+                                    <GroupStyle>
+                                        <GroupStyle.HeaderTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Margin="4,5,4,2" FontWeight="SemiBold" Foreground="{DynamicResource IDE.TextBrush}" Text="{Binding Name}" />
+                                            </DataTemplate>
+                                        </GroupStyle.HeaderTemplate>
+                                    </GroupStyle>
+                                </ListView.GroupStyle>
+                                <ListView.View>
+                                    <GridView AllowsColumnReorder="True">
+                                        <GridViewColumn Header="Severity" Width="80">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding SeverityText}" FontWeight="SemiBold">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="{x:Type TextBlock}">
+                                                                <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding SeverityText}" Value="Error">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource IDE.ErrorBrush}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding SeverityText}" Value="Warning">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource IDE.WarningBrush}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding SeverityText}" Value="Information">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource IDE.InfoBrush}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding SeverityText}" Value="Hint">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource IDE.TextMutedBrush}" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Header="Code" Width="72" DisplayMemberBinding="{Binding Code}" />
+                                        <GridViewColumn Header="Message" Width="360" DisplayMemberBinding="{Binding Message}" />
+                                        <GridViewColumn Header="File" Width="160" DisplayMemberBinding="{Binding FileName}" />
+                                        <GridViewColumn Header="Line" Width="52" DisplayMemberBinding="{Binding Line}" />
+                                        <GridViewColumn Header="Col" Width="48" DisplayMemberBinding="{Binding Column}" />
+                                        <GridViewColumn Header="Source" Width="110" DisplayMemberBinding="{Binding SourceText}" />
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                            <TextBlock Grid.Row="2" Margin="4,5,4,0" Foreground="{DynamicResource IDE.TextMutedBrush}" FontSize="11"
+                                       Text="{Binding Problems.StatusText}" />
+                        </Grid>
+                    </TabItem>
                     <TabItem Header="OUTPUT">
                         <Grid Margin="8">
                             <TextBlock Text="Rocket environment and language-server logs appear here. Compiler/program output is added in IDE-WP10." Foreground="{DynamicResource IDE.TextMutedBrush}" Margin="4,2,4,6" VerticalAlignment="Top" />

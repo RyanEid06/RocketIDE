@@ -2,9 +2,11 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
+             xmlns:diagnostics="clr-namespace:RocketIDE.Core.Diagnostics;assembly=RocketIDE.Core"
              Background="{DynamicResource IDE.EditorBrush}">
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
@@ -62,8 +64,29 @@
             </StackPanel>
         </Border>
 
+        <Border Grid.Row="1"
+                Margin="0"
+                Padding="10,6"
+                Background="{DynamicResource IDE.ChromeRaisedBrush}"
+                BorderBrush="{DynamicResource IDE.WarningBrush}"
+                BorderThickness="0,0,0,1">
+            <Border.Style>
+                <Style TargetType="{x:Type Border}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding DiagnosticState}" Value="{x:Static diagnostics:LiveDiagnosticDocumentState.Unsupported}">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <TextBlock Foreground="{DynamicResource IDE.WarningBrush}"
+                       TextWrapping="Wrap"
+                       Text="Live diagnostics are unavailable for this file because it exceeds Rocket's 4 MiB LSP document limit. Editing and saving remain available." />
+        </Border>
+
         <avalonEdit:TextEditor x:Name="Editor"
-                               Grid.Row="1"
+                               Grid.Row="2"
                                Background="{DynamicResource IDE.EditorBrush}"
                                Foreground="{DynamicResource IDE.TextBrush}"
                                LineNumbersForeground="{DynamicResource IDE.TextMutedBrush}"

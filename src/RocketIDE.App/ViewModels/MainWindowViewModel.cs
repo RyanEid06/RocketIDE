@@ -1,9 +1,13 @@
-using RocketIDE.Core.Workspaces;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
-using RocketIDE.Core.Documents;
 using RocketIDE.App.ViewModels.Explorer;
+using RocketIDE.Core.Diagnostics;
+using RocketIDE.Core.Documents;
+using RocketIDE.Core.Workspaces;
+using RocketIDE.Rocket.Diagnostics;
 
 namespace RocketIDE.App.ViewModels;
 
@@ -20,6 +24,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     {
         ArgumentNullException.ThrowIfNull(workspaceFileSystem);
         Explorer = new WorkspaceExplorerViewModel(workspaceFileSystem);
+        Problems = new ProblemsViewModel();
         Explorer.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName == nameof(WorkspaceExplorerViewModel.HasWorkspace))
@@ -27,7 +32,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(HasWorkspace));
             }
         };
-        Documents.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasDocuments));
+        Problems.Changed += Problems_Changed;
+        Documents.CollectionChanged += Documents_CollectionChanged;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -35,6 +41,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public ObservableCollection<DocumentTabViewModel> Documents { get; } = new();
 
     public WorkspaceExplorerViewModel Explorer { get; }
+
+    public ProblemsViewModel Problems { get; }
 
     public ObservableCollection<string> RecentWorkspaces { get; } = new();
 
@@ -119,7 +127,25 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         return tab;
     }
 
+    public void ApplyDiagnosticPublication(RocketDiagnosticPublication publication) =>
+        Problems.ApplyPublication(publication);
 
+    public void BeginDiagnosticSession(long generation, bool isOnline) =>
+        Problems.BeginSession(generation, isOnline);
+
+    public void SetDocumentDiagnosticSupport(string path, int version, bool isSupported)
+    {
+        var fullPath = Path.GetFullPath(path);
+        var document = Documents.FirstOrDefault(tab =>
+            IsRocketPath(tab.Path) &&
+            string.Equals(Path.GetFullPath(tab.Path), fullPath, PathComparison));
+        if (document is null || document.Version != version)
+        {
+            return;
+        }
+
+        Problems.TrackDocument(document.Path, version, isSupported);
+    }
 
     public void AppendOutput(string line)
     {
@@ -181,13 +207,70 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    private void Documents_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems is not null)
+        {
+            foreach (DocumentTabViewModel tab in e.OldItems)
+            {
+                tab.PropertyChanged -= Document_DiagnosticsPropertyChanged;
+                if (IsRocketPath(tab.Path))
+                {
+                    Problems.RemoveDocument(tab.Path);
+                }
+            }
+        }
+
+        if (e.NewItems is not null)
+        {
+            foreach (DocumentTabViewModel tab in e.NewItems)
+            {
+                tab.PropertyChanged += Document_DiagnosticsPropertyChanged;
+                if (IsRocketPath(tab.Path))
+                {
+                    Problems.TrackDocument(tab.Path, tab.Version, isSupported: true);
+                }
+            }
+        }
+
+        OnPropertyChanged(nameof(HasDocuments));
+    }
+
+    private void Document_DiagnosticsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is not DocumentTabViewModel tab ||
+            !IsRocketPath(tab.Path) ||
+            e.PropertyName != nameof(DocumentTabViewModel.Version))
+        {
+            return;
+        }
+
+        var isSupported = tab.DiagnosticState != LiveDiagnosticDocumentState.Unsupported;
+        Problems.TrackDocument(tab.Path, tab.Version, isSupported);
+    }
+
+    private void Problems_Changed(object? sender, EventArgs e)
+    {
+        foreach (var tab in Documents.Where(tab => IsRocketPath(tab.Path)))
+        {
+            tab.SetDiagnostics(Problems.GetCurrentDiagnostics(tab.Path), Problems.GetDocumentState(tab.Path));
+        }
+    }
+
+    private static bool IsRocketPath(string path) =>
+        string.Equals(Path.GetExtension(path), ".rocket", StringComparison.OrdinalIgnoreCase);
+
+    private static StringComparison PathComparison => OperatingSystem.IsWindows()
+        ? StringComparison.OrdinalIgnoreCase
+        : StringComparison.Ordinal;
+
     private static string NormalizeWorkspacePath(string path)
     {
-        var fullPath = System.IO.Path.GetFullPath(path);
-        var root = System.IO.Path.GetPathRoot(fullPath);
+        var fullPath = Path.GetFullPath(path);
+        var root = Path.GetPathRoot(fullPath);
         return string.Equals(fullPath, root, StringComparison.OrdinalIgnoreCase)
             ? fullPath
-            : fullPath.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
+            : fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }
 
     private void ActiveDocument_CaretChanged(object? sender, EventArgs e) => UpdateCaretStatus();
