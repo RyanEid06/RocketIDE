@@ -21,6 +21,8 @@ public partial class MainWindow
     private RocketToolSettings? _rocketToolSettings;
     private RocketSessionCoordinator _rocketSession = null!;
 
+    public IRocketEditorFeatureService RocketEditorFeatures => _rocketSession;
+
     private void InitializeRocketIntegration()
     {
         _rocketSession = new RocketSessionCoordinator(

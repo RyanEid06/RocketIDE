@@ -4,6 +4,11 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using ICSharpCode.AvalonEdit.Document;
+using RocketIDE.App.Editor.Completion;
+using RocketIDE.App.Editor.Hover;
+using RocketIDE.App.Editor.SemanticTokens;
+using RocketIDE.App.Editor.SignatureHelp;
+using RocketIDE.App.Integration;
 using RocketIDE.App.ViewModels;
 using RocketIDE.Core.Diagnostics;
 
@@ -12,12 +17,32 @@ namespace RocketIDE.App.Editor;
 public partial class EditorDocumentHost : UserControl
 {
     private readonly DiagnosticRenderer _diagnosticRenderer;
+    private readonly RocketCompletionController _completionController;
+    private readonly RocketHoverController _hoverController;
+    private readonly RocketSignatureHelpController _signatureHelpController;
+    private readonly RocketSemanticTokenController _semanticTokenController;
     private DocumentTabViewModel? _document;
+
+    public static readonly DependencyProperty FeatureServiceProperty = DependencyProperty.Register(
+        nameof(FeatureService),
+        typeof(IRocketEditorFeatureService),
+        typeof(EditorDocumentHost),
+        new PropertyMetadata(null, FeatureServiceChanged));
+
+    public IRocketEditorFeatureService? FeatureService
+    {
+        get => (IRocketEditorFeatureService?)GetValue(FeatureServiceProperty);
+        set => SetValue(FeatureServiceProperty, value);
+    }
 
     public EditorDocumentHost()
     {
         InitializeComponent();
         _diagnosticRenderer = new DiagnosticRenderer(Editor);
+        _completionController = new RocketCompletionController(Editor, () => FeatureService);
+        _hoverController = new RocketHoverController(Editor, () => FeatureService);
+        _signatureHelpController = new RocketSignatureHelpController(Editor, () => FeatureService);
+        _semanticTokenController = new RocketSemanticTokenController(Editor, () => FeatureService);
         DataContextChanged += OnDataContextChanged;
         Loaded += EditorDocumentHost_Loaded;
         Unloaded += EditorDocumentHost_Unloaded;
@@ -98,6 +123,7 @@ public partial class EditorDocumentHost : UserControl
 
             RocketIndentationStrategy.Configure(Editor);
             _diagnosticRenderer.UpdateDiagnostics(document.Diagnostics);
+            AttachRocketFeatures(document);
         }
         else
         {
@@ -129,6 +155,7 @@ public partial class EditorDocumentHost : UserControl
 
     private void DetachDocument()
     {
+        DetachRocketFeatures();
         if (_document is null)
         {
             return;
@@ -210,9 +237,34 @@ public partial class EditorDocumentHost : UserControl
     {
         if (DataContext is DocumentTabViewModel document &&
             IsRocketDocument(document) &&
-            EditorKeyBehavior.HandleTextInput(Editor, e.Text))
+            EditorKeyBehavior.HandleTextInput(Editor, e.Text, _signatureHelpController.NotifyHandledTextInput))
         {
             e.Handled = true;
+        }
+    }
+
+    private void AttachRocketFeatures(DocumentTabViewModel document)
+    {
+        _completionController.Attach(document);
+        _hoverController.Attach(document);
+        _signatureHelpController.Attach(document);
+        _semanticTokenController.Attach(document);
+    }
+
+    private void DetachRocketFeatures()
+    {
+        _completionController.Detach();
+        _hoverController.Detach();
+        _signatureHelpController.Detach();
+        _semanticTokenController.Detach();
+    }
+
+    private static void FeatureServiceChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
+    {
+        if (dependencyObject is EditorDocumentHost host && host._document is { } document && IsRocketDocument(document))
+        {
+            host.DetachRocketFeatures();
+            host.AttachRocketFeatures(document);
         }
     }
 

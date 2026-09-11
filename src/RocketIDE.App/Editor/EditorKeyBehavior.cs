@@ -6,7 +6,7 @@ namespace RocketIDE.App.Editor;
 
 public static class EditorKeyBehavior
 {
-    public static bool HandleTextInput(TextEditor editor, string text)
+    public static bool HandleTextInput(TextEditor editor, string text, Action<string>? handledTextInput = null)
     {
         ArgumentNullException.ThrowIfNull(editor);
         if (string.IsNullOrEmpty(text) || text.Length != 1)
@@ -20,6 +20,7 @@ public static class EditorKeyBehavior
             editor.Document.GetCharAt(editor.CaretOffset) == typed)
         {
             editor.CaretOffset++;
+            handledTextInput?.Invoke(text);
             return true;
         }
 
@@ -38,11 +39,14 @@ public static class EditorKeyBehavior
                 editor.Document.Replace(start, editor.SelectionLength, RocketEditorRules.WrapSelection(selected, typed));
                 editor.Select(start + 1, selected.Length);
                 editor.CaretOffset = start + 1 + selected.Length;
+                handledTextInput?.Invoke(text);
                 return true;
             }
 
-            editor.Document.Insert(editor.CaretOffset, string.Concat(typed, close.Value));
-            editor.CaretOffset++;
+            var insertionOffset = editor.CaretOffset;
+            editor.Document.Insert(insertionOffset, string.Concat(typed, close.Value));
+            editor.CaretOffset = insertionOffset + 1;
+            handledTextInput?.Invoke(text);
             return true;
         }
 

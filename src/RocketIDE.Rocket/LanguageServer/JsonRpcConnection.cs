@@ -230,7 +230,12 @@ public sealed class JsonRpcConnection : IAsyncDisposable
         await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            await LspFrameWriter.WriteAsync(_output, json, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            // Once an LSP frame starts writing, finish that frame atomically. A feature-level
+            // cancellation can arrive between the header and body writes; propagating that token
+            // into the stream would leave a truncated frame and desynchronize rocket-lsp. The
+            // request is still canceled immediately after the complete frame is published.
+            await LspFrameWriter.WriteAsync(_output, json, _disposeCts.Token).ConfigureAwait(false);
         }
         finally
         {

@@ -142,6 +142,41 @@ public sealed class JsonRpcConnectionTests
     }
 
     [TestMethod]
+    public async Task RequestAsync_CancellationDuringFrameWrite_CompletesFrameBeforeCancelingRequest()
+    {
+        await using var serverToClient = new AsyncByteStream();
+        await using var clientToServer = new PausingWriteStream();
+        await using var connection = new JsonRpcConnection(serverToClient, clientToServer);
+        using var cts = new CancellationTokenSource();
+
+        var requestTask = connection.RequestAsync<TestResult>(
+            "textDocument/completion",
+            new { value = 1 },
+            cts.Token);
+        await clientToServer.BodyWriteStarted.WaitAsync(TimeSpan.FromSeconds(2));
+
+        cts.Cancel();
+        try
+        {
+            Assert.IsFalse(
+                clientToServer.BodyWriteToken.IsCancellationRequested,
+                "Canceling a request must not cancel the stream write after an LSP frame header has been written.");
+        }
+        finally
+        {
+            clientToServer.ReleaseBodyWrite();
+        }
+
+        await Assert.ThrowsExactlyAsync<TaskCanceledException>(
+            async () => _ = await requestTask.WaitAsync(TimeSpan.FromSeconds(2)));
+
+        using var snapshot = new MemoryStream(clientToServer.Snapshot());
+        var request = await ReadJsonAsync(snapshot);
+        Assert.AreEqual("textDocument/completion", request.GetProperty("method").GetString());
+        Assert.AreEqual(JsonValueKind.Number, request.GetProperty("id").ValueKind);
+    }
+
+    [TestMethod]
     public async Task MalformedResponse_FailsTheMatchingPendingRequestInsteadOfLeavingItHung()
     {
         await using var serverToClient = new AsyncByteStream();
@@ -178,6 +213,77 @@ public sealed class JsonRpcConnectionTests
         LspFrameWriter.WriteAsync(stream, JsonSerializer.Serialize(value), CancellationToken.None);
 
     private sealed record TestResult(int Value);
+
+    private sealed class PausingWriteStream : Stream
+    {
+        private readonly MemoryStream _buffer = new();
+        private readonly object _sync = new();
+        private readonly TaskCompletionSource<bool> _bodyWriteStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<bool> _allowBodyWrite = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _writeCount;
+        private CancellationToken _bodyWriteToken;
+        private bool _disposed;
+
+        public Task BodyWriteStarted => _bodyWriteStarted.Task;
+        public CancellationToken BodyWriteToken => _bodyWriteToken;
+
+        public void ReleaseBodyWrite() => _allowBodyWrite.TrySetResult(true);
+
+        public byte[] Snapshot()
+        {
+            lock (_sync)
+            {
+                return _buffer.ToArray();
+            }
+        }
+
+        public override bool CanRead => false;
+        public override bool CanSeek => false;
+        public override bool CanWrite => !_disposed;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override void Flush() { }
+        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            var write = Interlocked.Increment(ref _writeCount);
+            if (write == 2)
+            {
+                _bodyWriteToken = cancellationToken;
+                _bodyWriteStarted.TrySetResult(true);
+                await _allowBodyWrite.Task.WaitAsync(cancellationToken);
+            }
+
+            lock (_sync)
+            {
+                _buffer.Write(buffer.Span);
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && !_disposed)
+            {
+                _disposed = true;
+                _allowBodyWrite.TrySetResult(true);
+                _buffer.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+            return ValueTask.CompletedTask;
+        }
+    }
 
     private sealed class AsyncByteStream : Stream
     {

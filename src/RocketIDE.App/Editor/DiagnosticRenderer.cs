@@ -127,31 +127,8 @@ public sealed class DiagnosticRenderer : IBackgroundRenderer, IDisposable
         _editor.TextArea.TextView.BackgroundRenderers.Remove(this);
     }
 
-    private static bool TryGetOffset(TextDocument document, int zeroBasedLine, int utf16Character, out int offset)
-    {
-        offset = 0;
-        if (zeroBasedLine < 0 || zeroBasedLine >= document.LineCount || utf16Character < 0)
-        {
-            return false;
-        }
-
-        var line = document.GetLineByNumber(zeroBasedLine + 1);
-        if (utf16Character > line.Length)
-        {
-            return false;
-        }
-
-        offset = line.Offset + utf16Character;
-        if (offset > line.Offset && offset < line.EndOffset &&
-            char.IsHighSurrogate(document.GetCharAt(offset - 1)) &&
-            char.IsLowSurrogate(document.GetCharAt(offset)))
-        {
-            offset = 0;
-            return false;
-        }
-
-        return true;
-    }
+    private static bool TryGetOffset(TextDocument document, int zeroBasedLine, int utf16Character, out int offset) =>
+        LspTextRangeMapper.TryGetOffset(document, zeroBasedLine, utf16Character, out offset);
 
     private void TextView_MouseHover(object sender, MouseEventArgs e)
     {

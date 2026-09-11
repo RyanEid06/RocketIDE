@@ -1,8 +1,11 @@
+using RocketIDE.Rocket.LanguageServer.Features;
+
 namespace RocketIDE.Rocket.LanguageServer;
 
 public interface IRocketLanguageClient : IAsyncDisposable
 {
     bool IsInitialized { get; }
+    RocketLanguageServerCapabilities Capabilities { get; }
     event EventHandler<RocketServerNotificationEventArgs>? NotificationReceived;
     event EventHandler<RocketTransportFaultedEventArgs>? Faulted;
     event EventHandler<string>? LogReceived;

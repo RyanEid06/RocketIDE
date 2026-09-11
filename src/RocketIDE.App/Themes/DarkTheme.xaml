@@ -29,6 +29,23 @@
     <SolidColorBrush x:Key="IDE.WarningBrush" Color="{StaticResource IDE.Color.Warning}" />
     <SolidColorBrush x:Key="IDE.InfoBrush" Color="{StaticResource IDE.Color.Info}" />
     <SolidColorBrush x:Key="IDE.SuccessBrush" Color="{StaticResource IDE.Color.Success}" />
+    <SolidColorBrush x:Key="IDE.Semantic.NamespaceBrush" Color="#FF4EC9B0" />
+    <SolidColorBrush x:Key="IDE.Semantic.TypeBrush" Color="#FF4EC9B0" />
+    <SolidColorBrush x:Key="IDE.Semantic.FunctionBrush" Color="#FFDCDCAA" />
+    <SolidColorBrush x:Key="IDE.Semantic.ParameterBrush" Color="#FF9CDCFE" />
+    <SolidColorBrush x:Key="IDE.Semantic.PropertyBrush" Color="#FF9CDCFE" />
+    <SolidColorBrush x:Key="IDE.Semantic.EnumMemberBrush" Color="#FF4FC1FF" />
+    <SolidColorBrush x:Key="IDE.Semantic.KeywordBrush" Color="#FFC586C0" />
+    <SolidColorBrush x:Key="IDE.Semantic.VariableBrush" Color="#FFD4D4D4" />
+
+    <Style TargetType="{x:Type ToolTip}">
+        <Setter Property="Background" Value="{DynamicResource IDE.ChromeRaisedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource IDE.BorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
 
     <Style TargetType="{x:Type Window}">
         <Setter Property="Background" Value="{DynamicResource IDE.WindowBrush}" />
@@ -379,8 +396,72 @@
     </Style>
 
     <Style TargetType="{x:Type TreeViewItem}">
+        <Style.Resources>
+            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="{StaticResource IDE.Color.Selection}" />
+            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="{StaticResource IDE.Color.Text}" />
+            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#FF22303D" />
+            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="{StaticResource IDE.Color.Text}" />
+        </Style.Resources>
         <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
         <Setter Property="Padding" Value="2" />
+    </Style>
+
+    <Style TargetType="{x:Type ListView}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource IDE.BorderBrush}" />
+    </Style>
+
+    <Style TargetType="{x:Type ListViewItem}">
+        <Style.Resources>
+            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="{StaticResource IDE.Color.Selection}" />
+            <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="{StaticResource IDE.Color.Text}" />
+            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#FF22303D" />
+            <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="{StaticResource IDE.Color.Text}" />
+        </Style.Resources>
+        <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="4,2" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListViewItem}">
+                    <Border x:Name="ItemBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <GridViewRowPresenter Content="{TemplateBinding Content}"
+                                              Columns="{Binding View.Columns, RelativeSource={RelativeSource AncestorType={x:Type ListView}}}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              SnapsToDevicePixels="True" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource IDE.HoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource IDE.SelectionBrush}" />
+                            <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{DynamicResource IDE.AccentBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="True" />
+                                <Condition Property="IsKeyboardFocusWithin" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="ItemBorder" Property="Background" Value="#FF22303D" />
+                            <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{DynamicResource IDE.BorderBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource IDE.TextBrush}" />
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style TargetType="{x:Type ScrollBar}">

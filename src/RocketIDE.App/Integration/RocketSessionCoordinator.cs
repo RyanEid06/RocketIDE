@@ -2,13 +2,15 @@ using System.IO;
 using RocketIDE.Infrastructure.Settings;
 using RocketIDE.Rocket.Diagnostics;
 using RocketIDE.Rocket.LanguageServer;
+using RocketIDE.Rocket.LanguageServer.Features;
+using RocketIDE.Rocket.LanguageServer.LspDtos;
 using RocketIDE.Rocket.Tools;
 
 namespace RocketIDE.App.Integration;
 
 public sealed record RocketSessionDocument(string Path, string Text, int Version, string DisplayName);
 
-public sealed class RocketSessionCoordinator : IAsyncDisposable
+public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFeatureService
 {
     private readonly Func<CancellationToken, Task<RocketToolSettings>> _settingsProvider;
     private readonly Func<RocketToolSettings, IRocketToolLocator> _locatorFactory;
@@ -21,6 +23,8 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
     private readonly SemaphoreSlim _gate = new(1, 1);
     private IRocketLanguageClient? _languageClient;
     private DocumentSynchronizer? _documentSynchronizer;
+    private SemanticTokensClient? _semanticTokensClient;
+    private readonly Dictionary<string, LspDocumentSyncState> _documentSyncStates = new(StringComparer.OrdinalIgnoreCase);
     private string? _workspacePath;
     private string? _lastDiscoveryProblem;
     private long _diagnosticGeneration;
@@ -51,6 +55,65 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
     public event EventHandler<RocketDiagnosticSessionChangedEventArgs>? DiagnosticSessionChanged;
     public event EventHandler<RocketDiagnosticsPublishedEventArgs>? DiagnosticsPublished;
     public event EventHandler<RocketDocumentSyncStateChangedEventArgs>? DocumentSyncStateChanged;
+
+    public IReadOnlyList<string> CompletionTriggerCharacters =>
+        _languageClient?.Capabilities.CompletionTriggerCharacters ?? Array.Empty<string>();
+
+    public IReadOnlyList<string> SignatureTriggerCharacters =>
+        _languageClient?.Capabilities.SignatureTriggerCharacters ?? Array.Empty<string>();
+
+    public IReadOnlyList<string> SignatureRetriggerCharacters =>
+        _languageClient?.Capabilities.SignatureRetriggerCharacters ?? Array.Empty<string>();
+
+    public Task<RocketCompletionResult?> RequestCompletionAsync(
+        string path,
+        LspPosition position,
+        string? triggerCharacter,
+        CancellationToken cancellationToken) =>
+        RequestFeatureAsync(
+            path,
+            capabilities => capabilities.SupportsCompletion,
+            (client, _) => new CompletionClient(client).RequestAsync(path, position, triggerCharacter, cancellationToken),
+            "completion",
+            cancellationToken);
+
+    public Task<RocketHover?> RequestHoverAsync(
+        string path,
+        LspPosition position,
+        CancellationToken cancellationToken) =>
+        RequestFeatureAsync(
+            path,
+            capabilities => capabilities.SupportsHover,
+            (client, _) => new HoverClient(client).RequestAsync(path, position, cancellationToken),
+            "hover",
+            cancellationToken);
+
+    public Task<RocketSignatureHelp?> RequestSignatureHelpAsync(
+        string path,
+        LspPosition position,
+        string? triggerCharacter,
+        bool isRetrigger,
+        CancellationToken cancellationToken) =>
+        RequestFeatureAsync(
+            path,
+            capabilities => capabilities.SupportsSignatureHelp,
+            (client, _) => new SignatureHelpClient(client).RequestAsync(path, position, triggerCharacter, isRetrigger, cancellationToken),
+            "signature help",
+            cancellationToken);
+
+    public Task<RocketSemanticTokensResult?> RequestSemanticTokensAsync(
+        string path,
+        CancellationToken cancellationToken) =>
+        RequestFeatureAsync(
+            path,
+            capabilities => capabilities.SupportsSemanticTokens,
+            (_, semanticTokens) => semanticTokens is null
+                ? Task.FromResult<RocketSemanticTokensResult?>(null)
+                : semanticTokens.RequestAsync(path, cancellationToken),
+            "semantic tokens",
+            cancellationToken);
+
+    public void InvalidateSemanticTokens(string path) => _semanticTokensClient?.Invalidate(path);
 
     public async Task EnsureAsync(string? activePath, string? workspacePath, CancellationToken cancellationToken)
     {
@@ -134,6 +197,8 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
             {
                 await _documentSynchronizer.CloseAsync(path, cancellationToken).ConfigureAwait(false);
             }
+            _documentSyncStates.Remove(path);
+            _semanticTokensClient?.Invalidate(path);
         }
         finally
         {
@@ -215,6 +280,10 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
             }
 
             _documentSynchronizer = new DocumentSynchronizer(client);
+            _semanticTokensClient = client.Capabilities.SupportsSemanticTokens
+                ? new SemanticTokensClient(client, client.Capabilities.SemanticTokenLegend, client.Capabilities.SupportsSemanticTokenDelta)
+                : null;
+            _documentSyncStates.Clear();
             _workspacePath = workspacePath;
             _lastDiscoveryProblem = null;
             _setLspStatus($"LSP: online ({discovery.LanguageServerVersion})");
@@ -229,6 +298,8 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
             {
                 _languageClient = null;
                 _documentSynchronizer = null;
+                _semanticTokensClient = null;
+                _documentSyncStates.Clear();
                 _workspacePath = null;
             }
             Unsubscribe(client);
@@ -244,6 +315,8 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
         var client = _languageClient;
         _languageClient = null;
         _documentSynchronizer = null;
+        _semanticTokensClient = null;
+        _documentSyncStates.Clear();
         _workspacePath = null;
         if (client is null)
         {
@@ -303,6 +376,12 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
 
     private void UpdateDocumentSyncState(RocketSessionDocument document, LspDocumentSyncState state)
     {
+        _documentSyncStates[document.Path] = state;
+        if (state != LspDocumentSyncState.Synchronized)
+        {
+            _semanticTokensClient?.Invalidate(document.Path);
+        }
+
         RaiseEventSafely(
             DocumentSyncStateChanged,
             new RocketDocumentSyncStateChangedEventArgs(document.Path, document.Version, state),
@@ -378,6 +457,8 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
 
             _languageClient = null;
             _documentSynchronizer = null;
+            _semanticTokensClient = null;
+            _documentSyncStates.Clear();
             _workspacePath = null;
             Unsubscribe(client);
             await client.DisposeAsync().ConfigureAwait(false);
@@ -393,6 +474,56 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable
             {
                 _gate.Release();
             }
+        }
+    }
+
+
+    private async Task<T?> RequestFeatureAsync<T>(
+        string path,
+        Func<RocketLanguageServerCapabilities, bool> capabilityPredicate,
+        Func<IRocketLanguageClient, SemanticTokensClient?, Task<T?>> request,
+        string featureName,
+        CancellationToken cancellationToken)
+        where T : class
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(capabilityPredicate);
+        ArgumentNullException.ThrowIfNull(request);
+
+        IRocketLanguageClient client;
+        SemanticTokensClient? semanticTokens;
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var candidate = _languageClient;
+            semanticTokens = _semanticTokensClient;
+            if (candidate is null || !candidate.IsInitialized ||
+                !_documentSyncStates.TryGetValue(path, out var syncState) ||
+                syncState != LspDocumentSyncState.Synchronized ||
+                !capabilityPredicate(candidate.Capabilities))
+            {
+                return null;
+            }
+            client = candidate;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+
+        try
+        {
+            var result = await request(client, semanticTokens).ConfigureAwait(false);
+            return ReferenceEquals(client, _languageClient) && client.IsInitialized ? result : null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is JsonRpcResponseException or LspProtocolException or IOException or InvalidOperationException or ObjectDisposedException)
+        {
+            _appendOutput($"Rocket LSP {featureName} request failed: {exception.Message}");
+            return null;
         }
     }
 

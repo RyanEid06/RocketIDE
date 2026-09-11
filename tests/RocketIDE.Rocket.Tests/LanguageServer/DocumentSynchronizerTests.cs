@@ -1,5 +1,6 @@
 using System.Text;
 using RocketIDE.Rocket.LanguageServer;
+using RocketIDE.Rocket.LanguageServer.Features;
 using RocketIDE.Rocket.LanguageServer.LspDtos;
 
 namespace RocketIDE.Rocket.Tests.LanguageServer;
@@ -81,6 +82,7 @@ public sealed class DocumentSynchronizerTests
     private sealed class RecordingClient : IRocketLanguageClient
     {
         public bool IsInitialized => true;
+        public RocketLanguageServerCapabilities Capabilities { get; } = RocketLanguageServerCapabilities.None;
         public List<(string Method, object? Parameters)> Notifications { get; } = new();
         public event EventHandler<RocketServerNotificationEventArgs>? NotificationReceived { add { } remove { } }
         public event EventHandler<RocketTransportFaultedEventArgs>? Faulted { add { } remove { } }

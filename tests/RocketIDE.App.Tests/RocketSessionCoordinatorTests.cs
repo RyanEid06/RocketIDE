@@ -5,6 +5,8 @@ using RocketIDE.Rocket.Diagnostics;
 using RocketIDE.App.Integration;
 using RocketIDE.Infrastructure.Settings;
 using RocketIDE.Rocket.LanguageServer;
+using RocketIDE.Rocket.LanguageServer.Features;
+using RocketIDE.Rocket.LanguageServer.LspDtos;
 using RocketIDE.Rocket.Tools;
 
 namespace RocketIDE.App.Tests;
@@ -216,6 +218,74 @@ public sealed class RocketSessionCoordinatorTests
     }
 
     [TestMethod]
+    public async Task FeatureRequest_UsesRealLspOnlyForSynchronizedSupportedDocument()
+    {
+        using var temp = new TempDirectory();
+        var source = Path.Combine(temp.Path, "main.rocket");
+        var fakeClient = new FakeLanguageClient
+        {
+            Capabilities = new RocketLanguageServerCapabilities(
+                true, ["."], false, false, [], [], false, false, SemanticTokenLegend.Empty),
+            RequestHandler = (method, _) => method == "textDocument/completion"
+                ? JsonDocument.Parse("""[{ "label": "launch", "kind": 3 }]""").RootElement.Clone()
+                : null,
+        };
+        var discovery = new RocketToolDiscoveryResult(
+            Path.Combine(temp.Path, "rocketc.exe"),
+            Path.Combine(temp.Path, "rocket-lsp.exe"),
+            "rocketc 2.1.0",
+            "rocket-lsp 1.0.0",
+            []);
+        await using var coordinator = CreateCoordinator(fakeClient, discovery);
+        await coordinator.EnsureAsync(source, temp.Path, CancellationToken.None);
+        await coordinator.OpenDocumentAsync(
+            new RocketSessionDocument(source, "fn main() -> Int:\n    return 0\n", 0, "main.rocket"),
+            CancellationToken.None);
+
+        var result = await coordinator.RequestCompletionAsync(
+            source,
+            new LspPosition(0, 2),
+            null,
+            CancellationToken.None);
+
+        Assert.IsNotNull(result);
+        Assert.AreEqual("launch", result.Items.Single().Label);
+        CollectionAssert.Contains(fakeClient.Requests.Select(request => request.Method).ToArray(), "textDocument/completion");
+    }
+
+    [TestMethod]
+    public async Task FeatureRequest_IsSuppressedForLargeUnsynchronizedDocument()
+    {
+        using var temp = new TempDirectory();
+        var source = Path.Combine(temp.Path, "large.rocket");
+        var fakeClient = new FakeLanguageClient
+        {
+            Capabilities = new RocketLanguageServerCapabilities(
+                true, ["."], false, false, [], [], false, false, SemanticTokenLegend.Empty),
+        };
+        var discovery = new RocketToolDiscoveryResult(
+            Path.Combine(temp.Path, "rocketc.exe"),
+            Path.Combine(temp.Path, "rocket-lsp.exe"),
+            "rocketc 2.1.0",
+            "rocket-lsp 1.0.0",
+            []);
+        await using var coordinator = CreateCoordinator(fakeClient, discovery);
+        await coordinator.EnsureAsync(source, temp.Path, CancellationToken.None);
+        await coordinator.OpenDocumentAsync(
+            new RocketSessionDocument(source, new string('x', (4 * 1024 * 1024) + 1), 0, "large.rocket"),
+            CancellationToken.None);
+
+        var result = await coordinator.RequestCompletionAsync(
+            source,
+            new LspPosition(0, 0),
+            null,
+            CancellationToken.None);
+
+        Assert.IsNull(result);
+        Assert.IsFalse(fakeClient.Requests.Any(request => request.Method == "textDocument/completion"));
+    }
+
+    [TestMethod]
     public async Task DocumentSynchronization_ReportsLargeFileSupportState()
     {
         using var temp = new TempDirectory();
@@ -275,8 +345,11 @@ public sealed class RocketSessionCoordinatorTests
     private sealed class FakeLanguageClient : IRocketLanguageClient
     {
         public bool IsInitialized { get; private set; }
+        public RocketLanguageServerCapabilities Capabilities { get; set; } = RocketLanguageServerCapabilities.None;
         public int DisposeCount { get; private set; }
+        public Func<string, object?, object?>? RequestHandler { get; init; }
         public List<(string Method, object? Parameters)> Notifications { get; } = new();
+        public List<(string Method, object? Parameters)> Requests { get; } = new();
 
         public event EventHandler<RocketServerNotificationEventArgs>? NotificationReceived;
         public event EventHandler<RocketTransportFaultedEventArgs>? Faulted;
@@ -292,8 +365,12 @@ public sealed class RocketSessionCoordinatorTests
             return Task.CompletedTask;
         }
 
-        public Task<TResponse?> RequestAsync<TResponse>(string method, object? parameters, CancellationToken cancellationToken) =>
-            Task.FromResult(default(TResponse));
+        public Task<TResponse?> RequestAsync<TResponse>(string method, object? parameters, CancellationToken cancellationToken)
+        {
+            Requests.Add((method, parameters));
+            var response = RequestHandler?.Invoke(method, parameters);
+            return Task.FromResult(response is TResponse typed ? typed : default);
+        }
 
         public Task NotifyAsync(string method, object? parameters, CancellationToken cancellationToken)
         {

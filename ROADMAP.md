@@ -40,8 +40,8 @@ Change only `Status`, `Completed`, and `Evidence` after the WP gate passes.
 | IDE-WP04 | Rocket syntax + editor ergonomics | DONE | 2026-09-10 | AvalonEdit XSHD/comment-regex regressions repaired with runtime `DocumentHighlighter` coverage; current Windows CI passed on commit `ee0ee1e`; real `.rocket` editing/highlighting smoke test passed |
 | IDE-WP05 | Rocket tool discovery + validation | DONE | 2026-09-10 | Local `verify.ps1` passed with 77/77 tests; Windows CI passed on commit `ee0ee1e`; real Rocket checkout smoke found `rocketc 2.1.0` and `rocket-lsp 1.0.0` without source edits |
 | IDE-WP06 | LSP transport + lifecycle | DONE | 2026-09-10 | Local `verify.ps1` passed with 77/77 tests; Windows CI passed on commit `ee0ee1e`; real `rocket-lsp 1.0.0` initialized, synchronized an open Rocket file, and shut down cleanly with no lingering process |
-| IDE-WP07 | Live diagnostics + Problems | READY |  | WP02 and WP06 dependencies satisfied |
-| IDE-WP08 | IntelliSense + semantic tokens | READY |  | WP02 and WP06 dependencies satisfied |
+| IDE-WP07 | Live diagnostics + Problems | DONE | 2026-09-11 | Windows verification passed; live `rocket-lsp` diagnostics, squiggles, Problems filtering/navigation, stale-version rejection, and offline clearing smoke-tested on commit `1b741bb`; GitHub CI green |
+| IDE-WP08 | IntelliSense + semantic tokens | DONE | 2026-09-11 | Windows verification passed with 164/164 tests; completion, hover, semantic-token presentation, dark popup/selection styling, cancellation/transport hardening, and standalone-file LSP stability smoke-tested; incomplete-call signature response is blocked by an upstream Rocket LSP limitation recorded below |
 | IDE-WP09 | Navigation + refactoring + fixes | READY |  | WP03 and WP06 dependencies satisfied |
 | IDE-WP10 | Check/build/run/test/output | READY |  | WP03 and WP05 dependencies satisfied |
 | IDE-WP11 | Search + productivity | READY |  | WP03 dependency satisfied |
@@ -56,7 +56,8 @@ Change only `Status`, `Completed`, and `Evidence` after the WP gate passes.
 
 Add missing compiler/LSP capabilities here instead of faking them in the IDE.
 
-_No requests recorded at baseline._
+- **LSP-PERF-01 — large-workspace interactive analysis:** `textDocument/didChange` currently causes broad workspace re-analysis in the full Rocket checkout (~239 files, observed ~20–25 s per analysis) and rapid edits can backlog obsolete work. Profile and optimize in the main Rocket repository without duplicating language intelligence in RocketIDE; target sub-second normal edit feedback while preserving full-analysis equivalence.
+- **LSP-SIG-01 — signature help for incomplete calls:** `textDocument/signatureHelp` should continue returning callable signature/active-parameter information while the user is in a temporarily invalid/incomplete call such as `print(|)`. RocketIDE's trigger/request/presentation path is implemented, but the current Rocket LSP can lose the callable information after semantic analysis reports the incomplete call.
 
 ---
 
@@ -444,16 +445,18 @@ public sealed record RocketDiagnostic(string Source, string Code, string Message
 
 ### Tasks
 
-- [ ] Map LSP severities and stable `Rdddd` codes without message-text parsing.
-- [ ] Key live diagnostics by document URI + server publication generation/current document version policy so stale results are not rendered over newer text.
-- [ ] Render error/warning/info squiggles without mutating document text.
-- [ ] Hovering a diagnostic decoration shows code + message + source.
-- [ ] Problems panel filters by severity and text, groups optionally by file, and displays file/line/column.
-- [ ] Double-click/Enter opens file and selects/navigates to range.
-- [ ] Closing a document honors Rocket's empty-diagnostics clear and removes stale display.
-- [ ] Show LSP disconnected/degraded state distinctly from "zero problems".
-- [ ] Test UTF-16 ranges involving surrogate pairs so line/column mapping does not drift.
-- [ ] Run verification and CI.
+- [x] Map LSP severities and stable `Rdddd` codes without message-text parsing.
+- [x] Key live diagnostics by document URI + server publication generation/current document version policy so stale results are not rendered over newer text.
+- [x] Render error/warning/info squiggles without mutating document text.
+- [x] Hovering a diagnostic decoration shows code + message + source.
+- [x] Problems panel filters by severity and text, groups optionally by file, and displays file/line/column.
+- [x] Double-click/Enter opens file and selects/navigates to range.
+- [x] Closing a document honors Rocket's empty-diagnostics clear and removes stale display.
+- [x] Show LSP disconnected/degraded state distinctly from "zero problems".
+- [x] Test UTF-16 ranges involving surrogate pairs so line/column mapping does not drift.
+- [x] Run verification and CI.
+
+**Completion note (2026-09-11):** live diagnostics were Windows-smoke-tested against the real Rocket workspace and standalone files, including unsaved edits, stale clearing, Problems navigation, squiggles, and distinct offline state. Explorer/Problems selected-state contrast regressions discovered during smoke testing were carried into WP08 theme hardening.
 
 **Acceptance:** intentionally invalid Rocket produces compiler-code-accurate live Problems entries and editor squiggles at the correct text.
 
@@ -475,17 +478,19 @@ public sealed record RocketDiagnostic(string Source, string Code, string Message
 
 ### Tasks
 
-- [ ] Implement completion request at caret with cancellation/debounce suitable for typing.
-- [ ] Render label/detail/documentation/kind and selected insertion text/textEdit correctly.
-- [ ] Apply additional text edits such as automatic import only after validating edits against open workspace/document bounds.
-- [ ] Implement Markdown hover rendering using a safe WPF presentation subset; do not execute HTML/scripts.
-- [ ] Make `rocket-doc://` links either resolve through a safe documentation handler or remain visibly copyable; never hand arbitrary schemes to the shell without validation.
-- [ ] Implement signature help with active signature/parameter highlighting and Rocket named/default parameter metadata as provided by server.
-- [ ] Implement semantic tokens full response decoding using server legend.
-- [ ] Implement semantic token delta updates with fallback to full when cache/result IDs are invalid.
-- [ ] Ensure semantic tokens overlay/augment basic syntax rather than leaving the file colorless when LSP disconnects.
-- [ ] Cancel stale completion/hover/signature requests when caret/document changes.
-- [ ] Run verification and CI.
+- [x] Implement completion request at caret with cancellation/debounce suitable for typing.
+- [x] Render label/detail/documentation/kind and selected insertion text/textEdit correctly.
+- [x] Apply additional text edits such as automatic import only after validating edits against open workspace/document bounds.
+- [x] Implement Markdown hover rendering using a safe WPF presentation subset; do not execute HTML/scripts.
+- [x] Make `rocket-doc://` links either resolve through a safe documentation handler or remain visibly copyable; never hand arbitrary schemes to the shell without validation.
+- [x] Implement signature help with active signature/parameter highlighting and Rocket named/default parameter metadata as provided by server.
+- [x] Implement semantic tokens full response decoding using server legend.
+- [x] Implement semantic token delta updates with fallback to full when cache/result IDs are invalid.
+- [x] Ensure semantic tokens overlay/augment basic syntax rather than leaving the file colorless when LSP disconnects.
+- [x] Cancel stale completion/hover/signature requests when caret/document changes.
+- [x] Run verification and CI.
+
+**Completion note (2026-09-11):** Windows verification passed with 164/164 tests and publish smoke. Real standalone-file smoke verified completion, hover, semantic coloring/fallback, readable dark completion and Problems selection UI, and stable LSP transport under rapid edits. Signature-help triggering/request/presentation is implemented and regression-tested, including auto-pair trigger forwarding; the current Rocket LSP does not reliably return a signature for an incomplete/temporarily invalid call such as `print(|)`, so that upstream limitation is tracked as `LSP-SIG-01` rather than reimplementing Rocket semantics in the IDE. Full-workspace latency is tracked separately as `LSP-PERF-01`.
 
 **Acceptance:** completions, hovers, signatures and semantic colors are driven by the real LSP and remain responsive under rapid typing.
 

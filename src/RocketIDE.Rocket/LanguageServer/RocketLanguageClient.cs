@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
+using RocketIDE.Rocket.LanguageServer.Features;
 using RocketIDE.Rocket.LanguageServer.LspDtos;
 
 namespace RocketIDE.Rocket.LanguageServer;
@@ -17,6 +18,7 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
 
     public bool IsInitialized => Volatile.Read(ref _initialized) != 0;
     public JsonElement? ServerCapabilities { get; private set; }
+    public RocketLanguageServerCapabilities Capabilities { get; private set; } = RocketLanguageServerCapabilities.None;
 
     public event EventHandler<RocketServerNotificationEventArgs>? NotificationReceived;
     public event EventHandler<RocketTransportFaultedEventArgs>? Faulted;
@@ -75,7 +77,50 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
                 {
                     general = new { positionEncodings = new[] { "utf-16" } },
                     workspace = new { workspaceFolders = true },
-                    textDocument = new { synchronization = new { dynamicRegistration = false, didSave = true } },
+                    textDocument = new
+                    {
+                        synchronization = new { dynamicRegistration = false, didSave = true },
+                        completion = new
+                        {
+                            contextSupport = true,
+                            completionItem = new
+                            {
+                                documentationFormat = new[] { "markdown", "plaintext" },
+                                snippetSupport = false,
+                                insertReplaceSupport = true,
+                            },
+                        },
+                        hover = new { contentFormat = new[] { "markdown", "plaintext" } },
+                        signatureHelp = new
+                        {
+                            contextSupport = true,
+                            signatureInformation = new
+                            {
+                                documentationFormat = new[] { "markdown", "plaintext" },
+                                activeParameterSupport = true,
+                                parameterInformation = new { labelOffsetSupport = true },
+                            },
+                        },
+                        semanticTokens = new
+                        {
+                            dynamicRegistration = false,
+                            requests = new { full = new { delta = true }, range = false },
+                            tokenTypes = new[]
+                            {
+                                "namespace", "type", "class", "enum", "interface", "struct", "typeParameter",
+                                "parameter", "variable", "property", "enumMember", "event", "function", "method",
+                                "macro", "keyword", "modifier", "comment", "string", "number", "regexp", "operator", "decorator",
+                            },
+                            tokenModifiers = new[]
+                            {
+                                "declaration", "definition", "readonly", "static", "deprecated", "abstract", "async",
+                                "modification", "documentation", "defaultLibrary",
+                            },
+                            formats = new[] { "relative" },
+                            overlappingTokenSupport = false,
+                            multilineTokenSupport = false,
+                        },
+                    },
                 },
                 workspaceFolders = new[]
                 {
@@ -87,6 +132,7 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
                 ?? throw new LspProtocolException("rocket-lsp returned a null initialize result.");
             ValidateServerCapabilities(result.Capabilities);
             ServerCapabilities = result.Capabilities.Clone();
+            Capabilities = RocketLanguageServerCapabilities.Parse(result.Capabilities);
             await connection.NotifyAsync("initialized", new { }, cancellationToken).ConfigureAwait(false);
             Volatile.Write(ref _initialized, 1);
         }
@@ -318,6 +364,7 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
     {
         Volatile.Write(ref _initialized, 0);
         ServerCapabilities = null;
+        Capabilities = RocketLanguageServerCapabilities.None;
         var connection = Interlocked.Exchange(ref _connection, null);
         if (connection is not null)
         {
