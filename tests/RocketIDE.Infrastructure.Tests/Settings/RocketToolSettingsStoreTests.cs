@@ -11,12 +11,14 @@ public sealed class RocketToolSettingsStoreTests
         using var temp = new TempDirectory();
         var path = Path.Combine(temp.Path, "rocket-tools.json");
         var store = new RocketToolSettingsStore(path);
-        var expected = new RocketToolSettings("C:\\sdk\\rocketc.exe", "D:\\rocket\\rocket-lsp.exe");
+        var expected = new RocketToolSettings("C:\\sdk\\rocketc.exe", "D:\\rocket\\rocket-lsp.exe", ["E:\\trusted\\Rocket"]);
 
         await store.SaveAsync(expected, CancellationToken.None);
         var actual = await store.LoadAsync(CancellationToken.None);
 
-        Assert.AreEqual(expected, actual);
+        Assert.AreEqual(expected.CompilerPath, actual.CompilerPath);
+        Assert.AreEqual(expected.LanguageServerPath, actual.LanguageServerPath);
+        CollectionAssert.AreEqual(expected.TrustedCheckoutRoots ?? [], actual.TrustedCheckoutRoots ?? []);
         Assert.IsTrue(File.Exists(path));
     }
 
@@ -31,7 +33,7 @@ public sealed class RocketToolSettingsStoreTests
         await store.ResetAsync(CancellationToken.None);
         var actual = await store.LoadAsync(CancellationToken.None);
 
-        Assert.AreEqual(RocketToolSettings.Automatic, actual);
+        Assert.IsTrue(actual.IsAutomatic);
         Assert.IsFalse(File.Exists(path));
     }
 
@@ -45,7 +47,7 @@ public sealed class RocketToolSettingsStoreTests
 
         var actual = await store.LoadAsync(CancellationToken.None);
 
-        Assert.AreEqual(RocketToolSettings.Automatic, actual);
+        Assert.IsTrue(actual.IsAutomatic);
     }
 
     private sealed class TempDirectory : IDisposable

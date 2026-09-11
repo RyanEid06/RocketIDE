@@ -12,7 +12,9 @@ public sealed class WorkspaceFileSystemTests
         Directory.CreateDirectory(Path.Combine(temp.Path, "src"));
         Directory.CreateDirectory(Path.Combine(temp.Path, ".git"));
         Directory.CreateDirectory(Path.Combine(temp.Path, "bin"));
+        Directory.CreateDirectory(Path.Combine(temp.Path, "out"));
         await File.WriteAllTextAsync(Path.Combine(temp.Path, "rocket.toml"), "[package]\nname = \"demo\"\n");
+        await File.WriteAllTextAsync(Path.Combine(temp.Path, "phase18_async.bootstrap.obj"), "generated");
 
         var entries = await new WorkspaceFileSystem().GetChildrenAsync(temp.Path, CancellationToken.None);
 
@@ -36,6 +38,32 @@ public sealed class WorkspaceFileSystemTests
         Assert.IsTrue(File.Exists(renamed));
         await Assert.ThrowsExactlyAsync<IOException>(
             () => service.CreateFileAsync(renamed, CancellationToken.None));
+    }
+
+    [TestMethod]
+    public void ResolveChildPath_RejectsTraversalAndNestedPathComponents()
+    {
+        using var temp = new TempDirectory();
+        var service = new WorkspaceFileSystem();
+
+        Assert.ThrowsExactly<ArgumentException>(() => service.ResolveChildPath(temp.Path, @"..\escape.rocket"));
+        Assert.ThrowsExactly<ArgumentException>(() => service.ResolveChildPath(temp.Path, "sub/file.rocket"));
+        Assert.ThrowsExactly<ArgumentException>(() => service.ResolveChildPath(temp.Path, ".."));
+        Assert.ThrowsExactly<ArgumentException>(() => service.ResolveChildPath(temp.Path, " padded.rocket "));
+        Assert.ThrowsExactly<ArgumentException>(() => service.ResolveChildPath(temp.Path, "trailing."));
+        Assert.ThrowsExactly<ArgumentException>(() => service.ResolveChildPath(temp.Path, "CON.rocket"));
+        Assert.ThrowsExactly<ArgumentException>(() => service.ResolveChildPath(temp.Path, "CON .rocket"));
+    }
+
+    [TestMethod]
+    public void ResolveChildPath_AcceptsSingleLeafInsideSelectedDirectory()
+    {
+        using var temp = new TempDirectory();
+        var service = new WorkspaceFileSystem();
+
+        var path = service.ResolveChildPath(temp.Path, "main.rocket");
+
+        Assert.AreEqual(Path.Combine(temp.Path, "main.rocket"), path);
     }
 
     private sealed class TempDirectory : IDisposable

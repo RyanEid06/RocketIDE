@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Microsoft.Win32;
 using RocketIDE.App.Editor;
 using RocketIDE.App.Interop;
@@ -21,7 +22,7 @@ namespace RocketIDE.App;
 public partial class MainWindow : Window
 {
     private readonly FileDocumentStore _documentStore = new();
-    private readonly WorkspaceFileSystem _workspaceFileSystem = new();
+    private readonly IWorkspaceFileSystem _workspaceFileSystem = new WorkspaceFileSystem();
     private readonly RocketTargetDiscovery _targetDiscovery = new();
     private readonly RecentWorkspaceStore _recentWorkspaceStore = RecentWorkspaceStore.CreateDefault();
     private readonly MainWindowViewModel _viewModel;
@@ -29,6 +30,7 @@ public partial class MainWindow : Window
     private WorkspaceFileWatcher? _workspaceWatcher;
     private ExplorerNodeViewModel? _selectedExplorerNode;
     private bool _allowWindowClose;
+    private bool _closePreparationInProgress;
 
     public MainWindow()
     {
@@ -106,21 +108,25 @@ public partial class MainWindow : Window
 
     private async Task OpenWorkspaceAsync(string path)
     {
+        WorkspaceFileWatcher? candidateWatcher = null;
         try
         {
-            DisposeWorkspaceWatcher();
+            candidateWatcher = new WorkspaceFileWatcher(path);
+            candidateWatcher.Start();
             await _viewModel.Explorer.OpenAsync(path, CancellationToken.None);
 
-            _workspaceWatcher = new WorkspaceFileWatcher(path);
+            var previousWatcher = _workspaceWatcher;
+            _workspaceWatcher = candidateWatcher;
+            candidateWatcher = null;
             _workspaceWatcher.ChangesAvailable += WorkspaceWatcher_ChangesAvailable;
-            _workspaceWatcher.Start();
+            DisposeWorkspaceWatcher(previousWatcher);
 
             _viewModel.AddRecentWorkspace(path);
             await PersistRecentWorkspacesAsync();
         }
         catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
         {
-            DisposeWorkspaceWatcher();
+            candidateWatcher?.Dispose();
             ShowFileError("Open folder failed", path, exception);
         }
     }
@@ -198,7 +204,15 @@ public partial class MainWindow : Window
                 return;
             }
 
-            path = Path.Combine(directory, dialog.Value);
+            try
+            {
+                path = _workspaceFileSystem.ResolveChildPath(directory, dialog.Value);
+            }
+            catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
+            {
+                ShowFileError("Create file failed", dialog.Value, exception);
+                return;
+            }
         }
 
         try
@@ -236,7 +250,17 @@ public partial class MainWindow : Window
             return;
         }
 
-        var path = Path.Combine(directory, dialog.Value);
+        string path;
+        try
+        {
+            path = _workspaceFileSystem.ResolveChildPath(directory, dialog.Value);
+        }
+        catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
+        {
+            ShowFileError("Create folder failed", dialog.Value, exception);
+            return;
+        }
+
         try
         {
             SuppressWorkspaceChange(path);
@@ -353,8 +377,17 @@ public partial class MainWindow : Window
         Process.Start(new ProcessStartInfo("explorer.exe", arguments) { UseShellExecute = true });
     }
 
-    private async void RefreshWorkspace_Click(object sender, RoutedEventArgs e) =>
-        await _viewModel.Explorer.RefreshAsync(CancellationToken.None);
+    private async void RefreshWorkspace_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await _viewModel.Explorer.RefreshAsync(CancellationToken.None);
+        }
+        catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
+        {
+            ShowFileError("Refresh workspace failed", _viewModel.Explorer.Workspace?.Path ?? "workspace", exception);
+        }
+    }
 
     private void ExplorerTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e) =>
         _selectedExplorerNode = e.NewValue as ExplorerNodeViewModel;
@@ -563,24 +596,47 @@ public partial class MainWindow : Window
             return;
         }
 
+        // WPF forbids calling Close() while the current Closing event is still being raised.
+        // Rocket shutdown can complete synchronously (especially when the LSP is offline), so
+        // always cancel this first close and schedule the final close on a later dispatcher turn.
         e.Cancel = true;
-        if (_viewModel.Documents.Any(document => document.IsDirty) &&
-            !await TryCloseTabsAsync(_viewModel.Documents.ToArray()))
+        if (_closePreparationInProgress)
         {
             return;
         }
 
+        _closePreparationInProgress = true;
         try
         {
-            await ShutdownRocketIntegrationAsync(CancellationToken.None);
+            if (_viewModel.Documents.Any(document => document.IsDirty) &&
+                !await TryCloseTabsAsync(_viewModel.Documents.ToArray()))
+            {
+                return;
+            }
+
+            try
+            {
+                await ShutdownRocketIntegrationAsync(CancellationToken.None);
+            }
+            catch (Exception exception) when (IsExpectedRocketIntegrationException(exception))
+            {
+                AppendRocketOutput($"Rocket LSP shutdown failed: {exception.Message}");
+            }
+
+            // Force at least one dispatcher turn even when shutdown completed synchronously.
+            // That guarantees the original Closing event has returned before Close() is called.
+            await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+            _allowWindowClose = true;
+            DisposeWorkspaceWatcher();
+            Close();
         }
-        catch (Exception exception) when (IsExpectedRocketIntegrationException(exception))
+        finally
         {
-            AppendRocketOutput($"Rocket LSP shutdown failed: {exception.Message}");
+            if (!_allowWindowClose)
+            {
+                _closePreparationInProgress = false;
+            }
         }
-        _allowWindowClose = true;
-        DisposeWorkspaceWatcher();
-        Close();
     }
 
     private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -677,7 +733,36 @@ public partial class MainWindow : Window
 
     private void WorkspaceWatcher_ChangesAvailable(object? sender, WorkspaceChangesEventArgs e)
     {
-        _ = Dispatcher.InvokeAsync(async () => await HandleWorkspaceChangesAsync(e.Changes));
+        // A notification can already be in flight when a workspace switch disposes the old
+        // watcher. Never apply stale structural/file events to the newly active workspace.
+        if (!ReferenceEquals(sender, _workspaceWatcher) || Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+        {
+            return;
+        }
+
+        try
+        {
+            _ = Dispatcher.InvokeAsync(() =>
+            {
+                // The helper catches/logs its own failures, so no faulted nested task is abandoned.
+                _ = HandleWorkspaceChangesSafelyAsync(e.Changes);
+            });
+        }
+        catch (InvalidOperationException) when (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+        {
+        }
+    }
+
+    private async Task HandleWorkspaceChangesSafelyAsync(IReadOnlyList<WorkspaceChange> changes)
+    {
+        try
+        {
+            await HandleWorkspaceChangesAsync(changes);
+        }
+        catch (Exception exception)
+        {
+            Trace.TraceError($"RocketIDE workspace watcher update failed: {exception}");
+        }
     }
 
     private async Task HandleWorkspaceChangesAsync(IReadOnlyList<WorkspaceChange> changes)
@@ -910,14 +995,20 @@ public partial class MainWindow : Window
 
     private void DisposeWorkspaceWatcher()
     {
-        if (_workspaceWatcher is null)
+        var watcher = _workspaceWatcher;
+        _workspaceWatcher = null;
+        DisposeWorkspaceWatcher(watcher);
+    }
+
+    private void DisposeWorkspaceWatcher(WorkspaceFileWatcher? watcher)
+    {
+        if (watcher is null)
         {
             return;
         }
 
-        _workspaceWatcher.ChangesAvailable -= WorkspaceWatcher_ChangesAvailable;
-        _workspaceWatcher.Dispose();
-        _workspaceWatcher = null;
+        watcher.ChangesAvailable -= WorkspaceWatcher_ChangesAvailable;
+        watcher.Dispose();
     }
 
     private static bool IsExpectedFileException(Exception exception) =>

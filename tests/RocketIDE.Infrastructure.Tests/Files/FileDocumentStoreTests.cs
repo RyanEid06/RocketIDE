@@ -92,6 +92,79 @@ public sealed class FileDocumentStoreTests
     }
 
     [TestMethod]
+    public async Task SaveAsync_EditDuringWriteAndUndoToOldBaselineRemainsDirtyAgainstPersistedDiskText()
+    {
+        var path = Path.Combine(_tempDirectory, "save-race.rocket");
+        await File.WriteAllTextAsync(path, "disk-v1", new UTF8Encoding(false));
+        var writeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWrite = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var store = new FileDocumentStore(async (target, bytes, cancellationToken) =>
+        {
+            writeStarted.TrySetResult();
+            await releaseWrite.Task.WaitAsync(cancellationToken);
+            await File.WriteAllBytesAsync(target, bytes, cancellationToken);
+        });
+        var opened = await store.OpenAsync(path, CancellationToken.None);
+        store.UpdateText(opened.Id, "saved-in-flight");
+
+        var saveTask = store.SaveAsync(opened.Id, overwriteExternalChanges: false, CancellationToken.None);
+        await writeStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        store.UpdateText(opened.Id, "disk-v1");
+        releaseWrite.TrySetResult();
+        var result = await saveTask;
+
+        Assert.AreEqual(DocumentSaveStatus.Saved, result.Status);
+        Assert.AreEqual("saved-in-flight", await File.ReadAllTextAsync(path));
+        Assert.AreEqual("disk-v1", result.Document.Text);
+        Assert.IsTrue(result.Document.IsDirty, "The editor buffer differs from what actually reached disk and must remain dirty.");
+    }
+
+    [TestMethod]
+    public async Task SaveAsync_SerializesConcurrentSavesForTheSameDocument()
+    {
+        var path = Path.Combine(_tempDirectory, "concurrent-save.rocket");
+        await File.WriteAllTextAsync(path, "disk-v1", new UTF8Encoding(false));
+        var firstWriteStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirstWrite = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondWriteStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var writeCount = 0;
+        var store = new FileDocumentStore(async (target, bytes, cancellationToken) =>
+        {
+            var call = Interlocked.Increment(ref writeCount);
+            if (call == 1)
+            {
+                firstWriteStarted.TrySetResult();
+                await releaseFirstWrite.Task.WaitAsync(cancellationToken);
+            }
+            else if (call == 2)
+            {
+                secondWriteStarted.TrySetResult();
+            }
+
+            await File.WriteAllBytesAsync(target, bytes, cancellationToken);
+        });
+        var opened = await store.OpenAsync(path, CancellationToken.None);
+        store.UpdateText(opened.Id, "save-one");
+
+        var firstSave = store.SaveAsync(opened.Id, overwriteExternalChanges: false, CancellationToken.None);
+        await firstWriteStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        store.UpdateText(opened.Id, "save-two");
+        var secondSave = store.SaveAsync(opened.Id, overwriteExternalChanges: false, CancellationToken.None);
+
+        Assert.IsFalse(secondWriteStarted.Task.IsCompleted, "The second save entered the writer before the first save released its document gate.");
+        Assert.AreEqual(1, Volatile.Read(ref writeCount), "The second save must wait until the first atomic replacement completes.");
+        releaseFirstWrite.TrySetResult();
+        await firstSave;
+        await secondWriteStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        var secondResult = await secondSave;
+
+        Assert.AreEqual(2, Volatile.Read(ref writeCount));
+        Assert.AreEqual("save-two", await File.ReadAllTextAsync(path));
+        Assert.AreEqual(DocumentSaveStatus.Saved, secondResult.Status);
+        Assert.IsFalse(secondResult.Document.IsDirty);
+    }
+
+    [TestMethod]
     public async Task Utf8BomIsPreservedAcrossSave()
     {
         var path = Path.Combine(_tempDirectory, "bom.rocket");

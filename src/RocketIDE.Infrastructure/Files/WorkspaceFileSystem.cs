@@ -3,7 +3,7 @@ using RocketIDE.Core.Workspaces;
 
 namespace RocketIDE.Infrastructure.Files;
 
-public sealed class WorkspaceFileSystem
+public sealed class WorkspaceFileSystem : IWorkspaceFileSystem
 {
     private static readonly HashSet<string> ExcludedDirectoryNames = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -12,6 +12,20 @@ public sealed class WorkspaceFileSystem
         ".vs",
         "bin",
         "obj",
+        "out",
+    };
+
+    private static readonly HashSet<string> ExcludedFileExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".obj",
+        ".o",
+    };
+
+    private static readonly HashSet<string> ReservedWindowsNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "CON", "PRN", "AUX", "NUL",
+        "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
     };
 
     public Task<IReadOnlyList<WorkspaceEntry>> GetChildrenAsync(string directoryPath, CancellationToken cancellationToken)
@@ -43,7 +57,13 @@ public sealed class WorkspaceFileSystem
             foreach (var file in Directory.EnumerateFiles(fullPath))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                entries.Add(new WorkspaceEntry(Path.GetFullPath(file), Path.GetFileName(file), IsDirectory: false, HasChildren: false));
+                var name = Path.GetFileName(file);
+                if (ShouldHideFile(name))
+                {
+                    continue;
+                }
+
+                entries.Add(new WorkspaceEntry(Path.GetFullPath(file), name, IsDirectory: false, HasChildren: false));
             }
 
             return entries
@@ -84,18 +104,34 @@ public sealed class WorkspaceFileSystem
         Directory.CreateDirectory(fullPath);
     }
 
+    public string ResolveChildPath(string directoryPath, string leafName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(directoryPath);
+        var directory = Path.GetFullPath(directoryPath);
+        if (!Directory.Exists(directory))
+        {
+            throw new DirectoryNotFoundException($"Directory '{directory}' does not exist.");
+        }
+
+        var safeName = ValidateLeafName(leafName, nameof(leafName));
+        var candidate = Path.GetFullPath(Path.Combine(directory, safeName));
+        var relative = Path.GetRelativePath(directory, candidate);
+        if (Path.IsPathRooted(relative) || relative.Equals("..", StringComparison.Ordinal) ||
+            relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) ||
+            relative.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal))
+        {
+            throw new ArgumentException("The name must stay inside the selected directory.", nameof(leafName));
+        }
+
+        return candidate;
+    }
+
     public string Rename(string path, string newName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        ArgumentException.ThrowIfNullOrWhiteSpace(newName);
-        if (newName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || newName is "." or "..")
-        {
-            throw new ArgumentException("The new name contains invalid file-name characters.", nameof(newName));
-        }
-
         var fullPath = Path.GetFullPath(path);
         var parent = Path.GetDirectoryName(fullPath) ?? throw new IOException($"Cannot determine the parent directory for '{fullPath}'.");
-        var destination = Path.Combine(parent, newName.Trim());
+        var destination = ResolveChildPath(parent, newName);
         if (File.Exists(destination) || Directory.Exists(destination))
         {
             throw new IOException($"'{destination}' already exists.");
@@ -136,7 +172,31 @@ public sealed class WorkspaceFileSystem
         throw new FileNotFoundException("The item to delete no longer exists.", fullPath);
     }
 
-    public static bool ShouldHideDirectory(string name) => ExcludedDirectoryNames.Contains(name);
+    private static string ValidateLeafName(string name, string parameterName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name, parameterName);
+        var trimmed = name.Trim();
+        var dotIndex = trimmed.IndexOf('.');
+        var deviceName = (dotIndex < 0 ? trimmed : trimmed[..dotIndex]).TrimEnd(' ', '.');
+        if (!string.Equals(trimmed, name, StringComparison.Ordinal) ||
+            trimmed is "." or ".." ||
+            trimmed.EndsWith('.') ||
+            ReservedWindowsNames.Contains(deviceName) ||
+            trimmed.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
+            trimmed.Contains(Path.DirectorySeparatorChar) ||
+            trimmed.Contains(Path.AltDirectorySeparatorChar) ||
+            !string.Equals(Path.GetFileName(trimmed), trimmed, StringComparison.Ordinal))
+        {
+            throw new ArgumentException("The name must be a single valid Windows file or folder name with no path components.", parameterName);
+        }
+
+        return trimmed;
+    }
+
+    internal static bool ShouldHideDirectory(string name) => ExcludedDirectoryNames.Contains(name);
+
+    internal static bool ShouldHideFile(string name) =>
+        ExcludedFileExtensions.Contains(Path.GetExtension(name));
 
     private static bool HasVisibleChildren(string directory)
     {
@@ -145,7 +205,9 @@ public sealed class WorkspaceFileSystem
             return Directory.EnumerateDirectories(directory)
                     .Select(Path.GetFileName)
                     .Any(name => !string.IsNullOrEmpty(name) && !ShouldHideDirectory(name)) ||
-                Directory.EnumerateFiles(directory).Any();
+                Directory.EnumerateFiles(directory)
+                    .Select(Path.GetFileName)
+                    .Any(name => !string.IsNullOrEmpty(name) && !ShouldHideFile(name));
         }
         catch (UnauthorizedAccessException)
         {

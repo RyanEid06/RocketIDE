@@ -37,10 +37,10 @@ Required standard capability consumers:
 - published diagnostics
 - incremental synchronization
 
-Rocket custom messages used by IDE:
+Rocket custom messages available to the IDE:
 
-- notification: `rocket/analysisStatus`
-- request: `rocket/projectStatus`
+- notification: `rocket/analysisStatus` — consumed by the current session-status path.
+- request: `rocket/projectStatus` — typed model available; request/consumer is added only when a later WP needs project-status data.
 
 Important semantic rule: `rocket-lsp` uses compiler lexer/parser/HIR/types and unsaved overlays. Do not duplicate that model in RocketIDE.
 
@@ -151,6 +151,12 @@ rocketc benchmark
 ```
 
 Exact flags must be verified against the active Rocket version before UI command construction is finalized.
+
+## Tool discovery and trust
+
+Trusted automatic tool sources are RocketIDE explicit settings, `ROCKET_COMPILER` / `ROCKET_LANGUAGE_SERVER`, process `PATH`, a bundled Rocket SDK, and a developer Rocket checkout discovered from RocketIDE's own installation location (specifically a sibling `Rocket` checkout beside a recognized `RocketIDE` / `RocketIDE-Build` directory). The installation-adjacent fallback is independent of the opened workspace and exists only to support development builds without machine-specific source changes.
+
+Build/package outputs discovered *from the opened checkout* are different: source-controlled content is untrusted, so RocketIDE must not probe or execute workspace-local `rocketc.exe` / `rocket-lsp.exe` merely because the workspace was opened. A checkout-local toolchain that is not the installation-adjacent developer SDK may be used only after the user explicitly trusts that exact checkout in Rocket SDK Settings. Trust is persisted per-user outside source control and must be revocable. This trust decision permits RocketIDE to probe/start the Rocket toolchain; it does **not** authorize running the user's Rocket program, package scripts, or arbitrary project executables.
 
 ## Existing Visual Studio code worth studying
 

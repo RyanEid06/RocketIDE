@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
+using RocketIDE.App.Integration;
 using RocketIDE.App.ViewModels;
 using RocketIDE.App.Views;
 using RocketIDE.Core.Documents;
@@ -16,16 +17,22 @@ namespace RocketIDE.App;
 public partial class MainWindow
 {
     private readonly RocketToolSettingsStore _rocketToolSettingsStore = RocketToolSettingsStore.CreateDefault();
-    private readonly SemaphoreSlim _rocketIntegrationGate = new(1, 1);
     private readonly Dictionary<DocumentId, bool> _documentDirtyStates = new();
     private RocketToolSettings? _rocketToolSettings;
-    private RocketLanguageClient? _languageClient;
-    private DocumentSynchronizer? _documentSynchronizer;
-    private string? _lspWorkspacePath;
-    private string? _lastDiscoveryProblem;
+    private RocketSessionCoordinator _rocketSession = null!;
 
     private void InitializeRocketIntegration()
     {
+        _rocketSession = new RocketSessionCoordinator(
+            GetRocketToolSettingsAsync,
+            CreateToolLocator,
+            static () => new RocketLanguageClient(),
+            GetOpenRocketSessionDocuments,
+            SetRocketSdkStatus,
+            SetLspStatus,
+            AppendRocketOutput,
+            ShowOutputPanel);
+        _rocketSession.NotificationReceived += RocketSession_NotificationReceived;
         _viewModel.Documents.CollectionChanged += Documents_CollectionChanged;
         _viewModel.Explorer.PropertyChanged += Explorer_RocketIntegrationPropertyChanged;
     }
@@ -67,23 +74,26 @@ public partial class MainWindow
         try
         {
             var settings = await GetRocketToolSettingsAsync(CancellationToken.None);
-            var dialog = new SettingsWindow(settings) { Owner = this };
+            var dialog = new SettingsWindow(settings, _viewModel.Explorer.Workspace?.Path) { Owner = this };
             if (dialog.ShowDialog() != true)
             {
                 return;
             }
 
-            if (dialog.Settings == RocketToolSettings.Automatic)
+            var updated = dialog.Settings;
+            if (updated.IsAutomatic)
             {
                 await _rocketToolSettingsStore.ResetAsync(CancellationToken.None);
             }
             else
             {
-                await _rocketToolSettingsStore.SaveAsync(dialog.Settings, CancellationToken.None);
+                await _rocketToolSettingsStore.SaveAsync(updated, CancellationToken.None);
             }
-            _rocketToolSettings = dialog.Settings;
+
+            _rocketToolSettings = updated;
             AppendRocketOutput("Rocket SDK settings updated. Tool discovery will use the new configuration.");
-            await RestartLanguageServerAsync(CancellationToken.None);
+            var activePath = GetRocketDiscoveryActivePath();
+            await _rocketSession.RestartAsync(activePath, GetLspWorkspacePath(activePath), CancellationToken.None);
         }
         catch (Exception exception) when (IsExpectedRocketIntegrationException(exception) || IsExpectedFileException(exception))
         {
@@ -95,9 +105,8 @@ public partial class MainWindow
     private async Task<RocketEnvironmentValidationResult> ValidateRocketEnvironmentAsync(CancellationToken cancellationToken)
     {
         var settings = await GetRocketToolSettingsAsync(cancellationToken);
-        var locator = CreateToolLocator(settings);
         var activePath = GetRocketDiscoveryActivePath();
-        var result = await new RocketEnvironmentValidator(locator).ValidateAsync(activePath, cancellationToken);
+        var result = await new RocketEnvironmentValidator(CreateToolLocator(settings)).ValidateAsync(activePath, cancellationToken);
 
         AppendRocketOutput("=== Rocket environment validation ===");
         if (result.Toolchain is { } toolchain)
@@ -106,12 +115,18 @@ public partial class MainWindow
             AppendRocketOutput($"Compiler version: {toolchain.CompilerVersion}");
             AppendRocketOutput($"Language server: {toolchain.LanguageServerPath}");
             AppendRocketOutput($"Language server version: {toolchain.LanguageServerVersion}");
-            _viewModel.RocketSdkStatus = $"Rocket SDK: {toolchain.CompilerVersion}";
+            SetRocketSdkStatus($"Rocket SDK: {toolchain.CompilerVersion}");
         }
+        else
+        {
+            SetRocketSdkStatus("Rocket SDK: not found");
+        }
+
         foreach (var problem in result.Problems)
         {
             AppendRocketOutput($"Problem: {problem}");
         }
+
         if (result.Problems.Count == 0)
         {
             AppendRocketOutput("Environment validation passed.");
@@ -120,11 +135,16 @@ public partial class MainWindow
         {
             ShowOutputPanel();
         }
+
         return result;
     }
 
-    private RocketToolLocator CreateToolLocator(RocketToolSettings settings) =>
-        new(new RocketToolDiscoveryOptions(settings.CompilerPath, settings.LanguageServerPath, AppContext.BaseDirectory));
+    private IRocketToolLocator CreateToolLocator(RocketToolSettings settings) =>
+        new RocketToolLocator(new RocketToolDiscoveryOptions(
+            settings.CompilerPath,
+            settings.LanguageServerPath,
+            AppContext.BaseDirectory,
+            settings.TrustedCheckoutRoots));
 
     private async Task<RocketToolSettings> GetRocketToolSettingsAsync(CancellationToken cancellationToken)
     {
@@ -147,7 +167,7 @@ public partial class MainWindow
                 {
                     tab.PropertyChanged -= RocketDocument_PropertyChanged;
                     _documentDirtyStates.Remove(tab.Id);
-                    await CloseRocketDocumentAsync(tab.Path, CancellationToken.None);
+                    await _rocketSession.CloseDocumentAsync(tab.Path, CancellationToken.None);
                 }
             }
 
@@ -157,18 +177,20 @@ public partial class MainWindow
                 {
                     _documentDirtyStates[tab.Id] = tab.IsDirty;
                     tab.PropertyChanged += RocketDocument_PropertyChanged;
-                    if (IsRocketPath(tab.Path))
+                    if (!IsRocketPath(tab.Path))
                     {
-                        await EnsureLanguageServerAsync(tab.Path, CancellationToken.None);
-                        await OpenRocketDocumentAsync(tab, CancellationToken.None);
+                        continue;
                     }
+
+                    await _rocketSession.EnsureAsync(tab.Path, GetLspWorkspacePath(tab.Path), CancellationToken.None);
+                    await _rocketSession.OpenDocumentAsync(ToSessionDocument(tab), CancellationToken.None);
                 }
             }
         }
         catch (Exception exception) when (IsExpectedRocketIntegrationException(exception))
         {
             AppendRocketOutput($"Rocket LSP document lifecycle failed: {exception.Message}");
-            _viewModel.LspStatus = "LSP: offline";
+            SetLspStatus("LSP: offline");
         }
     }
 
@@ -183,7 +205,7 @@ public partial class MainWindow
         {
             if (e.PropertyName == nameof(DocumentTabViewModel.Version))
             {
-                await ChangeRocketDocumentAsync(tab, CancellationToken.None);
+                await _rocketSession.ChangeDocumentAsync(ToSessionDocument(tab), CancellationToken.None);
             }
             else if (e.PropertyName == nameof(DocumentTabViewModel.IsDirty))
             {
@@ -191,256 +213,40 @@ public partial class MainWindow
                 _documentDirtyStates[tab.Id] = tab.IsDirty;
                 if (wasDirty && !tab.IsDirty)
                 {
-                    await SaveRocketDocumentAsync(tab.Path, CancellationToken.None);
+                    await _rocketSession.SaveDocumentAsync(tab.Path, CancellationToken.None);
                 }
             }
         }
         catch (Exception exception) when (IsExpectedRocketIntegrationException(exception))
         {
             AppendRocketOutput($"Rocket LSP document synchronization failed for '{tab.DisplayName}': {exception.Message}");
-            _viewModel.LspStatus = "LSP: degraded";
+            SetLspStatus("LSP: degraded");
         }
     }
 
     private async void Explorer_RocketIntegrationPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(RocketIDE.App.ViewModels.Explorer.WorkspaceExplorerViewModel.Workspace))
+        if (e.PropertyName != nameof(RocketIDE.App.ViewModels.Explorer.WorkspaceExplorerViewModel.Workspace))
         {
-            try
-            {
-                await RestartLanguageServerAsync(CancellationToken.None);
-            }
-            catch (Exception exception) when (IsExpectedRocketIntegrationException(exception))
-            {
-                AppendRocketOutput($"Rocket LSP workspace restart failed: {exception.Message}");
-                _viewModel.LspStatus = "LSP: offline";
-            }
+            return;
         }
-    }
 
-    private async Task EnsureLanguageServerAsync(string? activePath, CancellationToken cancellationToken)
-    {
-        await _rocketIntegrationGate.WaitAsync(cancellationToken);
         try
         {
-            var desiredWorkspace = GetLspWorkspacePath(activePath);
-            if (_languageClient is { IsInitialized: true } &&
-                string.Equals(_lspWorkspacePath, desiredWorkspace, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            await StopLanguageServerCoreAsync(cancellationToken);
-            await StartLanguageServerCoreAsync(activePath, desiredWorkspace, cancellationToken);
-        }
-        finally
-        {
-            _rocketIntegrationGate.Release();
-        }
-    }
-
-    private async Task RestartLanguageServerAsync(CancellationToken cancellationToken)
-    {
-        await _rocketIntegrationGate.WaitAsync(cancellationToken);
-        try
-        {
-            await StopLanguageServerCoreAsync(cancellationToken);
             var activePath = GetRocketDiscoveryActivePath();
-            var workspace = GetLspWorkspacePath(activePath);
-            if (workspace is not null)
-            {
-                await StartLanguageServerCoreAsync(activePath, workspace, cancellationToken);
-            }
+            await _rocketSession.RestartAsync(activePath, GetLspWorkspacePath(activePath), CancellationToken.None);
         }
-        finally
+        catch (Exception exception) when (IsExpectedRocketIntegrationException(exception))
         {
-            _rocketIntegrationGate.Release();
+            AppendRocketOutput($"Rocket LSP workspace restart failed: {exception.Message}");
+            SetLspStatus("LSP: offline");
         }
     }
 
-    private async Task StartLanguageServerCoreAsync(string? activePath, string? workspacePath, CancellationToken cancellationToken)
-    {
-        if (workspacePath is null)
-        {
-            _viewModel.LspStatus = "LSP: offline";
-            return;
-        }
+    private Task ShutdownRocketIntegrationAsync(CancellationToken cancellationToken) =>
+        _rocketSession.ShutdownAsync(cancellationToken);
 
-        var settings = await GetRocketToolSettingsAsync(cancellationToken);
-        var discovery = await CreateToolLocator(settings).DiscoverAsync(activePath, cancellationToken);
-        if (discovery.CompilerPath is not null && discovery.CompilerVersion is not null)
-        {
-            _viewModel.RocketSdkStatus = $"Rocket SDK: {discovery.CompilerVersion}";
-        }
-        else
-        {
-            _viewModel.RocketSdkStatus = "Rocket SDK: not found";
-        }
-
-        if (discovery.LanguageServerPath is null || discovery.LanguageServerVersion is null)
-        {
-            _viewModel.LspStatus = "LSP: offline";
-            var problem = string.Join(" ", discovery.Problems);
-            if (!string.Equals(_lastDiscoveryProblem, problem, StringComparison.Ordinal))
-            {
-                _lastDiscoveryProblem = problem;
-                foreach (var item in discovery.Problems)
-                {
-                    AppendRocketOutput($"Rocket tool discovery: {item}");
-                }
-                ShowOutputPanel();
-            }
-            return;
-        }
-
-        var client = new RocketLanguageClient();
-        client.LogReceived += LanguageClient_LogReceived;
-        client.NotificationReceived += LanguageClient_NotificationReceived;
-        try
-        {
-            _viewModel.LspStatus = "LSP: starting…";
-            await client.StartAsync(discovery.LanguageServerPath, workspacePath, cancellationToken);
-            _languageClient = client;
-            _documentSynchronizer = new DocumentSynchronizer(client);
-            _lspWorkspacePath = Path.GetFullPath(workspacePath);
-            _lastDiscoveryProblem = null;
-            _viewModel.LspStatus = $"LSP: online ({discovery.LanguageServerVersion})";
-            AppendRocketOutput($"rocket-lsp initialized: {discovery.LanguageServerVersion}");
-            AppendRocketOutput($"rocket-lsp path: {discovery.LanguageServerPath}");
-            await SyncAllOpenRocketDocumentsCoreAsync(cancellationToken);
-        }
-        catch
-        {
-            client.LogReceived -= LanguageClient_LogReceived;
-            client.NotificationReceived -= LanguageClient_NotificationReceived;
-            await client.DisposeAsync();
-            _viewModel.LspStatus = "LSP: offline";
-            throw;
-        }
-    }
-
-    private async Task StopLanguageServerCoreAsync(CancellationToken cancellationToken)
-    {
-        var client = _languageClient;
-        _languageClient = null;
-        _documentSynchronizer = null;
-        _lspWorkspacePath = null;
-        if (client is null)
-        {
-            return;
-        }
-
-        client.LogReceived -= LanguageClient_LogReceived;
-        client.NotificationReceived -= LanguageClient_NotificationReceived;
-        try
-        {
-            await client.StopAsync(cancellationToken);
-        }
-        finally
-        {
-            await client.DisposeAsync();
-            _viewModel.LspStatus = "LSP: offline";
-        }
-    }
-
-    private async Task SyncAllOpenRocketDocumentsCoreAsync(CancellationToken cancellationToken)
-    {
-        if (_documentSynchronizer is null)
-        {
-            return;
-        }
-
-        foreach (var tab in _viewModel.Documents.Where(tab => IsRocketPath(tab.Path)))
-        {
-            var state = await _documentSynchronizer.OpenAsync(tab.Path, tab.Text, tab.Version, cancellationToken);
-            UpdateLargeFileStatus(tab, state);
-        }
-    }
-
-    private async Task OpenRocketDocumentAsync(DocumentTabViewModel tab, CancellationToken cancellationToken)
-    {
-        await _rocketIntegrationGate.WaitAsync(cancellationToken);
-        try
-        {
-            if (_documentSynchronizer is null)
-            {
-                return;
-            }
-            var state = await _documentSynchronizer.OpenAsync(tab.Path, tab.Text, tab.Version, cancellationToken);
-            UpdateLargeFileStatus(tab, state);
-        }
-        finally
-        {
-            _rocketIntegrationGate.Release();
-        }
-    }
-
-    private async Task ChangeRocketDocumentAsync(DocumentTabViewModel tab, CancellationToken cancellationToken)
-    {
-        await _rocketIntegrationGate.WaitAsync(cancellationToken);
-        try
-        {
-            if (_documentSynchronizer is null)
-            {
-                return;
-            }
-            var state = await _documentSynchronizer.ChangeAsync(tab.Path, tab.Text, tab.Version, cancellationToken);
-            UpdateLargeFileStatus(tab, state);
-        }
-        finally
-        {
-            _rocketIntegrationGate.Release();
-        }
-    }
-
-    private async Task SaveRocketDocumentAsync(string path, CancellationToken cancellationToken)
-    {
-        await _rocketIntegrationGate.WaitAsync(cancellationToken);
-        try
-        {
-            if (_documentSynchronizer is not null)
-            {
-                await _documentSynchronizer.SaveAsync(path, cancellationToken);
-            }
-        }
-        finally
-        {
-            _rocketIntegrationGate.Release();
-        }
-    }
-
-    private async Task CloseRocketDocumentAsync(string path, CancellationToken cancellationToken)
-    {
-        await _rocketIntegrationGate.WaitAsync(cancellationToken);
-        try
-        {
-            if (_documentSynchronizer is not null)
-            {
-                await _documentSynchronizer.CloseAsync(path, cancellationToken);
-            }
-        }
-        finally
-        {
-            _rocketIntegrationGate.Release();
-        }
-    }
-
-    private async Task ShutdownRocketIntegrationAsync(CancellationToken cancellationToken)
-    {
-        await _rocketIntegrationGate.WaitAsync(cancellationToken);
-        try
-        {
-            await StopLanguageServerCoreAsync(cancellationToken);
-        }
-        finally
-        {
-            _rocketIntegrationGate.Release();
-        }
-    }
-
-    private void LanguageClient_LogReceived(object? sender, string line) => AppendRocketOutput($"[rocket-lsp] {line}");
-
-    private void LanguageClient_NotificationReceived(object? sender, RocketServerNotificationEventArgs e)
+    private void RocketSession_NotificationReceived(object? sender, RocketServerNotificationEventArgs e)
     {
         if (!string.Equals(e.Method, "rocket/analysisStatus", StringComparison.Ordinal))
         {
@@ -450,12 +256,10 @@ public partial class MainWindow
         try
         {
             var status = e.Parameters.Deserialize<RocketAnalysisStatus>(LspJson.Options);
-            if (status is null)
+            if (status is not null)
             {
-                return;
+                SetLspStatus($"LSP: online · {status.Files} files · {status.ElapsedMilliseconds} ms");
             }
-            _ = Dispatcher.InvokeAsync(() =>
-                _viewModel.LspStatus = $"LSP: online · {status.Files} files · {status.ElapsedMilliseconds} ms");
         }
         catch (JsonException exception)
         {
@@ -463,36 +267,42 @@ public partial class MainWindow
         }
     }
 
-    private void AppendRocketOutput(string line)
+    private IReadOnlyList<RocketSessionDocument> GetOpenRocketSessionDocuments() =>
+        _viewModel.Documents
+            .Where(tab => IsRocketPath(tab.Path))
+            .Select(ToSessionDocument)
+            .ToArray();
+
+    private static RocketSessionDocument ToSessionDocument(DocumentTabViewModel tab) =>
+        new(tab.Path, tab.Text, tab.Version, tab.DisplayName);
+
+    private void SetRocketSdkStatus(string status) => DispatchUi(() => _viewModel.RocketSdkStatus = status);
+
+    private void SetLspStatus(string status) => DispatchUi(() => _viewModel.LspStatus = status);
+
+    private void AppendRocketOutput(string line) => DispatchUi(() => _viewModel.AppendOutput(line));
+
+    private void ShowOutputPanel() => DispatchUi(() => BottomTabs.SelectedIndex = 1);
+
+    private void DispatchUi(Action action)
     {
+        if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+        {
+            return;
+        }
+
         if (Dispatcher.CheckAccess())
         {
-            _viewModel.AppendOutput(line);
+            action();
+            return;
         }
-        else
-        {
-            _ = Dispatcher.InvokeAsync(() => _viewModel.AppendOutput(line));
-        }
-    }
 
-    private void ShowOutputPanel()
-    {
-        if (Dispatcher.CheckAccess())
+        try
         {
-            BottomTabs.SelectedIndex = 1;
+            _ = Dispatcher.InvokeAsync(action);
         }
-        else
+        catch (InvalidOperationException) when (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
         {
-            _ = Dispatcher.InvokeAsync(() => BottomTabs.SelectedIndex = 1);
-        }
-    }
-
-    private void UpdateLargeFileStatus(DocumentTabViewModel tab, LspDocumentSyncState state)
-    {
-        if (state == LspDocumentSyncState.LargeFileUnsupportedByLsp)
-        {
-            _viewModel.LspStatus = $"LSP: large-file mode ({tab.DisplayName})";
-            AppendRocketOutput($"LSP disabled for '{tab.DisplayName}': document exceeds Rocket's 4 MiB open-document limit.");
         }
     }
 
@@ -517,10 +327,12 @@ public partial class MainWindow
         {
             return workspace.Path;
         }
+
         if (string.IsNullOrWhiteSpace(activePath))
         {
             return null;
         }
+
         var full = Path.GetFullPath(activePath);
         return Directory.Exists(full) ? full : Path.GetDirectoryName(full);
     }
@@ -530,5 +342,5 @@ public partial class MainWindow
 
     private static bool IsExpectedRocketIntegrationException(Exception exception) =>
         exception is IOException or UnauthorizedAccessException or InvalidOperationException or TimeoutException or
-        LspProtocolException or JsonRpcResponseException or System.ComponentModel.Win32Exception;
+        LspProtocolException or JsonRpcResponseException or ObjectDisposedException or System.ComponentModel.Win32Exception;
 }

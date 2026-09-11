@@ -82,6 +82,7 @@ RocketIDE/
       Views/
       ViewModels/
       Editor/
+      Integration/
       Themes/
     RocketIDE.Core/
       Documents/
@@ -330,6 +331,7 @@ public sealed record RocketToolchain(string CompilerPath, string LanguageServerP
 public interface IRocketToolLocator
 {
     Task<RocketToolchain?> LocateAsync(string? activePath, CancellationToken cancellationToken);
+    Task<RocketToolDiscoveryResult> DiscoverAsync(string? activePath, CancellationToken cancellationToken);
 }
 ```
 
@@ -345,12 +347,12 @@ public interface IRocketToolLocator
 - [x] Port discovery concepts from the Rocket Visual Studio reference; write tests using temporary fake executable files/paths instead of the developer machine.
 - [x] Support explicit settings and `ROCKET_COMPILER` / `ROCKET_LANGUAGE_SERVER`.
 - [x] Prefer an LSP sibling of the selected compiler when present.
-- [x] Support recognized active Rocket checkout build/package output candidates without hard-coded checkout paths.
+- [x] Support recognized Rocket checkout build/package output candidates without hard-coded checkout paths. Workspace-derived outputs require explicit per-user checkout trust; a development sibling `Rocket` SDK discovered solely beside a recognized RocketIDE installation directory is allowed as an independent trusted fallback. Merely opening source-controlled content never makes its binaries trusted.
 - [x] Support PATH lookup.
 - [x] Add bundled SDK candidate location under RocketIDE installation directory but do not require bundled SDK during development.
 - [x] Execute `--version` safely with timeout/cancellation and capture output.
 - [x] Add Tools > Validate Rocket Environment that displays selected paths, versions, and discovery problems in Output plus a user-facing summary.
-- [x] Add settings UI for compiler path, LSP path, automatic discovery reset, and optional pinned-repository environment loading only if the behavior is safely ported/tested.
+- [x] Add settings UI for compiler path, LSP path, discovery reset, and explicit trust/untrust of the current checkout. Trust is stored only in `%LOCALAPPDATA%` and never in source control.
 - [x] Run verification and CI.
 
 **Completion note (2026-09-10):** discovery/settings/version validation passed automated tests and real Windows smoke testing. With the Rocket checkout open, RocketIDE resolved `rocketc 2.1.0` and `rocket-lsp 1.0.0`, displayed a valid environment, and required no source-controlled machine path.
@@ -371,6 +373,9 @@ public interface IRocketToolLocator
 public interface IRocketLanguageClient : IAsyncDisposable
 {
     bool IsInitialized { get; }
+    event EventHandler<RocketServerNotificationEventArgs>? NotificationReceived;
+    event EventHandler<RocketTransportFaultedEventArgs>? Faulted;
+    event EventHandler<string>? LogReceived;
     Task StartAsync(string serverPath, string workspacePath, CancellationToken cancellationToken);
     Task<TResponse?> RequestAsync<TResponse>(string method, object? parameters, CancellationToken cancellationToken);
     Task NotifyAsync(string method, object? parameters, CancellationToken cancellationToken);
@@ -405,7 +410,7 @@ Implementation may introduce typed higher-level methods later, but transport rem
 - [x] Never send a source document >4 MiB. Expose a typed `LargeFileUnsupportedByLsp` state before transport.
 - [x] Implement `$/cancelRequest` for cancelled outstanding requests when appropriate.
 - [x] Implement `workspace/didChangeConfiguration` for current Rocket max project files/bytes and telemetry settings if exposed by IDE.
-- [x] Implement `rocket/projectStatus` and `rocket/analysisStatus` parsing into typed status models.
+- [x] Add typed models for `rocket/projectStatus` and `rocket/analysisStatus`; consume `rocket/analysisStatus` in the session status path. A `rocket/projectStatus` request/consumer is deferred until a later WP actually needs project-status data.
 - [x] Run all transport tests repeatedly to expose race/flakiness.
 - [x] Optional real-tool integration smoke: initialize current `rocket-lsp`, open a fixture, receive response, clean shutdown.
 - [x] Run verification and CI.

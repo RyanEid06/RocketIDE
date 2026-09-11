@@ -46,7 +46,7 @@ public sealed class RocketToolSettingsStore
     public async Task SaveAsync(RocketToolSettings settings, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        if (settings == RocketToolSettings.Automatic)
+        if (settings.IsAutomatic)
         {
             await ResetAsync(cancellationToken).ConfigureAwait(false);
             return;

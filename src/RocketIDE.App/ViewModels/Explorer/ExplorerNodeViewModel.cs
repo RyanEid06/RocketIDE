@@ -2,18 +2,17 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using RocketIDE.Core.Workspaces;
-using RocketIDE.Infrastructure.Files;
 
 namespace RocketIDE.App.ViewModels.Explorer;
 
 public sealed class ExplorerNodeViewModel : INotifyPropertyChanged
 {
-    private readonly WorkspaceFileSystem _fileSystem;
+    private readonly IWorkspaceFileSystem _fileSystem;
     private bool _isExpanded;
     private bool _isLoaded;
     private bool _isLoading;
 
-    public ExplorerNodeViewModel(WorkspaceFileSystem fileSystem, WorkspaceEntry entry)
+    public ExplorerNodeViewModel(IWorkspaceFileSystem fileSystem, WorkspaceEntry entry)
     {
         _fileSystem = fileSystem;
         Entry = entry;
@@ -23,7 +22,7 @@ public sealed class ExplorerNodeViewModel : INotifyPropertyChanged
         }
     }
 
-    private ExplorerNodeViewModel(WorkspaceFileSystem fileSystem)
+    private ExplorerNodeViewModel(IWorkspaceFileSystem fileSystem)
     {
         _fileSystem = fileSystem;
         Entry = new WorkspaceEntry(string.Empty, string.Empty, IsDirectory: false, HasChildren: false);
@@ -142,7 +141,7 @@ public sealed class ExplorerNodeViewModel : INotifyPropertyChanged
         }
     }
 
-    private static ExplorerNodeViewModel CreatePlaceholder(WorkspaceFileSystem fileSystem) => new(fileSystem);
+    private static ExplorerNodeViewModel CreatePlaceholder(IWorkspaceFileSystem fileSystem) => new(fileSystem);
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

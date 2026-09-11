@@ -16,6 +16,22 @@ try {
     }
     Write-Host "Using .NET SDK $dotnetVersion"
 
+    Write-Host '== RocketIDE clean generated build state =='
+    # Patch ZIP extraction can preserve source timestamps older than an existing incremental build.
+    # Clean only each MSBuild project's own bin/obj directories so verification cannot reuse stale
+    # outputs while still leaving any intentionally named test-fixture directories alone.
+    $projectDirectories = Get-ChildItem -Path (Join-Path $repo 'src'), (Join-Path $repo 'tests') -Filter '*.csproj' -File -Recurse |
+        ForEach-Object { $_.Directory.FullName } |
+        Sort-Object -Unique
+    foreach ($projectDirectory in $projectDirectories) {
+        foreach ($generatedName in @('bin', 'obj')) {
+            $generatedPath = Join-Path $projectDirectory $generatedName
+            if (Test-Path -LiteralPath $generatedPath) {
+                Remove-Item -LiteralPath $generatedPath -Recurse -Force
+            }
+        }
+    }
+
     Write-Host '== RocketIDE restore =='
     dotnet restore .\RocketIDE.sln
     if ($LASTEXITCODE -ne 0) { throw 'Solution restore failed.' }

@@ -308,19 +308,21 @@ Search order follows proven Rocket integration concepts:
 ### Compiler
 1. RocketIDE explicit setting.
 2. `ROCKET_COMPILER` environment variable.
-3. active Rocket checkout known build/package outputs where safely discoverable.
+3. known build/package outputs from an active Rocket checkout **only when that exact checkout was explicitly trusted by the user**.
 4. `PATH`.
 5. bundled SDK path when distributed with RocketIDE.
+6. development-only sibling `Rocket` checkout discovered beside a recognized `RocketIDE` / `RocketIDE-Build` installation directory, independent of the opened workspace.
 
 ### Language server
 1. RocketIDE explicit setting.
 2. `ROCKET_LANGUAGE_SERVER` environment variable.
 3. sibling of selected compiler.
-4. active Rocket checkout known build/package outputs.
+4. known build/package outputs from an explicitly trusted active Rocket checkout.
 5. `PATH`.
 6. bundled SDK sibling/path.
+7. development-only sibling `Rocket` checkout discovered beside a recognized `RocketIDE` / `RocketIDE-Build` installation directory, independent of the opened workspace.
 
-The UI exposes selected path + `--version`, and lets the user reset to automatic discovery.
+Opening source-controlled content is never itself a trust decision and must not cause executables discovered *from that workspace* to be probed with `--version` or launched. A developer SDK found as a sibling `Rocket` checkout beside a recognized `RocketIDE` / `RocketIDE-Build` installation directory is a separate trusted source because its discovery does not depend on which workspace is opened. Checkout trust is an explicit per-user setting stored outside the repository and can be revoked from Rocket SDK Settings. The UI exposes selected path + `--version` and lets the user reset discovery/trust state.
 
 ## 13. Process model
 
@@ -329,6 +331,7 @@ Only one conflicting target operation should control the primary target at a tim
 All external processes:
 
 - hidden/no shell window for tool commands;
+- trusted toolchain services use the trusted executable directory as their process working directory; untrusted workspace paths are conveyed through explicit protocol/command parameters rather than becoming the native loader/config current directory;
 - redirected stdout/stderr;
 - cancellable;
 - placed in a kill-on-close Windows Job Object when appropriate;
@@ -339,7 +342,7 @@ All external processes:
 
 ## 14. Search and large-project performance
 
-Workspace search must be asynchronous, streaming, cancellable, and bounded. It must skip generated/transient directories by default, including `.git`, `.rocketc`, `bin`, `obj`, `.vs`, and configurable exclusions.
+Workspace search must be asynchronous, streaming, cancellable, and bounded. It must skip generated/transient directories by default, including `.git`, `.rocketc`, `bin`, `obj`, `out`, `.vs`, and configurable exclusions.
 
 Do not load every file into WPF controls to search it. Stream file contents and results. Avoid one giant in-memory string representing the workspace.
 
@@ -353,6 +356,7 @@ Persist per-user, not inside the source repo unless explicitly project configura
 - window size/position;
 - panel visibility/sizes;
 - selected Rocket SDK path;
+- explicitly trusted Rocket checkout roots;
 - theme;
 - optional editor preferences;
 - last session documents.

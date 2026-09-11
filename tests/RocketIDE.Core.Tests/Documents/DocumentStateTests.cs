@@ -82,4 +82,30 @@ public sealed class DocumentStateTests
         Assert.AreEqual(6L, saved.ByteLength);
         Assert.AreEqual("rocket", saved.Text);
     }
+    [TestMethod]
+    public void MarkPersisted_UpdatesSavedBaselineWithoutLyingAboutNewerEditorText()
+    {
+        var state = new DocumentState(new DocumentId(Guid.NewGuid()), @"C:\work\main.rocket", "disk-v1", 7);
+        state.ApplyEdit("saved-in-flight");
+        state.ApplyEdit("newer-editor-text");
+
+        var snapshot = state.MarkPersisted("saved-in-flight", 15);
+
+        Assert.AreEqual("newer-editor-text", snapshot.Text);
+        Assert.IsTrue(snapshot.IsDirty);
+        Assert.AreEqual(System.Text.Encoding.UTF8.GetByteCount("newer-editor-text"), snapshot.ByteLength);
+    }
+
+    [TestMethod]
+    public void MarkPersisted_ClearsDirtyWhenCurrentTextMatchesPersistedSnapshot()
+    {
+        var state = new DocumentState(new DocumentId(Guid.NewGuid()), @"C:\work\main.rocket", "old", 3);
+        state.ApplyEdit("saved");
+
+        var snapshot = state.MarkPersisted("saved", 5);
+
+        Assert.IsFalse(snapshot.IsDirty);
+        Assert.AreEqual(5L, snapshot.ByteLength);
+    }
+
 }

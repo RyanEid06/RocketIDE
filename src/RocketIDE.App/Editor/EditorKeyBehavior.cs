@@ -59,6 +59,7 @@ public static class EditorKeyBehavior
             var caretOffset = editor.CaretOffset;
             var line = editor.Document.GetLineByOffset(caretOffset);
             var textBeforeCaret = editor.Document.GetText(line.Offset, Math.Max(0, caretOffset - line.Offset));
+            var newLine = RocketIndentationStrategy.GetPreferredNewLine(editor.Document, caretOffset);
 
             if (editor.SelectionLength == 0)
             {
@@ -67,7 +68,7 @@ public static class EditorKeyBehavior
                 if (dedent > 0 && textBeforeCaret.StartsWith(new string(' ', dedent), StringComparison.Ordinal))
                 {
                     var adjustedLinePrefix = textBeforeCaret[dedent..];
-                    var insertion = RocketIndentationStrategy.CreateNewLineInsertion(adjustedLinePrefix);
+                    var insertion = RocketIndentationStrategy.CreateNewLineInsertion(adjustedLinePrefix, newLine);
                     var replacement = adjustedLinePrefix + insertion;
                     editor.Document.Replace(line.Offset, caretOffset - line.Offset, replacement);
                     editor.CaretOffset = line.Offset + replacement.Length;
@@ -75,7 +76,7 @@ public static class EditorKeyBehavior
                 }
             }
 
-            var normalInsertion = RocketIndentationStrategy.CreateNewLineInsertion(textBeforeCaret);
+            var normalInsertion = RocketIndentationStrategy.CreateNewLineInsertion(textBeforeCaret, newLine);
             var selectionStart = editor.SelectionStart;
             editor.Document.Replace(selectionStart, editor.SelectionLength, normalInsertion);
             editor.CaretOffset = selectionStart + normalInsertion.Length;

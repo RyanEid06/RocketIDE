@@ -12,11 +12,14 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
     private JsonRpcConnection? _connection;
     private Task? _stderrTask;
     private int _initialized;
+    private int _stopping;
+    private int _faultReported;
 
     public bool IsInitialized => Volatile.Read(ref _initialized) != 0;
     public JsonElement? ServerCapabilities { get; private set; }
 
     public event EventHandler<RocketServerNotificationEventArgs>? NotificationReceived;
+    public event EventHandler<RocketTransportFaultedEventArgs>? Faulted;
     public event EventHandler<string>? LogReceived;
 
     public async Task StartAsync(string serverPath, string workspacePath, CancellationToken cancellationToken)
@@ -28,22 +31,11 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
             throw new InvalidOperationException("The Rocket language server is already running.");
         }
 
+        Volatile.Write(ref _stopping, 0);
+        Volatile.Write(ref _faultReported, 0);
         var fullServerPath = Path.GetFullPath(serverPath);
         var fullWorkspacePath = Path.GetFullPath(workspacePath);
-        var workingDirectory = Directory.Exists(fullWorkspacePath)
-            ? fullWorkspacePath
-            : Path.GetDirectoryName(fullWorkspacePath) ?? Directory.GetCurrentDirectory();
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = fullServerPath,
-            WorkingDirectory = workingDirectory,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WindowStyle = ProcessWindowStyle.Hidden,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
+        var startInfo = CreateProcessStartInfo(fullServerPath);
 
         var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
         try
@@ -60,10 +52,12 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
         }
 
         _process = process;
+        process.Exited += Process_Exited;
         _stderrTask = PumpStderrAsync(process, CancellationToken.None);
         var connection = new JsonRpcConnection(process.StandardOutput.BaseStream, process.StandardInput.BaseStream);
         _connection = connection;
         connection.NotificationReceived += Connection_NotificationReceived;
+        connection.Faulted += Connection_Faulted;
 
         try
         {
@@ -98,7 +92,15 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
         }
         catch
         {
-            await ForceStopAsync().ConfigureAwait(false);
+            Interlocked.Exchange(ref _stopping, 1);
+            try
+            {
+                await ForceStopAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                Volatile.Write(ref _stopping, 0);
+            }
             throw;
         }
     }
@@ -117,31 +119,39 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        var process = _process;
-        var connection = _connection;
-        if (process is null)
+        Interlocked.Exchange(ref _stopping, 1);
+        try
         {
-            return;
-        }
+            var process = _process;
+            var connection = _connection;
+            if (process is null)
+            {
+                return;
+            }
 
-        if (connection is not null && IsInitialized)
+            if (connection is not null && IsInitialized)
+            {
+                using var gracefulCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                gracefulCts.CancelAfter(ShutdownTimeout);
+                try
+                {
+                    _ = await connection.RequestAsync<JsonElement>("shutdown", null, gracefulCts.Token).ConfigureAwait(false);
+                    await connection.NotifyAsync("exit", null, gracefulCts.Token).ConfigureAwait(false);
+                    await process.WaitForExitAsync(gracefulCts.Token).ConfigureAwait(false);
+                }
+                catch (Exception exception) when (
+                    exception is OperationCanceledException or JsonRpcResponseException or LspProtocolException or IOException or InvalidOperationException)
+                {
+                    RaiseLogSafely($"rocket-lsp graceful shutdown failed: {exception.Message}");
+                }
+            }
+
+            await ForceStopAsync().ConfigureAwait(false);
+        }
+        finally
         {
-            using var gracefulCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            gracefulCts.CancelAfter(ShutdownTimeout);
-            try
-            {
-                _ = await connection.RequestAsync<JsonElement>("shutdown", null, gracefulCts.Token).ConfigureAwait(false);
-                await connection.NotifyAsync("exit", null, gracefulCts.Token).ConfigureAwait(false);
-                await process.WaitForExitAsync(gracefulCts.Token).ConfigureAwait(false);
-            }
-            catch (Exception exception) when (
-                exception is OperationCanceledException or JsonRpcResponseException or LspProtocolException or IOException or InvalidOperationException)
-            {
-                LogReceived?.Invoke(this, $"rocket-lsp graceful shutdown failed: {exception.Message}");
-            }
+            Volatile.Write(ref _stopping, 0);
         }
-
-        await ForceStopAsync().ConfigureAwait(false);
     }
 
     public async ValueTask DisposeAsync()
@@ -152,9 +162,30 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
         }
         catch (Exception exception) when (exception is IOException or InvalidOperationException or System.ComponentModel.Win32Exception)
         {
-            LogReceived?.Invoke(this, $"rocket-lsp disposal failed: {exception.Message}");
+            RaiseLogSafely($"rocket-lsp disposal failed: {exception.Message}");
             await ForceStopAsync().ConfigureAwait(false);
         }
+    }
+
+    internal static ProcessStartInfo CreateProcessStartInfo(string serverPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(serverPath);
+        var fullServerPath = Path.GetFullPath(serverPath);
+        var toolDirectory = Path.GetDirectoryName(fullServerPath)
+            ?? throw new IOException($"Cannot determine the rocket-lsp directory for '{fullServerPath}'.");
+        return new ProcessStartInfo
+        {
+            FileName = fullServerPath,
+            // Never use the opened workspace as the native process current directory. Even a
+            // trusted executable should not inherit an untrusted project's DLL/config search path.
+            WorkingDirectory = toolDirectory,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WindowStyle = ProcessWindowStyle.Hidden,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
     }
 
     private static void ValidateServerCapabilities(JsonElement capabilities)
@@ -200,7 +231,7 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
                     return;
                 }
 
-                LogReceived?.Invoke(this, line);
+                RaiseLogSafely(line);
             }
         }
         catch (OperationCanceledException)
@@ -211,12 +242,77 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
         }
         catch (IOException exception)
         {
-            LogReceived?.Invoke(this, $"rocket-lsp stderr read failed: {exception.Message}");
+            RaiseLogSafely($"rocket-lsp stderr read failed: {exception.Message}");
         }
     }
 
     private void Connection_NotificationReceived(object? sender, RocketServerNotificationEventArgs e) =>
-        NotificationReceived?.Invoke(this, e);
+        RaiseEventSafely(NotificationReceived, e, "notification");
+
+    private void Connection_Faulted(object? sender, RocketTransportFaultedEventArgs e)
+    {
+        if (Volatile.Read(ref _stopping) == 0)
+        {
+            Volatile.Write(ref _initialized, 0);
+            ReportFault(e.Exception);
+        }
+    }
+
+    private void Process_Exited(object? sender, EventArgs e)
+    {
+        if (Volatile.Read(ref _stopping) != 0 || sender is not Process process || !ReferenceEquals(process, _process))
+        {
+            return;
+        }
+
+        Volatile.Write(ref _initialized, 0);
+        var exitCode = TryGetExitCode(process);
+        var detail = exitCode is null ? string.Empty : $" with code {exitCode.Value}";
+        ReportFault(new IOException($"rocket-lsp exited unexpectedly{detail}."));
+    }
+
+    private static int? TryGetExitCode(Process process)
+    {
+        try
+        {
+            return process.HasExited ? process.ExitCode : null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    private void ReportFault(Exception exception)
+    {
+        if (Interlocked.Exchange(ref _faultReported, 1) != 0)
+        {
+            return;
+        }
+
+        RaiseEventSafely(Faulted, new RocketTransportFaultedEventArgs(exception), "fault");
+    }
+
+    private void RaiseEventSafely<TEventArgs>(EventHandler<TEventArgs>? handlers, TEventArgs args, string eventName)
+        where TEventArgs : EventArgs
+    {
+        if (handlers is null)
+        {
+            return;
+        }
+
+        foreach (EventHandler<TEventArgs> handler in handlers.GetInvocationList())
+        {
+            try
+            {
+                handler(this, args);
+            }
+            catch (Exception exception)
+            {
+                System.Diagnostics.Trace.TraceError($"RocketIDE language-client {eventName} observer failed: {exception}");
+            }
+        }
+    }
 
     private async Task ForceStopAsync()
     {
@@ -226,6 +322,7 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
         if (connection is not null)
         {
             connection.NotificationReceived -= Connection_NotificationReceived;
+            connection.Faulted -= Connection_Faulted;
         }
 
         // Close the child first so a blocked read on redirected stdout is guaranteed to reach EOF
@@ -246,10 +343,11 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
             }
             catch (System.ComponentModel.Win32Exception exception)
             {
-                LogReceived?.Invoke(this, $"rocket-lsp process cleanup failed: {exception.Message}");
+                RaiseLogSafely($"rocket-lsp process cleanup failed: {exception.Message}");
             }
             finally
             {
+                process.Exited -= Process_Exited;
                 process.Dispose();
             }
         }
@@ -268,7 +366,29 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
             }
             catch (Exception exception) when (exception is IOException or ObjectDisposedException)
             {
-                LogReceived?.Invoke(this, $"rocket-lsp stderr cleanup failed: {exception.Message}");
+                RaiseLogSafely($"rocket-lsp stderr cleanup failed: {exception.Message}");
+            }
+        }
+    }
+
+
+    private void RaiseLogSafely(string line)
+    {
+        var handlers = LogReceived;
+        if (handlers is null)
+        {
+            return;
+        }
+
+        foreach (EventHandler<string> handler in handlers.GetInvocationList())
+        {
+            try
+            {
+                handler(this, line);
+            }
+            catch (Exception exception)
+            {
+                Trace.TraceError($"RocketIDE language-client log observer failed: {exception}");
             }
         }
     }

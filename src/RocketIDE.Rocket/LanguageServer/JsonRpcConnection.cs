@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using RocketIDE.Rocket.LanguageServer.LspDtos;
@@ -13,6 +14,7 @@ public sealed class JsonRpcConnection : IAsyncDisposable
     private readonly CancellationTokenSource _disposeCts = new();
     private readonly Task _readerTask;
     private long _nextRequestId;
+    private Exception? _terminalFailure;
     private int _disposed;
 
     public JsonRpcConnection(Stream input, Stream output)
@@ -25,11 +27,12 @@ public sealed class JsonRpcConnection : IAsyncDisposable
     }
 
     public event EventHandler<RocketServerNotificationEventArgs>? NotificationReceived;
+    public event EventHandler<RocketTransportFaultedEventArgs>? Faulted;
 
     public async Task<TResponse?> RequestAsync<TResponse>(string method, object? parameters, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(method);
-        ThrowIfDisposed();
+        ThrowIfUnavailable();
         cancellationToken.ThrowIfCancellationRequested();
         var id = Interlocked.Increment(ref _nextRequestId);
         var completion = new TaskCompletionSource<JsonElement?>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -40,6 +43,10 @@ public sealed class JsonRpcConnection : IAsyncDisposable
 
         try
         {
+            // Close the race where the reader can terminate between the initial availability
+            // check and publishing this pending request. If failure won that race, remove the
+            // request ourselves; otherwise the reader's terminal sweep owns it.
+            ThrowIfUnavailable();
             await WriteMessageAsync(new { jsonrpc = "2.0", id, method, @params = parameters }, cancellationToken).ConfigureAwait(false);
         }
         catch
@@ -68,7 +75,7 @@ public sealed class JsonRpcConnection : IAsyncDisposable
     public Task NotifyAsync(string method, object? parameters, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(method);
-        ThrowIfDisposed();
+        ThrowIfUnavailable();
         return WriteMessageAsync(new { jsonrpc = "2.0", method, @params = parameters }, cancellationToken);
     }
 
@@ -87,12 +94,22 @@ public sealed class JsonRpcConnection : IAsyncDisposable
         catch (OperationCanceledException) when (_disposeCts.IsCancellationRequested)
         {
         }
-        catch (Exception exception) when (exception is EndOfStreamException or IOException or JsonException or LspProtocolException or ObjectDisposedException)
+        catch (Exception) when (_disposeCts.IsCancellationRequested)
+        {
+            // Closing the underlying streams can race cancellation and surface EOF/disposal
+            // exceptions. They are expected during an explicit connection shutdown.
+        }
+        catch (Exception exception)
         {
             failure = exception;
         }
         finally
         {
+            if (failure is not null)
+            {
+                Interlocked.CompareExchange(ref _terminalFailure, failure, null);
+            }
+
             var terminal = failure ?? new ObjectDisposedException(nameof(JsonRpcConnection));
             foreach (var entry in _pending.ToArray())
             {
@@ -100,6 +117,11 @@ public sealed class JsonRpcConnection : IAsyncDisposable
                 {
                     pending.TrySetException(terminal);
                 }
+            }
+
+            if (failure is not null)
+            {
+                RaiseEventSafely(Faulted, new RocketTransportFaultedEventArgs(failure), "fault");
             }
         }
     }
@@ -128,7 +150,7 @@ public sealed class JsonRpcConnection : IAsyncDisposable
             var parameters = root.TryGetProperty("params", out var paramsElement)
                 ? paramsElement.Clone()
                 : JsonSerializer.SerializeToElement<object?>(null, LspJson.Options);
-            NotificationReceived?.Invoke(this, new RocketServerNotificationEventArgs(method, parameters));
+            RaiseEventSafely(NotificationReceived, new RocketServerNotificationEventArgs(method, parameters), "notification");
             return;
         }
 
@@ -216,9 +238,36 @@ public sealed class JsonRpcConnection : IAsyncDisposable
         }
     }
 
-    private void ThrowIfDisposed()
+
+    private void RaiseEventSafely<TEventArgs>(EventHandler<TEventArgs>? handlers, TEventArgs args, string eventName)
+        where TEventArgs : EventArgs
+    {
+        if (handlers is null)
+        {
+            return;
+        }
+
+        foreach (EventHandler<TEventArgs> handler in handlers.GetInvocationList())
+        {
+            try
+            {
+                handler(this, args);
+            }
+            catch (Exception exception)
+            {
+                Trace.TraceError($"RocketIDE JSON-RPC {eventName} observer failed: {exception}");
+            }
+        }
+    }
+
+    private void ThrowIfUnavailable()
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        var failure = Volatile.Read(ref _terminalFailure);
+        if (failure is not null)
+        {
+            throw new LspProtocolException("The JSON-RPC connection has terminated.", failure);
+        }
     }
 
     public async ValueTask DisposeAsync()

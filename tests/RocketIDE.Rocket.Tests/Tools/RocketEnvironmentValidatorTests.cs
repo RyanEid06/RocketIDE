@@ -8,9 +8,13 @@ public sealed class RocketEnvironmentValidatorTests
     [TestMethod]
     public async Task ValidateAsync_ReportsMissingToolsWithoutInventingFallbackBehavior()
     {
-        using var temp = new TempDirectory();
-        var locator = new RocketToolLocator(new RocketToolDiscoveryOptions(null, null, temp.Path), new NoopProbe(), _ => null);
-        var validator = new RocketEnvironmentValidator(locator);
+        var discovery = new RocketToolDiscoveryResult(
+            null,
+            null,
+            null,
+            null,
+            ["rocketc.exe was not found.", "rocket-lsp.exe was not found."]);
+        var validator = new RocketEnvironmentValidator(new FakeLocator(discovery));
 
         var result = await validator.ValidateAsync(null, CancellationToken.None);
 
@@ -20,28 +24,12 @@ public sealed class RocketEnvironmentValidatorTests
         Assert.IsTrue(result.Problems.Any(problem => problem.Contains("rocket-lsp.exe", StringComparison.Ordinal)));
     }
 
-    private sealed class NoopProbe : IRocketToolVersionProbe
+    private sealed class FakeLocator(RocketToolDiscoveryResult discovery) : IRocketToolLocator
     {
-        public Task<string> GetVersionAsync(string executablePath, CancellationToken cancellationToken) =>
-            Task.FromResult("unused");
-    }
+        public Task<RocketToolchain?> LocateAsync(string? activePath, CancellationToken cancellationToken) =>
+            Task.FromResult(discovery.Toolchain);
 
-    private sealed class TempDirectory : IDisposable
-    {
-        public TempDirectory()
-        {
-            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"rocketide-validate-{Guid.NewGuid():N}");
-            Directory.CreateDirectory(Path);
-        }
-
-        public string Path { get; }
-
-        public void Dispose()
-        {
-            if (Directory.Exists(Path))
-            {
-                Directory.Delete(Path, recursive: true);
-            }
-        }
+        public Task<RocketToolDiscoveryResult> DiscoverAsync(string? activePath, CancellationToken cancellationToken) =>
+            Task.FromResult(discovery);
     }
 }

@@ -9,7 +9,6 @@ public sealed class RocketToolLocator : IRocketToolLocator
         Path.Combine("out", "package", "bin"),
     ];
 
-    private static readonly string[] AdjacentCheckoutNames = ["Rocket", "rocket"];
 
     private readonly RocketToolDiscoveryOptions _options;
     private readonly IRocketToolVersionProbe _versionProbe;
@@ -43,7 +42,7 @@ public sealed class RocketToolLocator : IRocketToolLocator
 
         if (compiler is null)
         {
-            problems.Add("rocketc.exe was not found. Configure a compiler path or make Rocket available through the environment/PATH.");
+            problems.Add("rocketc.exe was not found. Configure a compiler path, use the environment/PATH, bundle an SDK, keep a developer Rocket checkout beside the RocketIDE installation, or explicitly trust the active checkout in Tools > Rocket SDK Settings.");
         }
         else
         {
@@ -52,7 +51,7 @@ public sealed class RocketToolLocator : IRocketToolLocator
 
         if (lsp is null)
         {
-            problems.Add("rocket-lsp.exe was not found. Configure a language-server path or build/install the Rocket language server.");
+            problems.Add("rocket-lsp.exe was not found. Configure a language-server path, use the environment/PATH, bundle an SDK, keep a developer Rocket checkout beside the RocketIDE installation, or explicitly trust the active checkout in Tools > Rocket SDK Settings.");
         }
         else
         {
@@ -65,19 +64,19 @@ public sealed class RocketToolLocator : IRocketToolLocator
     private string? FindCompiler(string? activePath) => FindFirstExisting(
         ExplicitCandidate(_options.CompilerPath),
         ExplicitCandidate(_environmentVariable("ROCKET_COMPILER")),
-        ActiveCheckoutCandidates(activePath, "rocketc.exe"),
-        AdjacentCheckoutCandidates(activePath, "rocketc.exe"),
+        TrustedCheckoutCandidates(activePath, "rocketc.exe"),
         PathCandidates("rocketc.exe"),
-        BundledCandidates("rocketc.exe"));
+        BundledCandidates("rocketc.exe"),
+        InstallationAdjacentCheckoutCandidates("rocketc.exe"));
 
     private string? FindLanguageServer(string? activePath, string? compilerPath) => FindFirstExisting(
         ExplicitCandidate(_options.LanguageServerPath),
         ExplicitCandidate(_environmentVariable("ROCKET_LANGUAGE_SERVER")),
         SiblingCandidate(compilerPath, "rocket-lsp.exe"),
-        ActiveCheckoutCandidates(activePath, "rocket-lsp.exe"),
-        AdjacentCheckoutCandidates(activePath, "rocket-lsp.exe"),
+        TrustedCheckoutCandidates(activePath, "rocket-lsp.exe"),
         PathCandidates("rocket-lsp.exe"),
-        BundledCandidates("rocket-lsp.exe"));
+        BundledCandidates("rocket-lsp.exe"),
+        InstallationAdjacentCheckoutCandidates("rocket-lsp.exe"));
 
     private async Task<string?> TryProbeAsync(
         string path,
@@ -145,24 +144,117 @@ public sealed class RocketToolLocator : IRocketToolLocator
         }
     }
 
-    private static IEnumerable<string> ActiveCheckoutCandidates(string? activePath, string fileName)
+    private IEnumerable<string> TrustedCheckoutCandidates(string? activePath, string fileName)
     {
-        foreach (var ancestor in EnumerateAncestors(activePath))
+        if (_options.TrustedCheckoutRoots is null || string.IsNullOrWhiteSpace(activePath))
         {
+            yield break;
+        }
+
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var trustedRoot in _options.TrustedCheckoutRoots)
+        {
+            if (!TryNormalize(trustedRoot, out var root) || IsFileSystemRoot(root) || !Directory.Exists(root) || !seen.Add(root) ||
+                !IsWithinRoot(activePath, root))
+            {
+                continue;
+            }
+
             foreach (var output in CheckoutOutputs)
             {
-                yield return Path.Combine(ancestor, output, fileName);
+                yield return Path.Combine(root, output, fileName);
+            }
+
+            foreach (var packaged in VersionedPackageCandidates(root, fileName))
+            {
+                yield return packaged;
             }
         }
     }
 
-    private IEnumerable<string> AdjacentCheckoutCandidates(string? activePath, string fileName)
+
+    private static bool IsFileSystemRoot(string path)
     {
-        foreach (var siblingRoot in EnumerateAdjacentCheckouts(activePath))
+        var root = Path.GetPathRoot(path);
+        return !string.IsNullOrEmpty(root) && string.Equals(path, root, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsWithinRoot(string activePath, string root)
+    {
+        if (!TryNormalize(activePath, out var active))
         {
+            return false;
+        }
+
+        if (string.Equals(active, root, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var prefix = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        return active.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static IEnumerable<string> VersionedPackageCandidates(string root, string fileName)
+    {
+        var packageRoot = Path.Combine(root, "out", "package");
+        string[] packageDirectories;
+        try
+        {
+            packageDirectories = Directory.Exists(packageRoot)
+                ? Directory.GetDirectories(packageRoot)
+                : [];
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            yield break;
+        }
+
+        foreach (var packageDirectory in packageDirectories.OrderByDescending(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase))
+        {
+            yield return Path.Combine(packageDirectory, "bin", fileName);
+        }
+    }
+
+    private IEnumerable<string> InstallationAdjacentCheckoutCandidates(string fileName)
+    {
+        // Development builds commonly live beside the Rocket checkout, for example
+        //   ...\Projects\RocketIDE-Build
+        //   ...\Projects\Rocket
+        // This fallback is derived only from RocketIDE's immediate installation parent;
+        // opening a workspace never changes the candidate root. Keeping the search to one
+        // parent avoids turning unrelated ancestor directories into implicit trust roots.
+        var installationDirectory = _options.InstallationDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var installationName = Path.GetFileName(installationDirectory);
+        if (!string.Equals(installationName, "RocketIDE-Build", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(installationName, "RocketIDE", StringComparison.OrdinalIgnoreCase))
+        {
+            yield break;
+        }
+
+        var parent = Directory.GetParent(installationDirectory)?.FullName;
+        if (string.IsNullOrWhiteSpace(parent) || IsFileSystemRoot(parent))
+        {
+            yield break;
+        }
+
+        var seenRoots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var checkoutName in new[] { "Rocket", "rocket" })
+        {
+            var root = Path.Combine(parent, checkoutName);
+            if (!Directory.Exists(root) || !seenRoots.Add(Path.GetFullPath(root)))
+            {
+                continue;
+            }
+
             foreach (var output in CheckoutOutputs)
             {
-                yield return Path.Combine(siblingRoot, output, fileName);
+                yield return Path.Combine(root, output, fileName);
+            }
+
+            foreach (var packaged in VersionedPackageCandidates(root, fileName))
+            {
+                yield return packaged;
             }
         }
     }
@@ -172,8 +264,8 @@ public sealed class RocketToolLocator : IRocketToolLocator
         var path = _environmentVariable("PATH") ?? string.Empty;
         foreach (var directory in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
-            var cleaned = directory.Trim().Trim('"');
-            if (cleaned.Length > 0)
+            var cleaned = Environment.ExpandEnvironmentVariables(directory.Trim().Trim('"'));
+            if (cleaned.Length > 0 && Path.IsPathRooted(cleaned))
             {
                 yield return Path.Combine(cleaned, fileName);
             }
@@ -187,72 +279,17 @@ public sealed class RocketToolLocator : IRocketToolLocator
         yield return Path.Combine(_options.InstallationDirectory, fileName);
     }
 
-    private IEnumerable<string> EnumerateAdjacentCheckouts(string? activePath)
-    {
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var anchor in EnumerateAncestors(activePath).Concat(EnumerateAncestors(_options.InstallationDirectory)))
-        {
-            DirectoryInfo? parent;
-            try
-            {
-                parent = Directory.GetParent(anchor);
-            }
-            catch (Exception exception) when (exception is ArgumentException or IOException or UnauthorizedAccessException)
-            {
-                parent = null;
-            }
-
-            if (parent is null)
-            {
-                continue;
-            }
-
-            foreach (var name in AdjacentCheckoutNames)
-            {
-                var candidate = Path.Combine(parent.FullName, name);
-                if (Directory.Exists(candidate) && seen.Add(candidate))
-                {
-                    yield return candidate;
-                }
-            }
-        }
-    }
-
-    private static IEnumerable<string> EnumerateAncestors(string? activePath)
-    {
-        if (string.IsNullOrWhiteSpace(activePath))
-        {
-            yield break;
-        }
-
-        string fullPath;
-        try
-        {
-            fullPath = Path.GetFullPath(activePath);
-        }
-        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
-        {
-            yield break;
-        }
-
-        var directoryPath = Directory.Exists(fullPath) ? fullPath : Path.GetDirectoryName(fullPath);
-        if (string.IsNullOrWhiteSpace(directoryPath))
-        {
-            yield break;
-        }
-
-        for (var directory = new DirectoryInfo(directoryPath); directory is not null; directory = directory.Parent)
-        {
-            yield return directory.FullName;
-        }
-    }
-
     private static bool TryNormalize(string path, out string fullPath)
     {
         fullPath = string.Empty;
         try
         {
             fullPath = Path.GetFullPath(path);
+            var root = Path.GetPathRoot(fullPath);
+            if (!string.IsNullOrEmpty(root) && !string.Equals(fullPath, root, StringComparison.OrdinalIgnoreCase))
+            {
+                fullPath = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
             return true;
         }
         catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)

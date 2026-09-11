@@ -78,13 +78,17 @@ public sealed class RocketToolLocatorTests
     }
 
     [TestMethod]
-    public async Task DiscoverAsync_FindsRecognizedActiveCheckoutOutputWithoutHardCodedRepositoryPath()
+    public async Task DiscoverAsync_FindsTrustedCheckoutOutputWithoutHardCodedRepositoryPath()
     {
         using var temp = new TempDirectory();
+        var checkout = Directory.CreateDirectory(Path.Combine(temp.Path, "arbitrary-clone")).FullName;
         var compiler = temp.CreateFile("arbitrary-clone/out/build/windows-release/rocketc.exe");
         var lsp = temp.CreateFile("arbitrary-clone/out/build/windows-release/rocket-lsp.exe");
         var activeFile = temp.CreateFile("arbitrary-clone/examples/demo.rocket");
-        var locator = new RocketToolLocator(new RocketToolDiscoveryOptions(null, null, temp.Path), new FakeProbe(), _ => null);
+        var locator = new RocketToolLocator(
+            new RocketToolDiscoveryOptions(null, null, Path.Combine(temp.Path, "ide"), [checkout]),
+            new FakeProbe(),
+            _ => null);
 
         var result = await locator.DiscoverAsync(activeFile, CancellationToken.None);
 
@@ -93,16 +97,130 @@ public sealed class RocketToolLocatorTests
     }
 
 
-
     [TestMethod]
-    public async Task DiscoverAsync_FindsAdjacentRocketCheckoutNearInstallationDirectory()
+    public async Task DiscoverAsync_TrustedCheckoutRootWithTrailingSeparatorStillMatchesWorkspaceRoot()
     {
         using var temp = new TempDirectory();
-        Directory.CreateDirectory(System.IO.Path.Combine(temp.Path, "RocketIDE-Build"));
+        var checkout = Directory.CreateDirectory(Path.Combine(temp.Path, "checkout")).FullName;
+        var compiler = temp.CreateFile("checkout/out/build/windows-debug/rocketc.exe");
+        var lsp = temp.CreateFile("checkout/out/build/windows-debug/rocket-lsp.exe");
+        var trustedWithSeparator = checkout + Path.DirectorySeparatorChar;
+        var locator = new RocketToolLocator(
+            new RocketToolDiscoveryOptions(null, null, Path.Combine(temp.Path, "ide"), [trustedWithSeparator]),
+            new FakeProbe(),
+            _ => null);
+
+        var result = await locator.DiscoverAsync(checkout, CancellationToken.None);
+
+        Assert.AreEqual(Path.GetFullPath(compiler), result.CompilerPath);
+        Assert.AreEqual(Path.GetFullPath(lsp), result.LanguageServerPath);
+    }
+
+    [TestMethod]
+    public async Task DiscoverAsync_FindsVersionedPackageToolsOnlyInsideTrustedCheckout()
+    {
+        using var temp = new TempDirectory();
+        var trustedRoot = Directory.CreateDirectory(Path.Combine(temp.Path, "trusted")).FullName;
+        var compiler = temp.CreateFile("trusted/out/package/rocket-2.1.0-windows-x64/bin/rocketc.exe");
+        var lsp = temp.CreateFile("trusted/out/package/rocket-2.1.0-windows-x64/bin/rocket-lsp.exe");
+        var activeFile = temp.CreateFile("trusted/src/main.rocket");
+        var locator = new RocketToolLocator(
+            new RocketToolDiscoveryOptions(null, null, Path.Combine(temp.Path, "ide"), [trustedRoot]),
+            new FakeProbe(),
+            _ => null);
+
+        var result = await locator.DiscoverAsync(activeFile, CancellationToken.None);
+
+        Assert.AreEqual(Path.GetFullPath(compiler), result.CompilerPath);
+        Assert.AreEqual(Path.GetFullPath(lsp), result.LanguageServerPath);
+    }
+
+    [TestMethod]
+    public async Task DiscoverAsync_DoesNotUseTrustedCheckoutForUnrelatedWorkspace()
+    {
+        using var temp = new TempDirectory();
+        var trustedRoot = Directory.CreateDirectory(Path.Combine(temp.Path, "trusted")).FullName;
+        _ = temp.CreateFile("trusted/out/build/windows-debug/rocketc.exe");
+        _ = temp.CreateFile("trusted/out/build/windows-debug/rocket-lsp.exe");
+        var unrelatedFile = temp.CreateFile("unrelated/src/main.rocket");
+        var probe = new RecordingProbe();
+        var locator = new RocketToolLocator(
+            new RocketToolDiscoveryOptions(null, null, Path.Combine(temp.Path, "ide"), [trustedRoot]),
+            probe,
+            _ => null);
+
+        var result = await locator.DiscoverAsync(unrelatedFile, CancellationToken.None);
+
+        Assert.IsNull(result.Toolchain);
+        Assert.AreEqual(0, probe.Paths.Count);
+    }
+
+    [TestMethod]
+    public async Task DiscoverAsync_IgnoresFileSystemRootAsCheckoutTrustBoundary()
+    {
+        using var temp = new TempDirectory();
+        var activeFile = temp.CreateFile("workspace/main.rocket");
+        var fileSystemRoot = Path.GetPathRoot(Path.GetFullPath(activeFile))!;
+        var probe = new RecordingProbe();
+        var locator = new RocketToolLocator(
+            new RocketToolDiscoveryOptions(null, null, Path.Combine(temp.Path, "ide"), [fileSystemRoot]),
+            probe,
+            _ => null);
+
+        var result = await locator.DiscoverAsync(activeFile, CancellationToken.None);
+
+        Assert.IsNull(result.Toolchain);
+        Assert.AreEqual(0, probe.Paths.Count);
+    }
+
+    [TestMethod]
+    public async Task DiscoverAsync_DoesNotProbeExecutablesFromUntrustedOpenedWorkspace()
+    {
+        using var temp = new TempDirectory();
+        _ = temp.CreateFile("untrusted/out/build/windows-debug/rocketc.exe");
+        _ = temp.CreateFile("untrusted/out/build/windows-debug/rocket-lsp.exe");
+        var activeFile = temp.CreateFile("untrusted/src/main.rocket");
+        var probe = new RecordingProbe();
+        var locator = new RocketToolLocator(
+            new RocketToolDiscoveryOptions(null, null, Path.Combine(temp.Path, "ide"), []),
+            probe,
+            _ => null);
+
+        var result = await locator.DiscoverAsync(activeFile, CancellationToken.None);
+
+        Assert.IsNull(result.CompilerPath);
+        Assert.IsNull(result.LanguageServerPath);
+        Assert.AreEqual(0, probe.Paths.Count, "Opening an untrusted workspace must never execute its native tools for --version probing.");
+    }
+
+    [TestMethod]
+    public async Task DiscoverAsync_UsesOnlyExplicitlyTrustedCheckoutBuildOutputs()
+    {
+        using var temp = new TempDirectory();
+        var trustedRoot = Directory.CreateDirectory(Path.Combine(temp.Path, "trusted")).FullName;
+        var compiler = temp.CreateFile("trusted/out/build/windows-release/rocketc.exe");
+        var lsp = temp.CreateFile("trusted/out/build/windows-release/rocket-lsp.exe");
+        var activeFile = temp.CreateFile("trusted/src/main.rocket");
+        var locator = new RocketToolLocator(
+            new RocketToolDiscoveryOptions(null, null, Path.Combine(temp.Path, "ide"), [trustedRoot]),
+            new FakeProbe(),
+            _ => null);
+
+        var result = await locator.DiscoverAsync(activeFile, CancellationToken.None);
+
+        Assert.AreEqual(Path.GetFullPath(compiler), result.CompilerPath);
+        Assert.AreEqual(Path.GetFullPath(lsp), result.LanguageServerPath);
+    }
+
+    [TestMethod]
+    public async Task DiscoverAsync_FindsInstallationAdjacentDeveloperCheckoutWithoutActiveWorkspace()
+    {
+        using var temp = new TempDirectory();
+        var installation = Directory.CreateDirectory(Path.Combine(temp.Path, "RocketIDE-Build")).FullName;
         var compiler = temp.CreateFile("Rocket/out/build/windows-debug/rocketc.exe");
         var lsp = temp.CreateFile("Rocket/out/build/windows-debug/rocket-lsp.exe");
         var locator = new RocketToolLocator(
-            new RocketToolDiscoveryOptions(null, null, System.IO.Path.Combine(temp.Path, "RocketIDE-Build")),
+            new RocketToolDiscoveryOptions(null, null, installation + Path.DirectorySeparatorChar, []),
             new FakeProbe(),
             _ => null);
 
@@ -110,6 +228,50 @@ public sealed class RocketToolLocatorTests
 
         Assert.AreEqual(Path.GetFullPath(compiler), result.CompilerPath);
         Assert.AreEqual(Path.GetFullPath(lsp), result.LanguageServerPath);
+    }
+
+    [TestMethod]
+    public async Task DiscoverAsync_DoesNotTrustAdjacentRocketFolderForGenericInstallationDirectory()
+    {
+        using var temp = new TempDirectory();
+        var installation = Directory.CreateDirectory(Path.Combine(temp.Path, "generic-install")).FullName;
+        _ = temp.CreateFile("Rocket/out/build/windows-debug/rocketc.exe");
+        _ = temp.CreateFile("Rocket/out/build/windows-debug/rocket-lsp.exe");
+        var probe = new RecordingProbe();
+        var locator = new RocketToolLocator(
+            new RocketToolDiscoveryOptions(null, null, installation, []),
+            probe,
+            _ => null);
+
+        var result = await locator.DiscoverAsync(null, CancellationToken.None);
+
+        Assert.IsNull(result.Toolchain);
+        Assert.AreEqual(0, probe.Paths.Count);
+    }
+
+    [TestMethod]
+    public async Task DiscoverAsync_UsesInstallationAdjacentDeveloperSdkInsteadOfUntrustedWorkspaceOutput()
+    {
+        using var temp = new TempDirectory();
+        var installation = Directory.CreateDirectory(Path.Combine(temp.Path, "RocketIDE-Build")).FullName;
+        var trustedCompiler = temp.CreateFile("Rocket/out/build/windows-release/rocketc.exe");
+        var trustedLsp = temp.CreateFile("Rocket/out/build/windows-release/rocket-lsp.exe");
+        _ = temp.CreateFile("untrusted/out/build/windows-debug/rocketc.exe");
+        _ = temp.CreateFile("untrusted/out/build/windows-debug/rocket-lsp.exe");
+        var activeFile = temp.CreateFile("untrusted/src/main.rocket");
+        var probe = new RecordingProbe();
+        var locator = new RocketToolLocator(
+            new RocketToolDiscoveryOptions(null, null, installation, []),
+            probe,
+            _ => null);
+
+        var result = await locator.DiscoverAsync(activeFile, CancellationToken.None);
+
+        Assert.AreEqual(Path.GetFullPath(trustedCompiler), result.CompilerPath);
+        Assert.AreEqual(Path.GetFullPath(trustedLsp), result.LanguageServerPath);
+        CollectionAssert.AreEquivalent(
+            new[] { Path.GetFullPath(trustedCompiler), Path.GetFullPath(trustedLsp) },
+            probe.Paths.ToArray());
     }
 
     [TestMethod]
@@ -153,6 +315,23 @@ public sealed class RocketToolLocatorTests
     }
 
     [TestMethod]
+    public async Task DiscoverAsync_IgnoresRelativePathEntriesThatCouldResolveAgainstUntrustedCurrentDirectory()
+    {
+        using var temp = new TempDirectory();
+        var relativeDirectory = "workspace-tools";
+        var probe = new RecordingProbe();
+        var locator = new RocketToolLocator(
+            new RocketToolDiscoveryOptions(null, null, temp.Path),
+            probe,
+            name => name == "PATH" ? relativeDirectory : null);
+
+        var result = await locator.DiscoverAsync(null, CancellationToken.None);
+
+        Assert.IsNull(result.Toolchain);
+        Assert.AreEqual(0, probe.Paths.Count);
+    }
+
+    [TestMethod]
     public async Task DiscoverAsync_UsesBundledSdkCandidateAsFinalFallback()
     {
         using var temp = new TempDirectory();
@@ -164,6 +343,17 @@ public sealed class RocketToolLocatorTests
 
         Assert.AreEqual(Path.GetFullPath(compiler), result.CompilerPath);
         Assert.AreEqual(Path.GetFullPath(lsp), result.LanguageServerPath);
+    }
+
+    private sealed class RecordingProbe : IRocketToolVersionProbe
+    {
+        public List<string> Paths { get; } = new();
+
+        public Task<string> GetVersionAsync(string executablePath, CancellationToken cancellationToken)
+        {
+            Paths.Add(executablePath);
+            return Task.FromResult("recorded");
+        }
     }
 
     private sealed class FakeProbe : IRocketToolVersionProbe

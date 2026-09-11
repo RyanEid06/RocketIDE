@@ -3,16 +3,15 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using RocketIDE.Core.Workspaces;
-using RocketIDE.Infrastructure.Files;
 
 namespace RocketIDE.App.ViewModels.Explorer;
 
 public sealed class WorkspaceExplorerViewModel : INotifyPropertyChanged
 {
-    private readonly WorkspaceFileSystem _fileSystem;
+    private readonly IWorkspaceFileSystem _fileSystem;
     private WorkspaceRoot? _workspace;
 
-    public WorkspaceExplorerViewModel(WorkspaceFileSystem fileSystem)
+    public WorkspaceExplorerViewModel(IWorkspaceFileSystem fileSystem)
     {
         _fileSystem = fileSystem;
     }
@@ -51,12 +50,14 @@ public sealed class WorkspaceExplorerViewModel : INotifyPropertyChanged
             throw new DirectoryNotFoundException($"Workspace '{fullPath}' does not exist.");
         }
 
-        Workspace = new WorkspaceRoot(fullPath);
-        Roots.Clear();
-        var rootEntry = new WorkspaceEntry(fullPath, Workspace.Name, IsDirectory: true, HasChildren: true);
+        var workspace = new WorkspaceRoot(fullPath);
+        var rootEntry = new WorkspaceEntry(fullPath, workspace.Name, IsDirectory: true, HasChildren: true);
         var root = new ExplorerNodeViewModel(_fileSystem, rootEntry) { IsExpanded = true };
-        Roots.Add(root);
         await root.LoadChildrenAsync(cancellationToken);
+
+        Workspace = workspace;
+        Roots.Clear();
+        Roots.Add(root);
     }
 
     public async Task RefreshAsync(CancellationToken cancellationToken = default)

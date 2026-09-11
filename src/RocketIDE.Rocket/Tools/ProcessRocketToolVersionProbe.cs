@@ -10,16 +10,7 @@ public sealed class ProcessRocketToolVersionProbe(TimeSpan? timeout = null) : IR
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
         var fullPath = Path.GetFullPath(executablePath);
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = fullPath,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WindowStyle = ProcessWindowStyle.Hidden,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        startInfo.ArgumentList.Add("--version");
+        var startInfo = CreateProcessStartInfo(fullPath);
 
         using var process = new Process { StartInfo = startInfo };
         if (!process.Start())
@@ -54,6 +45,27 @@ public sealed class ProcessRocketToolVersionProbe(TimeSpan? timeout = null) : IR
             TryKillProcessTree(process);
             throw;
         }
+    }
+
+
+    internal static ProcessStartInfo CreateProcessStartInfo(string executablePath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
+        var fullPath = Path.GetFullPath(executablePath);
+        var toolDirectory = Path.GetDirectoryName(fullPath)
+            ?? throw new IOException($"Cannot determine the tool directory for '{fullPath}'.");
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = fullPath,
+            WorkingDirectory = toolDirectory,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WindowStyle = ProcessWindowStyle.Hidden,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        startInfo.ArgumentList.Add("--version");
+        return startInfo;
     }
 
     private static string FirstNonEmpty(params string[] values) =>

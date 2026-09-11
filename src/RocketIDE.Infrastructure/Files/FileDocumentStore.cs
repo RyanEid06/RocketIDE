@@ -14,6 +14,17 @@ public sealed class FileDocumentStore : IDocumentStore
     private readonly Dictionary<string, Entry> _byPath = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<DocumentId, Entry> _byId = new();
     private readonly List<DocumentId> _order = new();
+    private readonly Func<string, byte[], CancellationToken, Task> _writeAtomicallyAsync;
+
+    public FileDocumentStore()
+        : this(WriteAtomicallyAsync)
+    {
+    }
+
+    internal FileDocumentStore(Func<string, byte[], CancellationToken, Task> writeAtomicallyAsync)
+    {
+        _writeAtomicallyAsync = writeAtomicallyAsync ?? throw new ArgumentNullException(nameof(writeAtomicallyAsync));
+    }
 
     public IReadOnlyList<DocumentSnapshot> OpenDocuments
     {
@@ -103,56 +114,64 @@ public sealed class FileDocumentStore : IDocumentStore
         CancellationToken cancellationToken)
     {
         Entry entry;
-        DocumentSnapshot snapshot;
-        byte[] baselineHash;
-        bool hasUtf8Bom;
-
         lock (_gate)
         {
             entry = GetEntry(id);
-            snapshot = entry.State.Snapshot;
-            baselineHash = entry.BaselineHash.ToArray();
-            hasUtf8Bom = entry.HasUtf8Bom;
         }
 
-        if (!snapshot.IsDirty)
+        await entry.SaveGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            return new DocumentSaveResult(DocumentSaveStatus.NoChanges, snapshot);
-        }
-
-        cancellationToken.ThrowIfCancellationRequested();
-
-        if (!overwriteExternalChanges)
-        {
-            var currentHash = await TryGetCurrentHashAsync(snapshot.Path, cancellationToken).ConfigureAwait(false);
-            if (currentHash is null || !CryptographicOperations.FixedTimeEquals(currentHash, baselineHash))
+            DocumentSnapshot snapshot;
+            byte[] baselineHash;
+            bool hasUtf8Bom;
+            lock (_gate)
             {
-                return new DocumentSaveResult(
-                    DocumentSaveStatus.Conflict,
-                    snapshot,
-                    "The file changed on disk after it was opened or last saved.");
+                // Re-read state only after this document's previous save has finished. Two rapid
+                // Ctrl+S operations must not race atomic replacements and leave BaselineHash
+                // describing a different write than the bytes currently on disk.
+                var current = GetEntry(id);
+                snapshot = current.State.Snapshot;
+                baselineHash = current.BaselineHash.ToArray();
+                hasUtf8Bom = current.HasUtf8Bom;
             }
-        }
 
-        var bytes = Encode(snapshot.Path, snapshot.Text, hasUtf8Bom);
-        await WriteAtomicallyAsync(snapshot.Path, bytes, cancellationToken).ConfigureAwait(false);
-        var newHash = SHA256.HashData(bytes);
-
-        lock (_gate)
-        {
-            // The UI may have produced another edit while the save I/O was in flight.
-            // Only mark clean when the exact version/text that was written is still current.
-            var current = GetEntry(id);
-            if (current.State.Snapshot.Version != snapshot.Version ||
-                !string.Equals(current.State.Snapshot.Text, snapshot.Text, StringComparison.Ordinal))
+            if (!snapshot.IsDirty)
             {
+                return new DocumentSaveResult(DocumentSaveStatus.NoChanges, snapshot);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!overwriteExternalChanges)
+            {
+                var currentHash = await TryGetCurrentHashAsync(snapshot.Path, cancellationToken).ConfigureAwait(false);
+                if (currentHash is null || !CryptographicOperations.FixedTimeEquals(currentHash, baselineHash))
+                {
+                    return new DocumentSaveResult(
+                        DocumentSaveStatus.Conflict,
+                        snapshot,
+                        "The file changed on disk after it was opened or last saved.");
+                }
+            }
+
+            var bytes = Encode(snapshot.Path, snapshot.Text, hasUtf8Bom);
+            await _writeAtomicallyAsync(snapshot.Path, bytes, cancellationToken).ConfigureAwait(false);
+            var newHash = SHA256.HashData(bytes);
+
+            lock (_gate)
+            {
+                // The editor may change while the async write is in flight. The disk baseline must
+                // always become the exact snapshot that was persisted, independently of current text.
+                var current = GetEntry(id);
                 current.BaselineHash = newHash;
-                return new DocumentSaveResult(DocumentSaveStatus.Saved, current.State.Snapshot);
+                var persisted = current.State.MarkPersisted(snapshot.Text, StrictUtf8.GetByteCount(snapshot.Text));
+                return new DocumentSaveResult(DocumentSaveStatus.Saved, persisted);
             }
-
-            current.BaselineHash = newHash;
-            var saved = current.State.MarkSaved(StrictUtf8.GetByteCount(snapshot.Text));
-            return new DocumentSaveResult(DocumentSaveStatus.Saved, saved);
+        }
+        finally
+        {
+            entry.SaveGate.Release();
         }
     }
 
@@ -317,6 +336,8 @@ public sealed class FileDocumentStore : IDocumentStore
         public byte[] BaselineHash { get; set; } = baselineHash;
 
         public bool HasUtf8Bom { get; set; } = hasUtf8Bom;
+
+        public SemaphoreSlim SaveGate { get; } = new(1, 1);
     }
 
     private sealed record LoadedTextFile(string Text, byte[] Bytes, byte[] Hash, bool HasUtf8Bom);

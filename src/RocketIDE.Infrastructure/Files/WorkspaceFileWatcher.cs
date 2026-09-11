@@ -121,9 +121,10 @@ public sealed class WorkspaceFileWatcher : IDisposable
     private bool IsExcluded(string path)
     {
         var fileName = Path.GetFileName(path);
-        if (fileName.StartsWith(".", StringComparison.Ordinal) &&
-            fileName.Contains(".rocketide-", StringComparison.OrdinalIgnoreCase) &&
-            fileName.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase))
+        if (WorkspaceFileSystem.ShouldHideFile(fileName) ||
+            (fileName.StartsWith(".", StringComparison.Ordinal) &&
+             fileName.Contains(".rocketide-", StringComparison.OrdinalIgnoreCase) &&
+             fileName.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase)))
         {
             return true;
         }

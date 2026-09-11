@@ -83,6 +83,7 @@ public sealed class DocumentSynchronizerTests
         public bool IsInitialized => true;
         public List<(string Method, object? Parameters)> Notifications { get; } = new();
         public event EventHandler<RocketServerNotificationEventArgs>? NotificationReceived { add { } remove { } }
+        public event EventHandler<RocketTransportFaultedEventArgs>? Faulted { add { } remove { } }
         public event EventHandler<string>? LogReceived { add { } remove { } }
         public Task StartAsync(string serverPath, string workspacePath, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task<TResponse?> RequestAsync<TResponse>(string method, object? parameters, CancellationToken cancellationToken) => Task.FromResult(default(TResponse));

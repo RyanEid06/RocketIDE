@@ -8,9 +8,9 @@ The goal is not to clone Visual Studio or VS Code. RocketIDE aims to provide a f
 
 RocketIDE is under active development through the work packages tracked in [`ROADMAP.md`](ROADMAP.md).
 
-- IDE-WP00 — Repository baseline + Windows CI: **DONE**
-- IDE-WP01 + IDE-WP02 — native shell and editor/document foundation: **DONE** (`windows-ci` run `34504712942` + real Windows smoke test)
-- Current implementation batch: **IDE-WP03 + IDE-WP04 — workspace/project explorer and Rocket editor ergonomics** (Windows CI + smoke verification pending)
+- IDE-WP00 through IDE-WP06: **DONE** — repository/CI foundation, native shell, editor/document handling, workspace explorer, Rocket syntax ergonomics, Rocket tool discovery, and the LSP transport/lifecycle foundation have passed their recorded Windows verification gates.
+- Post-WP06 stabilization: harden trust boundaries, save/workspace races, verification determinism, line-ending fidelity, and LSP fault handling before adding more semantic UI.
+- Next feature package after stabilization: **IDE-WP07 — live diagnostics + Problems**.
 
 A work package is not considered complete because its UI looks finished. Focused tests, `scripts/verify.ps1`, and the Windows CI gate must pass before its status is changed to `DONE`.
 
@@ -37,6 +37,8 @@ A work package is not considered complete because its UI looks finished. Focused
 RocketIDE is a **client of Rocket tooling**, not another implementation of Rocket.
 
 Do not create an IDE-local Rocket parser, type checker, semantic model, diagnostic engine, formatter, or package resolver just to make a feature appear to work. Semantic behavior comes from `rocket-lsp`. Build, test, and tooling behavior comes from `rocketc`.
+
+Workspace-local Rocket binaries are treated as untrusted project content. If developing Rocket itself, explicitly trust that checkout once under **Tools > Rocket SDK Settings** before RocketIDE may probe or start its checkout-local `rocketc.exe` / `rocket-lsp.exe`; trust is stored per-user, not in the repository.
 
 ## Development workflow
 

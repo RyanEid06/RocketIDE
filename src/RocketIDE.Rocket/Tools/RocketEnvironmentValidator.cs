@@ -1,6 +1,6 @@
 namespace RocketIDE.Rocket.Tools;
 
-public sealed class RocketEnvironmentValidator(RocketToolLocator locator)
+public sealed class RocketEnvironmentValidator(IRocketToolLocator locator)
 {
     public async Task<RocketEnvironmentValidationResult> ValidateAsync(string? activePath, CancellationToken cancellationToken)
     {

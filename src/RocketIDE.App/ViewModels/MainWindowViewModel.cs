@@ -1,8 +1,8 @@
+using RocketIDE.Core.Workspaces;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using RocketIDE.Core.Documents;
-using RocketIDE.Infrastructure.Files;
 using RocketIDE.App.ViewModels.Explorer;
 
 namespace RocketIDE.App.ViewModels;
@@ -16,7 +16,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private string _caretStatus = "Ln 1, Col 1";
     private string _encodingStatus = "UTF-8";
 
-    public MainWindowViewModel(WorkspaceFileSystem workspaceFileSystem)
+    public MainWindowViewModel(IWorkspaceFileSystem workspaceFileSystem)
     {
         ArgumentNullException.ThrowIfNull(workspaceFileSystem);
         Explorer = new WorkspaceExplorerViewModel(workspaceFileSystem);

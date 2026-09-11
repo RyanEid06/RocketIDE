@@ -95,6 +95,52 @@ public sealed class JsonRpcConnectionTests
         Assert.AreEqual(3, notification.Parameters.GetProperty("files").GetInt32());
     }
 
+
+    [TestMethod]
+    public async Task NotificationSubscriberException_DoesNotKillReaderLoopOrOtherSubscribers()
+    {
+        await using var serverToClient = new AsyncByteStream();
+        await using var clientToServer = new AsyncByteStream();
+        await using var connection = new JsonRpcConnection(serverToClient, clientToServer);
+        var notifications = 0;
+        connection.NotificationReceived += (_, _) => throw new InvalidOperationException("observer failed");
+        connection.NotificationReceived += (_, _) => Interlocked.Increment(ref notifications);
+
+        await WriteJsonAsync(serverToClient, new { jsonrpc = "2.0", method = "rocket/analysisStatus", @params = new { files = 1 } });
+        await WaitUntilAsync(() => Volatile.Read(ref notifications) == 1);
+
+        var requestTask = connection.RequestAsync<TestResult>("still-alive", null, CancellationToken.None);
+        var request = await ReadJsonAsync(clientToServer);
+        var id = request.GetProperty("id").GetInt64();
+        await WriteJsonAsync(serverToClient, new { jsonrpc = "2.0", id, result = new { value = 42 } });
+
+        Assert.AreEqual(42, (await requestTask)!.Value);
+    }
+
+    [TestMethod]
+    public async Task UnexpectedInputEof_RaisesFaultAndFailsPendingRequest()
+    {
+        await using var serverToClient = new AsyncByteStream();
+        await using var clientToServer = new AsyncByteStream();
+        await using var connection = new JsonRpcConnection(serverToClient, clientToServer);
+        var fault = new TaskCompletionSource<RocketTransportFaultedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+        connection.Faulted += (_, args) => fault.TrySetResult(args);
+
+        var requestTask = connection.RequestAsync<TestResult>("pending", null, CancellationToken.None);
+        _ = await ReadJsonAsync(clientToServer);
+        await serverToClient.DisposeAsync();
+
+        var observed = await fault.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.IsInstanceOfType<EndOfStreamException>(observed.Exception);
+        await Assert.ThrowsExactlyAsync<EndOfStreamException>(async () => _ = await requestTask);
+        Assert.ThrowsExactly<LspProtocolException>(() =>
+        {
+            _ = connection.NotifyAsync("after-fault", null, CancellationToken.None);
+        });
+        await Assert.ThrowsExactlyAsync<LspProtocolException>(
+            async () => _ = await connection.RequestAsync<TestResult>("after-fault", null, CancellationToken.None));
+    }
+
     [TestMethod]
     public async Task MalformedResponse_FailsTheMatchingPendingRequestInsteadOfLeavingItHung()
     {
@@ -108,6 +154,17 @@ public sealed class JsonRpcConnectionTests
         await WriteJsonAsync(serverToClient, new { jsonrpc = "2.0", id });
 
         await Assert.ThrowsExactlyAsync<LspProtocolException>(async () => _ = await requestTask.WaitAsync(TimeSpan.FromSeconds(2)));
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(2);
+        while (!condition() && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(10);
+        }
+
+        Assert.IsTrue(condition());
     }
 
     private static async Task<JsonElement> ReadJsonAsync(Stream stream)

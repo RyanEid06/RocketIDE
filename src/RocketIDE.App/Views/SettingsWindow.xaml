@@ -1,7 +1,7 @@
 <Window x:Class="RocketIDE.App.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Rocket SDK Settings" Width="620" Height="260" ResizeMode="NoResize"
+        Title="Rocket SDK Settings" Width="680" Height="350" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{DynamicResource IDE.WindowBrush}"
         Foreground="{DynamicResource IDE.TextBrush}">
@@ -10,23 +10,30 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <TextBlock Text="Leave either field empty to use automatic discovery for that tool." Foreground="{DynamicResource IDE.TextMutedBrush}" TextWrapping="Wrap" />
+        <TextBlock Text="Explicit paths, environment/PATH entries, bundled SDK files, and the developer Rocket checkout discovered beside the RocketIDE installation are trusted tool sources. Other workspace build outputs are never executed unless that exact checkout is trusted here. Only trust a checkout you control." Foreground="{DynamicResource IDE.TextMutedBrush}" TextWrapping="Wrap" />
         <Grid Grid.Row="1" Margin="0,14,0,0">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="80" /></Grid.ColumnDefinitions>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="145" /><ColumnDefinition Width="*" /><ColumnDefinition Width="80" /></Grid.ColumnDefinitions>
             <TextBlock VerticalAlignment="Center" Text="Rocket compiler:" />
             <TextBox x:Name="CompilerPathTextBox" Grid.Column="1" Margin="8,0" />
             <Button Grid.Column="2" Content="Browse..." Click="BrowseCompiler_Click" />
         </Grid>
         <Grid Grid.Row="2" Margin="0,10,0,0">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="130" /><ColumnDefinition Width="*" /><ColumnDefinition Width="80" /></Grid.ColumnDefinitions>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="145" /><ColumnDefinition Width="*" /><ColumnDefinition Width="80" /></Grid.ColumnDefinitions>
             <TextBlock VerticalAlignment="Center" Text="Language server:" />
             <TextBox x:Name="LanguageServerPathTextBox" Grid.Column="1" Margin="8,0" />
             <Button Grid.Column="2" Content="Browse..." Click="BrowseLanguageServer_Click" />
         </Grid>
-        <DockPanel Grid.Row="3" Margin="0,18,0,0" LastChildFill="False" VerticalAlignment="Bottom">
-            <Button DockPanel.Dock="Left" Width="145" Content="Use Automatic Discovery" Click="Automatic_Click" />
+        <Border Grid.Row="3" Margin="0,16,0,0" Padding="10" Background="{DynamicResource IDE.ChromeRaisedBrush}" BorderBrush="{DynamicResource IDE.BorderBrush}" BorderThickness="1" CornerRadius="3">
+            <StackPanel>
+                <CheckBox x:Name="TrustWorkspaceCheckBox" Content="Trust current workspace Rocket build outputs" />
+                <TextBlock x:Name="WorkspaceTrustPathText" Margin="24,5,0,0" Foreground="{DynamicResource IDE.TextMutedBrush}" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+        <DockPanel Grid.Row="4" Margin="0,18,0,0" LastChildFill="False" VerticalAlignment="Bottom">
+            <Button DockPanel.Dock="Left" Width="145" Content="Reset Discovery" Click="Automatic_Click" />
             <Button DockPanel.Dock="Right" Width="80" Margin="8,0,0,0" Content="Save" IsDefault="True" Click="Save_Click" />
             <Button DockPanel.Dock="Right" Width="80" Content="Cancel" IsCancel="True" />
         </DockPanel>

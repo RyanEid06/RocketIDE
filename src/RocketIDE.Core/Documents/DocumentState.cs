@@ -71,16 +71,23 @@ public sealed class DocumentState
         return Snapshot;
     }
 
-    public DocumentSnapshot MarkSaved(long byteLength)
+    public DocumentSnapshot MarkPersisted(string persistedText, long persistedByteLength)
     {
-        if (byteLength < 0)
+        ArgumentNullException.ThrowIfNull(persistedText);
+        if (persistedByteLength < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(byteLength));
+            throw new ArgumentOutOfRangeException(nameof(persistedByteLength));
         }
 
-        _byteLength = byteLength;
-        _savedText = _text;
-        _isDirty = false;
+        _savedText = persistedText;
+        if (string.Equals(_text, persistedText, StringComparison.Ordinal))
+        {
+            _byteLength = persistedByteLength;
+        }
+
+        _isDirty = !string.Equals(_text, _savedText, StringComparison.Ordinal);
         return Snapshot;
     }
+
+    public DocumentSnapshot MarkSaved(long byteLength) => MarkPersisted(_text, byteLength);
 }

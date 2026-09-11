@@ -8,4 +8,9 @@ public sealed class RocketServerNotificationEventArgs(string method, JsonElement
     public JsonElement Parameters { get; } = parameters;
 }
 
+public sealed class RocketTransportFaultedEventArgs(Exception exception) : EventArgs
+{
+    public Exception Exception { get; } = exception ?? throw new ArgumentNullException(nameof(exception));
+}
+
 internal sealed record JsonRpcErrorPayload(int Code, string Message, JsonElement? Data);

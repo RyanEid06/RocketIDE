@@ -53,7 +53,7 @@ Engineering discipline is evidence-based. Do not substitute optimistic claims, v
    Never commit a username, drive letter, local checkout path, generated `.rocketc`, `.vs`, `bin`, `obj`, SDK cache, or installed Rocket path.
 
 10. **Security and safety.**
-    Opening a project must not execute Rocket code, native programs, package scripts, or registry operations. Source-controlled project content is untrusted input. Only explicit user commands may run/build/test programs.
+    Opening a project must not execute Rocket code, project-supplied native programs, package scripts, or registry operations. Source-controlled project content is untrusted input. RocketIDE may start a trusted Rocket toolchain service (for example an explicitly configured, environment/PATH, bundled, recognized installation-adjacent developer SDK, or previously user-trusted `rocket-lsp.exe`), but compiler/LSP binaries discovered from the opened workspace must never be probed or executed until the exact checkout is explicitly trusted in per-user settings. The recognized installation-adjacent developer SDK is limited to a sibling `Rocket` checkout beside a `RocketIDE` / `RocketIDE-Build` directory and must not depend on the opened workspace. Trusted toolchain processes must not use an untrusted workspace as their native process working directory; pass the workspace explicitly through the tool protocol/arguments instead. Only explicit user commands may run/build/test user programs.
 
 11. **Respect Rocket LSP bounds.**
     - LSP protocol message: 16 MiB
