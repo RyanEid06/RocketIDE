@@ -65,7 +65,8 @@ public static class LspDiagnosticMapper
                 diagnostic.Range.Start.Line,
                 diagnostic.Range.Start.Character,
                 diagnostic.Range.End.Line,
-                diagnostic.Range.End.Character));
+                diagnostic.Range.End.Character),
+            diagnostic.Data.ValueKind == JsonValueKind.Undefined ? default : diagnostic.Data.Clone());
     }
 
     private static DiagnosticSeverity MapSeverity(int? severity) => severity switch

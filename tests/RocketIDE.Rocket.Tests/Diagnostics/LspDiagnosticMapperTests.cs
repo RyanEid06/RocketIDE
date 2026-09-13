@@ -25,7 +25,8 @@ public sealed class LspDiagnosticMapperTests
               "severity": 2,
               "code": "R4001",
               "source": "rocketc",
-              "message": "Type mismatch"
+              "message": "Type mismatch",
+              "data": { "replacement": "twice", "token": 17 }
             }
           ]
         }
@@ -43,6 +44,9 @@ public sealed class LspDiagnosticMapperTests
         Assert.AreEqual("rocketc", diagnostic.Source);
         Assert.AreEqual("Type mismatch", diagnostic.Message);
         Assert.AreEqual(new SourceRange(2, 3, 2, 5), diagnostic.Range);
+        Assert.AreEqual(JsonValueKind.Object, diagnostic.Data.ValueKind);
+        Assert.AreEqual("twice", diagnostic.Data.GetProperty("replacement").GetString());
+        Assert.AreEqual(17, diagnostic.Data.GetProperty("token").GetInt32());
     }
 
     [TestMethod]

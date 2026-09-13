@@ -57,4 +57,62 @@ public sealed class RocketLanguageServerCapabilitiesTests
         Assert.AreEqual(0, capabilities.CompletionTriggerCharacters.Count);
         Assert.AreEqual(0, capabilities.SemanticTokenLegend.TokenTypes.Count);
     }
+
+
+    [TestMethod]
+    public void Parse_ReadsWp09BooleanAndOptionsCapabilitiesIncludingPrepareRename()
+    {
+        using var document = JsonDocument.Parse("""
+        {
+          "definitionProvider": { "workDoneProgress": true },
+          "referencesProvider": true,
+          "renameProvider": { "prepareProvider": true },
+          "codeActionProvider": { "codeActionKinds": ["quickfix"] },
+          "documentFormattingProvider": true
+        }
+        """);
+
+        var capabilities = RocketLanguageServerCapabilities.Parse(document.RootElement);
+
+        Assert.IsTrue(capabilities.SupportsDefinition);
+        Assert.IsTrue(capabilities.SupportsReferences);
+        Assert.IsTrue(capabilities.SupportsRename);
+        Assert.IsTrue(capabilities.SupportsPrepareRename);
+        Assert.IsTrue(capabilities.SupportsCodeActions);
+        Assert.IsTrue(capabilities.SupportsDocumentFormatting);
+    }
+
+    [TestMethod]
+    public void Parse_Wp09ProvidersRejectMalformedNonBooleanNonOptionsShapes()
+    {
+        using var document = JsonDocument.Parse("""
+        {
+          "definitionProvider": "yes",
+          "referencesProvider": 1,
+          "renameProvider": [],
+          "codeActionProvider": "quickfix",
+          "documentFormattingProvider": 1
+        }
+        """);
+
+        var capabilities = RocketLanguageServerCapabilities.Parse(document.RootElement);
+
+        Assert.IsFalse(capabilities.SupportsDefinition);
+        Assert.IsFalse(capabilities.SupportsReferences);
+        Assert.IsFalse(capabilities.SupportsRename);
+        Assert.IsFalse(capabilities.SupportsPrepareRename);
+        Assert.IsFalse(capabilities.SupportsCodeActions);
+        Assert.IsFalse(capabilities.SupportsDocumentFormatting);
+    }
+
+    [TestMethod]
+    public void Parse_RenameBooleanTrueDoesNotInventPrepareRenameSupport()
+    {
+        using var document = JsonDocument.Parse("""{ "renameProvider": true }""");
+
+        var capabilities = RocketLanguageServerCapabilities.Parse(document.RootElement);
+
+        Assert.IsTrue(capabilities.SupportsRename);
+        Assert.IsFalse(capabilities.SupportsPrepareRename);
+    }
 }

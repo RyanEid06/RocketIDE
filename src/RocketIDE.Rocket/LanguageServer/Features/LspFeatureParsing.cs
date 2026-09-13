@@ -17,7 +17,15 @@ internal static class LspFeatureParsing
             throw new LspProtocolException($"{context} is missing a valid range.");
         }
 
-        return new LspRange(ParsePosition(start, context), ParsePosition(end, context));
+        var startPosition = ParsePosition(start, context);
+        var endPosition = ParsePosition(end, context);
+        if (endPosition.Line < startPosition.Line ||
+            (endPosition.Line == startPosition.Line && endPosition.Character < startPosition.Character))
+        {
+            throw new LspProtocolException($"{context} range end precedes its start.");
+        }
+
+        return new LspRange(startPosition, endPosition);
     }
 
     public static LspPosition ParsePosition(JsonElement element, string context)

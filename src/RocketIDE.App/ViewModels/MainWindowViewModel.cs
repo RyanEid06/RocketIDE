@@ -25,6 +25,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         ArgumentNullException.ThrowIfNull(workspaceFileSystem);
         Explorer = new WorkspaceExplorerViewModel(workspaceFileSystem);
         Problems = new ProblemsViewModel();
+        References = new ReferencesViewModel();
         Explorer.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName == nameof(WorkspaceExplorerViewModel.HasWorkspace))
@@ -43,6 +44,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public WorkspaceExplorerViewModel Explorer { get; }
 
     public ProblemsViewModel Problems { get; }
+
+    public ReferencesViewModel References { get; }
 
     public ObservableCollection<string> RecentWorkspaces { get; } = new();
 

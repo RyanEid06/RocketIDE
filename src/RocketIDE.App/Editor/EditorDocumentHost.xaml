@@ -96,6 +96,18 @@
                                HorizontalScrollBarVisibility="Auto"
                                VerticalScrollBarVisibility="Auto"
                                PreviewKeyDown="Editor_PreviewKeyDown"
-                               PreviewTextInput="Editor_PreviewTextInput" />
+                               PreviewTextInput="Editor_PreviewTextInput">
+            <avalonEdit:TextEditor.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="Go to Definition" InputGestureText="F12" Click="Definition_Click" />
+                    <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="Find References" InputGestureText="Shift+F12" Click="References_Click" />
+                    <Separator />
+                    <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="Rename Symbol..." InputGestureText="F2" Click="RenameSymbol_Click" />
+                    <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="Quick Fixes (server-provided)" InputGestureText="Ctrl+." Click="CodeActions_Click" />
+                    <Separator />
+                    <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="Format Document" InputGestureText="Shift+Alt+F" Click="FormatDocument_Click" />
+                </ContextMenu>
+            </avalonEdit:TextEditor.ContextMenu>
+        </avalonEdit:TextEditor>
     </Grid>
 </UserControl>

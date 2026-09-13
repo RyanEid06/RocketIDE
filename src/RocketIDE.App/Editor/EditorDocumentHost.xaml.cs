@@ -11,6 +11,7 @@ using RocketIDE.App.Editor.SignatureHelp;
 using RocketIDE.App.Integration;
 using RocketIDE.App.ViewModels;
 using RocketIDE.Core.Diagnostics;
+using RocketIDE.Rocket.LanguageServer.LspDtos;
 
 namespace RocketIDE.App.Editor;
 
@@ -22,6 +23,8 @@ public partial class EditorDocumentHost : UserControl
     private readonly RocketSignatureHelpController _signatureHelpController;
     private readonly RocketSemanticTokenController _semanticTokenController;
     private DocumentTabViewModel? _document;
+
+    public event EventHandler<RocketEditorCommandRequestedEventArgs>? RocketCommandRequested;
 
     public static readonly DependencyProperty FeatureServiceProperty = DependencyProperty.Register(
         nameof(FeatureService),
@@ -80,6 +83,26 @@ public partial class EditorDocumentHost : UserControl
         Editor.ScrollTo(clampedLine, 1);
         Editor.TextArea.Caret.BringCaretToView();
         Editor.Focus();
+    }
+
+    public void RequestRocketCommand(RocketEditorCommand command)
+    {
+        if (_document is not { } document || !IsRocketDocument(document))
+        {
+            return;
+        }
+
+        var caret = new LspPosition(
+            Math.Max(0, Editor.TextArea.Caret.Line - 1),
+            Math.Max(0, Editor.TextArea.Caret.Column - 1));
+        var selectionStart = Editor.SelectionLength > 0 ? Editor.SelectionStart : Editor.CaretOffset;
+        var selectionEnd = Editor.SelectionLength > 0 ? Editor.SelectionStart + Editor.SelectionLength : Editor.CaretOffset;
+        var startLocation = Editor.Document.GetLocation(selectionStart);
+        var endLocation = Editor.Document.GetLocation(selectionEnd);
+        var range = new LspRange(
+            new LspPosition(startLocation.Line - 1, startLocation.Column - 1),
+            new LspPosition(endLocation.Line - 1, endLocation.Column - 1));
+        RocketCommandRequested?.Invoke(this, new RocketEditorCommandRequestedEventArgs(command, document.Path, caret, range));
     }
 
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -225,11 +248,19 @@ public partial class EditorDocumentHost : UserControl
             return;
         }
 
-        if (DataContext is DocumentTabViewModel document &&
-            IsRocketDocument(document) &&
-            EditorKeyBehavior.HandlePreviewKeyDown(Editor, e))
+        if (DataContext is DocumentTabViewModel document && IsRocketDocument(document))
         {
-            e.Handled = true;
+            if (RocketEditorCommandBinding.TryGetCommand(e.Key, Keyboard.Modifiers, out var command))
+            {
+                RequestRocketCommand(command);
+                e.Handled = true;
+                return;
+            }
+
+            if (EditorKeyBehavior.HandlePreviewKeyDown(Editor, e))
+            {
+                e.Handled = true;
+            }
         }
     }
 
@@ -270,6 +301,12 @@ public partial class EditorDocumentHost : UserControl
 
     private static bool IsRocketDocument(DocumentTabViewModel document) =>
         string.Equals(System.IO.Path.GetExtension(document.Path), ".rocket", StringComparison.OrdinalIgnoreCase);
+
+    private void Definition_Click(object sender, RoutedEventArgs e) => RequestRocketCommand(RocketEditorCommand.Definition);
+    private void References_Click(object sender, RoutedEventArgs e) => RequestRocketCommand(RocketEditorCommand.References);
+    private void RenameSymbol_Click(object sender, RoutedEventArgs e) => RequestRocketCommand(RocketEditorCommand.Rename);
+    private void CodeActions_Click(object sender, RoutedEventArgs e) => RequestRocketCommand(RocketEditorCommand.CodeActions);
+    private void FormatDocument_Click(object sender, RoutedEventArgs e) => RequestRocketCommand(RocketEditorCommand.FormatDocument);
 
     private void FindTextBox_KeyDown(object sender, KeyEventArgs e)
     {

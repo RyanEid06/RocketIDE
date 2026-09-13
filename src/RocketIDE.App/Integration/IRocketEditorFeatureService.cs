@@ -31,5 +31,38 @@ public interface IRocketEditorFeatureService
         string path,
         CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<RocketLocation>?> RequestDefinitionAsync(
+        string path,
+        LspPosition position,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<RocketLocation>?> RequestReferencesAsync(
+        string path,
+        LspPosition position,
+        CancellationToken cancellationToken);
+
+    Task<RocketPrepareRenameResult?> PrepareRenameAsync(
+        string path,
+        LspPosition position,
+        CancellationToken cancellationToken);
+
+    Task<RocketWorkspaceEdit?> RequestRenameAsync(
+        string path,
+        LspPosition position,
+        string newName,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<RocketCodeAction>?> RequestCodeActionsAsync(
+        string path,
+        LspRange range,
+        IReadOnlyList<RocketCodeActionDiagnostic> diagnostics,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<RocketTextEdit>?> RequestFormattingAsync(
+        string path,
+        int tabSize,
+        bool insertSpaces,
+        CancellationToken cancellationToken);
+
     void InvalidateSemanticTokens(string path);
 }

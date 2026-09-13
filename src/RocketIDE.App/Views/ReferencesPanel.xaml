@@ -1,0 +1,27 @@
+<UserControl x:Class="RocketIDE.App.Views.ReferencesPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <ListView x:Name="ResultsList"
+                  ItemsSource="{Binding Items}"
+                  BorderThickness="0"
+                  Background="Transparent"
+                  Foreground="{DynamicResource IDE.TextBrush}"
+                  MouseDoubleClick="ResultsList_MouseDoubleClick"
+                  PreviewKeyDown="ResultsList_PreviewKeyDown">
+            <ListView.View>
+                <GridView AllowsColumnReorder="True">
+                    <GridViewColumn Header="File" Width="180" DisplayMemberBinding="{Binding FileName}" />
+                    <GridViewColumn Header="Line" Width="58" DisplayMemberBinding="{Binding Line}" />
+                    <GridViewColumn Header="Col" Width="52" DisplayMemberBinding="{Binding Column}" />
+                    <GridViewColumn Header="Location" Width="520" DisplayMemberBinding="{Binding LocationText}" />
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <TextBlock Grid.Row="1" Margin="4,5,4,0" Foreground="{DynamicResource IDE.TextMutedBrush}" FontSize="11" Text="{Binding StatusText}" />
+    </Grid>
+</UserControl>

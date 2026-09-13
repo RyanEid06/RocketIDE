@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace RocketIDE.Core.Diagnostics;
 
 public sealed record RocketDiagnostic(
@@ -6,4 +8,5 @@ public sealed record RocketDiagnostic(
     string Message,
     DiagnosticSeverity Severity,
     string FilePath,
-    SourceRange Range);
+    SourceRange Range,
+    JsonElement Data = default);

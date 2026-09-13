@@ -73,55 +73,7 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
                     version = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "0.0.0",
                 },
                 rootUri = workspaceUri,
-                capabilities = new
-                {
-                    general = new { positionEncodings = new[] { "utf-16" } },
-                    workspace = new { workspaceFolders = true },
-                    textDocument = new
-                    {
-                        synchronization = new { dynamicRegistration = false, didSave = true },
-                        completion = new
-                        {
-                            contextSupport = true,
-                            completionItem = new
-                            {
-                                documentationFormat = new[] { "markdown", "plaintext" },
-                                snippetSupport = false,
-                                insertReplaceSupport = true,
-                            },
-                        },
-                        hover = new { contentFormat = new[] { "markdown", "plaintext" } },
-                        signatureHelp = new
-                        {
-                            contextSupport = true,
-                            signatureInformation = new
-                            {
-                                documentationFormat = new[] { "markdown", "plaintext" },
-                                activeParameterSupport = true,
-                                parameterInformation = new { labelOffsetSupport = true },
-                            },
-                        },
-                        semanticTokens = new
-                        {
-                            dynamicRegistration = false,
-                            requests = new { full = new { delta = true }, range = false },
-                            tokenTypes = new[]
-                            {
-                                "namespace", "type", "class", "enum", "interface", "struct", "typeParameter",
-                                "parameter", "variable", "property", "enumMember", "event", "function", "method",
-                                "macro", "keyword", "modifier", "comment", "string", "number", "regexp", "operator", "decorator",
-                            },
-                            tokenModifiers = new[]
-                            {
-                                "declaration", "definition", "readonly", "static", "deprecated", "abstract", "async",
-                                "modification", "documentation", "defaultLibrary",
-                            },
-                            formats = new[] { "relative" },
-                            overlappingTokenSupport = false,
-                            multilineTokenSupport = false,
-                        },
-                    },
-                },
+                capabilities = CreateClientCapabilities(),
                 workspaceFolders = new[]
                 {
                     new { uri = workspaceUri, name = Path.GetFileName(fullWorkspacePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) },
@@ -211,6 +163,83 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
             RaiseLogSafely($"rocket-lsp disposal failed: {exception.Message}");
             await ForceStopAsync().ConfigureAwait(false);
         }
+    }
+
+    internal static object CreateClientCapabilities()
+    {
+        return new
+        {
+            general = new { positionEncodings = new[] { "utf-16" } },
+            workspace = new
+            {
+                workspaceFolders = true,
+                workspaceEdit = new
+                {
+                    documentChanges = true,
+                    // WP09 supports text-document edits only and rejects create/rename/delete
+                    // operations. Advertise the strongest failure mode that matches that scope.
+                    failureHandling = "textOnlyTransactional",
+                },
+            },
+            textDocument = new
+            {
+                synchronization = new { dynamicRegistration = false, didSave = true },
+                completion = new
+                {
+                    contextSupport = true,
+                    completionItem = new
+                    {
+                        documentationFormat = new[] { "markdown", "plaintext" },
+                        snippetSupport = false,
+                        insertReplaceSupport = true,
+                    },
+                },
+                hover = new { contentFormat = new[] { "markdown", "plaintext" } },
+                signatureHelp = new
+                {
+                    contextSupport = true,
+                    signatureInformation = new
+                    {
+                        documentationFormat = new[] { "markdown", "plaintext" },
+                        activeParameterSupport = true,
+                        parameterInformation = new { labelOffsetSupport = true },
+                    },
+                },
+                definition = new { dynamicRegistration = false, linkSupport = true },
+                references = new { dynamicRegistration = false },
+                rename = new { dynamicRegistration = false, prepareSupport = true, prepareSupportDefaultBehavior = true },
+                publishDiagnostics = new { dataSupport = true },
+                codeAction = new
+                {
+                    dynamicRegistration = false,
+                    codeActionLiteralSupport = new
+                    {
+                        codeActionKind = new { valueSet = new[] { "quickfix" } },
+                    },
+                    disabledSupport = true,
+                },
+                formatting = new { dynamicRegistration = false },
+                semanticTokens = new
+                {
+                    dynamicRegistration = false,
+                    requests = new { full = new { delta = true }, range = false },
+                    tokenTypes = new[]
+                    {
+                        "namespace", "type", "class", "enum", "interface", "struct", "typeParameter",
+                        "parameter", "variable", "property", "enumMember", "event", "function", "method",
+                        "macro", "keyword", "modifier", "comment", "string", "number", "regexp", "operator", "decorator",
+                    },
+                    tokenModifiers = new[]
+                    {
+                        "declaration", "definition", "readonly", "static", "deprecated", "abstract", "async",
+                        "modification", "documentation", "defaultLibrary",
+                    },
+                    formats = new[] { "relative" },
+                    overlappingTokenSupport = false,
+                    multilineTokenSupport = false,
+                },
+            },
+        };
     }
 
     internal static ProcessStartInfo CreateProcessStartInfo(string serverPath)

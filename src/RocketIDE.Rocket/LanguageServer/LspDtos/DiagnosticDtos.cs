@@ -12,4 +12,5 @@ public sealed record LspDiagnostic(
     string? Message,
     int? Severity = null,
     JsonElement Code = default,
-    string? Source = null);
+    string? Source = null,
+    JsonElement Data = default);

@@ -16,7 +16,13 @@ public sealed record RocketLanguageServerCapabilities(
     IReadOnlyList<string> SignatureRetriggerCharacters,
     bool SupportsSemanticTokens,
     bool SupportsSemanticTokenDelta,
-    SemanticTokenLegend SemanticTokenLegend)
+    SemanticTokenLegend SemanticTokenLegend,
+    bool SupportsDefinition = false,
+    bool SupportsReferences = false,
+    bool SupportsRename = false,
+    bool SupportsPrepareRename = false,
+    bool SupportsCodeActions = false,
+    bool SupportsDocumentFormatting = false)
 {
     public static RocketLanguageServerCapabilities None { get; } = new(
         false,
@@ -72,6 +78,15 @@ public sealed record RocketLanguageServerCapabilities(
             }
         }
 
+        var supportsDefinition = IsBooleanOrOptionsProvider(capabilities, "definitionProvider", out _);
+        var supportsReferences = IsBooleanOrOptionsProvider(capabilities, "referencesProvider", out _);
+        var supportsRename = IsBooleanOrOptionsProvider(capabilities, "renameProvider", out var renameProvider);
+        var supportsPrepareRename = supportsRename && renameProvider.ValueKind == JsonValueKind.Object &&
+            renameProvider.TryGetProperty("prepareProvider", out var prepareProvider) &&
+            prepareProvider.ValueKind == JsonValueKind.True;
+        var supportsCodeActions = IsBooleanOrOptionsProvider(capabilities, "codeActionProvider", out _);
+        var supportsFormatting = IsBooleanOrOptionsProvider(capabilities, "documentFormattingProvider", out _);
+
         return new RocketLanguageServerCapabilities(
             supportsCompletion,
             completionTriggers,
@@ -81,7 +96,23 @@ public sealed record RocketLanguageServerCapabilities(
             signatureRetriggers,
             supportsSemantic,
             supportsDelta,
-            legend);
+            legend,
+            supportsDefinition,
+            supportsReferences,
+            supportsRename,
+            supportsPrepareRename,
+            supportsCodeActions,
+            supportsFormatting);
+    }
+
+    private static bool IsBooleanOrOptionsProvider(JsonElement parent, string propertyName, out JsonElement value)
+    {
+        if (!parent.TryGetProperty(propertyName, out value))
+        {
+            return false;
+        }
+
+        return value.ValueKind is JsonValueKind.True or JsonValueKind.Object;
     }
 
     private static bool IsEnabled(JsonElement parent, string propertyName, out JsonElement value)

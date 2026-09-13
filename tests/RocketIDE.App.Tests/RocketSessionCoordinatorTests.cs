@@ -311,6 +311,111 @@ public sealed class RocketSessionCoordinatorTests
         Assert.AreEqual(LspDocumentSyncState.LargeFileUnsupportedByLsp, state.State);
     }
 
+
+    [TestMethod]
+    public async Task Wp09FeatureRequests_UseAdvertisedCapabilitiesAndSynchronizedDocument()
+    {
+        using var temp = new TempDirectory();
+        var source = Path.Combine(temp.Path, "main.rocket");
+        var target = Path.Combine(temp.Path, "lib.rocket");
+        var fakeClient = new FakeLanguageClient
+        {
+            Capabilities = RocketLanguageServerCapabilities.None with
+            {
+                SupportsDefinition = true,
+                SupportsReferences = true,
+                SupportsRename = true,
+                SupportsPrepareRename = true,
+                SupportsCodeActions = true,
+                SupportsDocumentFormatting = true,
+            },
+            RequestHandler = (method, _) => method switch
+            {
+                "textDocument/definition" => JsonDocument.Parse($$"""{ "uri": {{JsonSerializer.Serialize(new Uri(target).AbsoluteUri)}}, "range": { "start": {"line":0,"character":0}, "end": {"line":0,"character":1} } }""").RootElement.Clone(),
+                "textDocument/references" => JsonDocument.Parse("[]").RootElement.Clone(),
+                "textDocument/prepareRename" => JsonDocument.Parse("""{ "range": { "start": {"line":0,"character":0}, "end": {"line":0,"character":4} }, "placeholder": "name" }""").RootElement.Clone(),
+                "textDocument/rename" => JsonDocument.Parse("""{ "changes": {} }""").RootElement.Clone(),
+                "textDocument/codeAction" => JsonDocument.Parse("""
+                [
+                  { "title": "Fix name", "kind": "quickfix" },
+                  { "title": "Format Rocket document", "kind": "source.format" }
+                ]
+                """).RootElement.Clone(),
+                "textDocument/formatting" => JsonDocument.Parse("[]").RootElement.Clone(),
+                _ => JsonDocument.Parse("null").RootElement.Clone(),
+            },
+        };
+        var discovery = new RocketToolDiscoveryResult(
+            Path.Combine(temp.Path, "rocketc.exe"), Path.Combine(temp.Path, "rocket-lsp.exe"),
+            "rocketc 2.1.0", "rocket-lsp 1.0.0", []);
+        await using var coordinator = CreateCoordinator(fakeClient, discovery);
+        await coordinator.EnsureAsync(source, temp.Path, CancellationToken.None);
+        await coordinator.OpenDocumentAsync(new RocketSessionDocument(source, "name", 0, "main.rocket"), CancellationToken.None);
+
+        var position = new LspPosition(0, 1);
+        var range = new LspRange(new LspPosition(0, 0), new LspPosition(0, 4));
+        var definitions = await coordinator.RequestDefinitionAsync(source, position, CancellationToken.None);
+        var references = await coordinator.RequestReferencesAsync(source, position, CancellationToken.None);
+        var prepared = await coordinator.PrepareRenameAsync(source, position, CancellationToken.None);
+        var rename = await coordinator.RequestRenameAsync(source, position, "other", CancellationToken.None);
+        var actions = await coordinator.RequestCodeActionsAsync(
+            source,
+            range,
+            [new RocketCodeActionDiagnostic(
+                range, 1, "R4002", "rocket-lsp", "undefined name 'nmae'",
+                JsonSerializer.SerializeToElement(new { replacement = "name", token = 23 }))],
+            CancellationToken.None);
+        var formatting = await coordinator.RequestFormattingAsync(source, 4, true, CancellationToken.None);
+
+        Assert.IsNotNull(definitions);
+        Assert.AreEqual(target, definitions.Single().Path);
+        Assert.IsNotNull(references);
+        Assert.AreEqual("name", prepared?.Placeholder);
+        Assert.IsNotNull(rename);
+        Assert.IsNotNull(actions);
+        Assert.AreEqual(1, actions.Count);
+        Assert.AreEqual("Fix name", actions[0].Title);
+        Assert.IsNotNull(formatting);
+        var methods = fakeClient.Requests.Select(item => item.Method).ToArray();
+        CollectionAssert.Contains(methods, "textDocument/definition");
+        CollectionAssert.Contains(methods, "textDocument/references");
+        CollectionAssert.Contains(methods, "textDocument/prepareRename");
+        CollectionAssert.Contains(methods, "textDocument/rename");
+        CollectionAssert.Contains(methods, "textDocument/codeAction");
+        CollectionAssert.Contains(methods, "textDocument/formatting");
+
+        var codeActionRequest = fakeClient.Requests.Single(item => item.Method == "textDocument/codeAction");
+        var codeActionParams = JsonSerializer.SerializeToElement(codeActionRequest.Parameters, LspJson.Options);
+        var codeActionContext = codeActionParams.GetProperty("context");
+        var forwardedDiagnostic = codeActionContext.GetProperty("diagnostics").EnumerateArray().Single();
+        Assert.AreEqual("R4002", forwardedDiagnostic.GetProperty("code").GetString());
+        Assert.AreEqual("name", forwardedDiagnostic.GetProperty("data").GetProperty("replacement").GetString());
+        Assert.AreEqual(23, forwardedDiagnostic.GetProperty("data").GetProperty("token").GetInt32());
+        CollectionAssert.AreEqual(new[] { "quickfix" }, codeActionContext.GetProperty("only").EnumerateArray().Select(item => item.GetString()).ToArray());
+    }
+
+    [TestMethod]
+    public async Task PrepareRename_IsSuppressedUnlessServerAdvertisesPrepareProvider()
+    {
+        using var temp = new TempDirectory();
+        var source = Path.Combine(temp.Path, "main.rocket");
+        var fakeClient = new FakeLanguageClient
+        {
+            Capabilities = RocketLanguageServerCapabilities.None with { SupportsRename = true, SupportsPrepareRename = false },
+        };
+        var discovery = new RocketToolDiscoveryResult(
+            Path.Combine(temp.Path, "rocketc.exe"), Path.Combine(temp.Path, "rocket-lsp.exe"),
+            "rocketc 2.1.0", "rocket-lsp 1.0.0", []);
+        await using var coordinator = CreateCoordinator(fakeClient, discovery);
+        await coordinator.EnsureAsync(source, temp.Path, CancellationToken.None);
+        await coordinator.OpenDocumentAsync(new RocketSessionDocument(source, "name", 0, "main.rocket"), CancellationToken.None);
+
+        var result = await coordinator.PrepareRenameAsync(source, new LspPosition(0, 1), CancellationToken.None);
+
+        Assert.IsNull(result);
+        Assert.IsFalse(fakeClient.Requests.Any(item => item.Method == "textDocument/prepareRename"));
+    }
+
     private static RocketSessionCoordinator CreateCoordinator(FakeLanguageClient client, RocketToolDiscoveryResult discovery) =>
         new(
             _ => Task.FromResult(RocketToolSettings.Automatic),

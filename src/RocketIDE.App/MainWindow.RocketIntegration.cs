@@ -1,14 +1,19 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
+using RocketIDE.App.Editor;
 using RocketIDE.App.Integration;
 using RocketIDE.App.ViewModels;
 using RocketIDE.App.Views;
+using RocketIDE.Core.Diagnostics;
 using RocketIDE.Core.Documents;
 using RocketIDE.Infrastructure.Settings;
 using RocketIDE.Rocket.LanguageServer;
+using RocketIDE.Rocket.LanguageServer.Features;
 using RocketIDE.Rocket.LanguageServer.LspDtos;
 using RocketIDE.Rocket.Tools;
 
@@ -20,6 +25,8 @@ public partial class MainWindow
     private readonly Dictionary<DocumentId, bool> _documentDirtyStates = new();
     private RocketToolSettings? _rocketToolSettings;
     private RocketSessionCoordinator _rocketSession = null!;
+    private WorkspaceEditTransactionService _workspaceEdits = null!;
+    private CancellationTokenSource? _wp09RequestCancellation;
 
     public IRocketEditorFeatureService RocketEditorFeatures => _rocketSession;
 
@@ -34,6 +41,7 @@ public partial class MainWindow
             SetLspStatus,
             AppendRocketOutput,
             ShowOutputPanel);
+        _workspaceEdits = WorkspaceEditTransactionService.CreateFileSystemService(GetOpenWorkspaceEditDocuments);
         _rocketSession.NotificationReceived += RocketSession_NotificationReceived;
         _rocketSession.DiagnosticSessionChanged += RocketSession_DiagnosticSessionChanged;
         _rocketSession.DiagnosticsPublished += RocketSession_DiagnosticsPublished;
@@ -210,6 +218,7 @@ public partial class MainWindow
         {
             if (e.PropertyName == nameof(DocumentTabViewModel.Version))
             {
+                _wp09RequestCancellation?.Cancel();
                 await _rocketSession.ChangeDocumentAsync(ToSessionDocument(tab), CancellationToken.None);
             }
             else if (e.PropertyName == nameof(DocumentTabViewModel.IsDirty))
@@ -250,6 +259,7 @@ public partial class MainWindow
 
     private async Task ShutdownRocketIntegrationAsync(CancellationToken cancellationToken)
     {
+        CancelWp09Request();
         try
         {
             await _rocketSession.ShutdownAsync(cancellationToken);
@@ -268,6 +278,366 @@ public partial class MainWindow
             }
         }
     }
+
+
+    private void GotoDefinition_Click(object sender, RoutedEventArgs e) => GetActiveEditor()?.RequestRocketCommand(RocketEditorCommand.Definition);
+    private void FindReferences_Click(object sender, RoutedEventArgs e) => GetActiveEditor()?.RequestRocketCommand(RocketEditorCommand.References);
+    private void RenameSymbol_Click(object sender, RoutedEventArgs e) => GetActiveEditor()?.RequestRocketCommand(RocketEditorCommand.Rename);
+    private void CodeActions_Click(object sender, RoutedEventArgs e) => GetActiveEditor()?.RequestRocketCommand(RocketEditorCommand.CodeActions);
+    private void FormatDocument_Click(object sender, RoutedEventArgs e) => GetActiveEditor()?.RequestRocketCommand(RocketEditorCommand.FormatDocument);
+
+    private async void EditorHost_RocketCommandRequested(object? sender, RocketEditorCommandRequestedEventArgs e)
+    {
+        using var cancellation = BeginWp09Request();
+        try
+        {
+            switch (e.Command)
+            {
+                case RocketEditorCommand.Definition:
+                    await GoToDefinitionAsync(e.Path, e.Position, cancellation.Token);
+                    break;
+                case RocketEditorCommand.References:
+                    await FindReferencesAsync(e.Path, e.Position, cancellation.Token);
+                    break;
+                case RocketEditorCommand.Rename:
+                    await RenameSymbolAsync(e.Path, e.Position, cancellation.Token);
+                    break;
+                case RocketEditorCommand.CodeActions:
+                    await ShowCodeActionsAsync(sender as EditorDocumentHost, e.Path, e.Range, cancellation.Token);
+                    break;
+                case RocketEditorCommand.FormatDocument:
+                    await FormatDocumentAsync(e.Path, cancellation.Token);
+                    break;
+            }
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception) when (IsExpectedWp09Exception(exception))
+        {
+            AppendRocketOutput($"Rocket editor command failed: {exception.Message}");
+            SetLspStatus("LSP: action failed");
+        }
+        finally
+        {
+            Interlocked.CompareExchange(ref _wp09RequestCancellation, null, cancellation);
+        }
+    }
+
+    private async Task GoToDefinitionAsync(string path, LspPosition position, CancellationToken cancellationToken)
+    {
+        var version = FindOpenDocument(path)?.Version;
+        var locations = await _rocketSession.RequestDefinitionAsync(path, position, cancellationToken);
+        if (!IsSameDocumentVersion(path, version) || locations is null)
+        {
+            return;
+        }
+        if (locations.Count == 0)
+        {
+            SetLspStatus("LSP: no definition");
+            return;
+        }
+        if (locations.Count == 1)
+        {
+            await NavigateToRocketLocationAsync(locations[0]);
+            return;
+        }
+
+        _viewModel.References.SetResults("Definitions", locations);
+        BottomTabs.SelectedIndex = 1;
+    }
+
+    private async Task FindReferencesAsync(string path, LspPosition position, CancellationToken cancellationToken)
+    {
+        var version = FindOpenDocument(path)?.Version;
+        var locations = await _rocketSession.RequestReferencesAsync(path, position, cancellationToken);
+        if (!IsSameDocumentVersion(path, version) || locations is null)
+        {
+            return;
+        }
+        _viewModel.References.SetResults("References", locations);
+        BottomTabs.SelectedIndex = 1;
+    }
+
+    private async Task RenameSymbolAsync(string path, LspPosition position, CancellationToken cancellationToken)
+    {
+        var workflow = new RocketRenameWorkflow(_rocketSession);
+        var result = await workflow.ExecuteAsync(
+            path,
+            position,
+            async initialValue =>
+            {
+                var value = await Dispatcher.InvokeAsync(() =>
+                {
+                    var dialog = new NameInputDialog("Rename Symbol", "New symbol name:", initialValue ?? string.Empty) { Owner = this };
+                    return dialog.ShowDialog() == true ? dialog.Value : null;
+                });
+                return value;
+            },
+            edit => ApplyWorkspaceEditAsync(edit, path, cancellationToken),
+            cancellationToken);
+
+        switch (result.Status)
+        {
+            case RocketRenameWorkflowStatus.NotRenameable:
+                SetLspStatus("LSP: symbol is not renameable");
+                break;
+            case RocketRenameWorkflowStatus.NoEdit:
+                SetLspStatus("LSP: rename returned no edit");
+                break;
+            case RocketRenameWorkflowStatus.Applied:
+                SetLspStatus("LSP: rename applied");
+                break;
+        }
+    }
+
+    private async Task ShowCodeActionsAsync(EditorDocumentHost? editorHost, string path, LspRange range, CancellationToken cancellationToken)
+    {
+        var tab = FindOpenDocument(path);
+        if (tab is null)
+        {
+            return;
+        }
+        var version = tab.Version;
+        var diagnostics = tab.Diagnostics.Select(MapCodeActionDiagnostic).ToArray();
+        var context = RocketCodeActionContextBuilder.Build(range, diagnostics);
+        var actions = await _rocketSession.RequestCodeActionsAsync(path, context.Range, context.Diagnostics, cancellationToken);
+        if (!IsSameDocumentVersion(path, version) || actions is null)
+        {
+            return;
+        }
+        if (actions.Count == 0)
+        {
+            SetLspStatus("LSP: no server-provided code actions");
+            return;
+        }
+
+        var menu = new ContextMenu { PlacementTarget = editorHost ?? GetActiveEditor() };
+        foreach (var action in actions)
+        {
+            var unsupported = action.HasUnsupportedCommand || action.Edit is null;
+            var disabled = !string.IsNullOrWhiteSpace(action.DisabledReason);
+            var item = new MenuItem
+            {
+                Style = FindResource("IDE.MenuItemStyle") as Style,
+                Header = disabled
+                    ? $"{action.Title} — rocket-lsp ({action.DisabledReason})"
+                    : unsupported
+                        ? $"{action.Title} — rocket-lsp (unsupported in WP09)"
+                        : $"{action.Title} — rocket-lsp",
+                IsEnabled = !unsupported && !disabled,
+            };
+            if (!unsupported && !disabled)
+            {
+                item.Click += async (_, _) =>
+                {
+                    try
+                    {
+                        var status = await RocketCodeActionExecutor.TryApplyAsync(
+                            action,
+                            () => IsSameDocumentVersion(path, version),
+                            edit => ApplyWorkspaceEditAsync(edit, path, CancellationToken.None));
+                        SetLspStatus(status switch
+                        {
+                            RocketCodeActionApplyStatus.Applied => "LSP: quick fix applied",
+                            RocketCodeActionApplyStatus.Stale => "LSP: code action is stale",
+                            RocketCodeActionApplyStatus.Disabled => "LSP: code action disabled by server",
+                            _ => "LSP: code action unsupported",
+                        });
+                    }
+                    catch (Exception exception) when (IsExpectedWp09Exception(exception))
+                    {
+                        AppendRocketOutput($"Rocket code action failed: {exception.Message}");
+                        SetLspStatus("LSP: quick fix failed");
+                    }
+                };
+            }
+            menu.Items.Add(item);
+        }
+        menu.IsOpen = true;
+    }
+
+    private async Task FormatDocumentAsync(string path, CancellationToken cancellationToken)
+    {
+        var tab = FindOpenDocument(path);
+        if (tab is null)
+        {
+            return;
+        }
+        var version = tab.Version;
+        var edits = await _rocketSession.RequestFormattingAsync(path, 4, true, cancellationToken);
+        if (!IsSameDocumentVersion(path, version) || edits is null)
+        {
+            return;
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+        var workspaceEdit = new RocketWorkspaceEdit([new RocketWorkspaceDocumentEdit(path, null, edits)]);
+        var result = await ApplyWorkspaceEditAsync(workspaceEdit, path, cancellationToken);
+        SetLspStatus(result.ChangedDocumentCount == 0 ? "LSP: document already formatted" : "LSP: document formatted");
+    }
+
+    private async Task<WorkspaceEditApplyResult> ApplyWorkspaceEditAsync(
+        RocketWorkspaceEdit edit,
+        string activePath,
+        CancellationToken cancellationToken)
+    {
+        var result = await _workspaceEdits.ApplyAsync(edit, GetLspWorkspacePath(activePath), cancellationToken);
+        if (result.ChangedDocumentCount > 0)
+        {
+            AppendRocketOutput($"Applied server WorkspaceEdit to {result.ChangedDocumentCount} document(s).");
+        }
+        return result;
+    }
+
+    private IReadOnlyList<WorkspaceEditOpenDocument> GetOpenWorkspaceEditDocuments() =>
+        _viewModel.Documents.Select(tab => new WorkspaceEditOpenDocument(
+            tab.Path,
+            tab.Text,
+            tab.Version,
+            text => ApplyOpenWorkspaceEditText(tab, text))).ToArray();
+
+    private void ApplyOpenWorkspaceEditText(DocumentTabViewModel tab, string text)
+    {
+        void Apply()
+        {
+            if (string.Equals(tab.EditorDocument.Text, text, StringComparison.Ordinal))
+            {
+                return;
+            }
+            using (tab.EditorDocument.RunUpdate())
+            {
+                tab.EditorDocument.Replace(0, tab.EditorDocument.TextLength, text);
+            }
+        }
+
+        if (Dispatcher.CheckAccess())
+        {
+            Apply();
+        }
+        else
+        {
+            Dispatcher.Invoke(Apply);
+        }
+    }
+
+    private async void ReferencesPanel_ReferenceInvoked(object? sender, ReferenceInvokedEventArgs e)
+    {
+        try
+        {
+            await NavigateToRocketLocationAsync(new RocketLocation(e.Item.FilePath, e.Item.Range));
+        }
+        catch (Exception exception) when (IsExpectedWp09Exception(exception))
+        {
+            AppendRocketOutput($"Rocket reference navigation failed: {exception.Message}");
+            SetLspStatus("LSP: navigation failed");
+        }
+    }
+
+    private async Task NavigateToRocketLocationAsync(RocketLocation location)
+    {
+        string text;
+        var open = FindOpenDocument(location.Path);
+        if (open is not null)
+        {
+            text = open.Text;
+        }
+        else
+        {
+            text = await ReadNavigationTextAsync(location.Path, CancellationToken.None);
+        }
+
+        if (!WorkspaceEditValidator.IsValidRange(text, location))
+        {
+            AppendRocketOutput($"Rejected rocket-lsp navigation target with invalid UTF-16 range: {location.Path}");
+            SetLspStatus("LSP: invalid navigation target");
+            return;
+        }
+
+        var tab = open ?? await OpenDocumentAsync(location.Path);
+        if (tab is null)
+        {
+            return;
+        }
+        _viewModel.ActiveDocument = tab;
+        tab.RequestNavigation(new SourceRange(
+            location.Range.Start.Line,
+            location.Range.Start.Character,
+            location.Range.End.Line,
+            location.Range.End.Character));
+    }
+
+    private static async Task<string> ReadNavigationTextAsync(string path, CancellationToken cancellationToken)
+    {
+        var normalized = Path.GetFullPath(path);
+        if (!File.Exists(normalized))
+        {
+            throw new IOException($"Navigation target '{normalized}' does not exist.");
+        }
+        var bytes = await File.ReadAllBytesAsync(normalized, cancellationToken);
+        if (Array.IndexOf(bytes, (byte)0) >= 0)
+        {
+            throw new IOException($"Navigation target '{normalized}' is not a text file.");
+        }
+        var bom = Encoding.UTF8.GetPreamble();
+        var offset = bytes.AsSpan().StartsWith(bom) ? bom.Length : 0;
+        try
+        {
+            return new UTF8Encoding(false, true).GetString(bytes, offset, bytes.Length - offset);
+        }
+        catch (DecoderFallbackException exception)
+        {
+            throw new IOException($"Navigation target '{normalized}' is not valid UTF-8.", exception);
+        }
+    }
+
+    private CancellationTokenSource BeginWp09Request()
+    {
+        var cancellation = new CancellationTokenSource();
+        var previous = Interlocked.Exchange(ref _wp09RequestCancellation, cancellation);
+        if (previous is not null)
+        {
+            previous.Cancel();
+        }
+        return cancellation;
+    }
+
+    private void CancelWp09Request()
+    {
+        var cancellation = Interlocked.Exchange(ref _wp09RequestCancellation, null);
+        cancellation?.Cancel();
+        cancellation?.Dispose();
+    }
+
+    private bool IsSameDocumentVersion(string path, int? expectedVersion)
+    {
+        if (!expectedVersion.HasValue)
+        {
+            return true;
+        }
+        return FindOpenDocument(path)?.Version == expectedVersion.Value;
+    }
+
+    private static RocketCodeActionDiagnostic MapCodeActionDiagnostic(RocketDiagnostic diagnostic) =>
+        new(
+            new LspRange(
+                new LspPosition(diagnostic.Range.StartLine, diagnostic.Range.StartCharacter),
+                new LspPosition(diagnostic.Range.EndLine, diagnostic.Range.EndCharacter)),
+            diagnostic.Severity switch
+            {
+                DiagnosticSeverity.Error => 1,
+                DiagnosticSeverity.Warning => 2,
+                DiagnosticSeverity.Information => 3,
+                DiagnosticSeverity.Hint => 4,
+                _ => null,
+            },
+            diagnostic.Code,
+            diagnostic.Source,
+            diagnostic.Message,
+            diagnostic.Data);
+
+    private static bool IsExpectedWp09Exception(Exception exception) =>
+        exception is IOException or UnauthorizedAccessException or InvalidOperationException or LspProtocolException or
+            JsonRpcResponseException or WorkspaceEditValidationException or WorkspaceEditCommitException;
 
     private void RocketSession_DiagnosticSessionChanged(object? sender, RocketDiagnosticSessionChangedEventArgs e) =>
         DispatchUi(() => _viewModel.BeginDiagnosticSession(e.Generation, e.IsOnline));
@@ -317,7 +687,7 @@ public partial class MainWindow
 
     private void AppendRocketOutput(string line) => DispatchUi(() => _viewModel.AppendOutput(line));
 
-    private void ShowOutputPanel() => DispatchUi(() => BottomTabs.SelectedIndex = 1);
+    private void ShowOutputPanel() => DispatchUi(() => BottomTabs.SelectedIndex = 2);
 
     private void DispatchUi(Action action)
     {

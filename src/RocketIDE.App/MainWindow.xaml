@@ -4,6 +4,7 @@
         xmlns:editor="clr-namespace:RocketIDE.App.Editor"
         xmlns:explorer="clr-namespace:RocketIDE.App.ViewModels.Explorer"
         xmlns:viewModels="clr-namespace:RocketIDE.App.ViewModels"
+        xmlns:views="clr-namespace:RocketIDE.App.Views"
         Title="{Binding WindowTitle}"
         Width="1280" Height="800" MinWidth="900" MinHeight="600"
         WindowStartupLocation="CenterScreen"
@@ -36,13 +37,22 @@
                 <Separator />
                 <MenuItem Header="_Find..." InputGestureText="Ctrl+F" IsEnabled="{Binding HasDocuments}" Click="Find_Click" />
                 <MenuItem Header="_Replace..." InputGestureText="Ctrl+H" IsEnabled="{Binding HasDocuments}" Click="Replace_Click" />
+                <Separator />
+                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="Rename _Symbol..." InputGestureText="F2" IsEnabled="{Binding HasDocuments}" Click="RenameSymbol_Click" />
+                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Quick Fixes (server-provided)" InputGestureText="Ctrl+." IsEnabled="{Binding HasDocuments}" Click="CodeActions_Click" />
+                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Format Document" InputGestureText="Shift+Alt+F" IsEnabled="{Binding HasDocuments}" Click="FormatDocument_Click" />
             </MenuItem>
             <MenuItem Header="_Selection"><MenuItem Header="Select _All" InputGestureText="Ctrl+A" IsEnabled="{Binding HasDocuments}" Click="SelectAll_Click" /></MenuItem>
             <MenuItem Header="_View">
                 <MenuItem Header="Explorer" IsEnabled="False" IsCheckable="True" IsChecked="True" ToolTip="Panel visibility persistence is implemented in a later reliability WP." />
                 <MenuItem Header="Bottom Panel" IsEnabled="False" IsCheckable="True" IsChecked="True" ToolTip="Panel visibility persistence is implemented in a later reliability WP." />
             </MenuItem>
-            <MenuItem Header="_Navigate"><MenuItem Header="_Go to Line..." InputGestureText="Ctrl+G" IsEnabled="{Binding HasDocuments}" Click="GotoLine_Click" /></MenuItem>
+            <MenuItem Header="_Navigate">
+                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Go to Definition" InputGestureText="F12" IsEnabled="{Binding HasDocuments}" Click="GotoDefinition_Click" />
+                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="Find _References" InputGestureText="Shift+F12" IsEnabled="{Binding HasDocuments}" Click="FindReferences_Click" />
+                <Separator />
+                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Go to Line..." InputGestureText="Ctrl+G" IsEnabled="{Binding HasDocuments}" Click="GotoLine_Click" />
+            </MenuItem>
             <MenuItem Header="_Build"><MenuItem Header="Build Project" IsEnabled="False" ToolTip="Implemented in IDE-WP10." /></MenuItem>
             <MenuItem Header="_Run">
                 <MenuItem Header="Run" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
@@ -160,7 +170,7 @@
                                 </StackPanel>
                             </DataTemplate>
                         </TabControl.ItemTemplate>
-                        <TabControl.ContentTemplate><DataTemplate DataType="{x:Type viewModels:DocumentTabViewModel}"><editor:EditorDocumentHost FeatureService="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=RocketEditorFeatures}" /></DataTemplate></TabControl.ContentTemplate>
+                        <TabControl.ContentTemplate><DataTemplate DataType="{x:Type viewModels:DocumentTabViewModel}"><editor:EditorDocumentHost FeatureService="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=RocketEditorFeatures}" RocketCommandRequested="EditorHost_RocketCommandRequested" /></DataTemplate></TabControl.ContentTemplate>
                     </TabControl>
                     <Border Background="{DynamicResource IDE.EditorBrush}">
                         <Border.Style><Style TargetType="{x:Type Border}"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding HasDocuments}" Value="False"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></Border.Style>
@@ -247,6 +257,9 @@
                             <TextBlock Grid.Row="2" Margin="4,5,4,0" Foreground="{DynamicResource IDE.TextMutedBrush}" FontSize="11"
                                        Text="{Binding Problems.StatusText}" />
                         </Grid>
+                    </TabItem>
+                    <TabItem Header="{Binding References.HeaderText}">
+                        <views:ReferencesPanel DataContext="{Binding References}" ReferenceInvoked="ReferencesPanel_ReferenceInvoked" />
                     </TabItem>
                     <TabItem Header="OUTPUT">
                         <Grid Margin="8">

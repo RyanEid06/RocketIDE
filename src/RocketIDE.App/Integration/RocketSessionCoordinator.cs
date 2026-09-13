@@ -113,6 +113,63 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
             "semantic tokens",
             cancellationToken);
 
+    public Task<IReadOnlyList<RocketLocation>?> RequestDefinitionAsync(
+        string path, LspPosition position, CancellationToken cancellationToken) =>
+        RequestFeatureAsync(
+            path,
+            capabilities => capabilities.SupportsDefinition,
+            async (client, _) => await new NavigationClient(client).RequestDefinitionAsync(path, position, cancellationToken).ConfigureAwait(false),
+            "definition",
+            cancellationToken);
+
+    public Task<IReadOnlyList<RocketLocation>?> RequestReferencesAsync(
+        string path, LspPosition position, CancellationToken cancellationToken) =>
+        RequestFeatureAsync(
+            path,
+            capabilities => capabilities.SupportsReferences,
+            async (client, _) => await new NavigationClient(client).RequestReferencesAsync(path, position, cancellationToken).ConfigureAwait(false),
+            "references",
+            cancellationToken);
+
+    public Task<RocketPrepareRenameResult?> PrepareRenameAsync(
+        string path, LspPosition position, CancellationToken cancellationToken) =>
+        RequestFeatureAsync(
+            path,
+            capabilities => capabilities.SupportsRename && capabilities.SupportsPrepareRename,
+            (client, _) => new NavigationClient(client).PrepareRenameAsync(path, position, cancellationToken),
+            "prepare rename",
+            cancellationToken);
+
+    public Task<RocketWorkspaceEdit?> RequestRenameAsync(
+        string path, LspPosition position, string newName, CancellationToken cancellationToken) =>
+        RequestFeatureAsync(
+            path,
+            capabilities => capabilities.SupportsRename,
+            (client, _) => new NavigationClient(client).RequestRenameAsync(path, position, newName, cancellationToken),
+            "rename",
+            cancellationToken);
+
+    public Task<IReadOnlyList<RocketCodeAction>?> RequestCodeActionsAsync(
+        string path,
+        LspRange range,
+        IReadOnlyList<RocketCodeActionDiagnostic> diagnostics,
+        CancellationToken cancellationToken) =>
+        RequestFeatureAsync(
+            path,
+            capabilities => capabilities.SupportsCodeActions,
+            async (client, _) => await new NavigationClient(client).RequestCodeActionsAsync(path, range, diagnostics, cancellationToken).ConfigureAwait(false),
+            "code actions",
+            cancellationToken);
+
+    public Task<IReadOnlyList<RocketTextEdit>?> RequestFormattingAsync(
+        string path, int tabSize, bool insertSpaces, CancellationToken cancellationToken) =>
+        RequestFeatureAsync(
+            path,
+            capabilities => capabilities.SupportsDocumentFormatting,
+            async (client, _) => await new NavigationClient(client).RequestFormattingAsync(path, tabSize, insertSpaces, cancellationToken).ConfigureAwait(false),
+            "document formatting",
+            cancellationToken);
+
     public void InvalidateSemanticTokens(string path) => _semanticTokensClient?.Invalidate(path);
 
     public async Task EnsureAsync(string? activePath, string? workspacePath, CancellationToken cancellationToken)

@@ -42,7 +42,7 @@ Change only `Status`, `Completed`, and `Evidence` after the WP gate passes.
 | IDE-WP06 | LSP transport + lifecycle | DONE | 2026-09-10 | Local `verify.ps1` passed with 77/77 tests; Windows CI passed on commit `ee0ee1e`; real `rocket-lsp 1.0.0` initialized, synchronized an open Rocket file, and shut down cleanly with no lingering process |
 | IDE-WP07 | Live diagnostics + Problems | DONE | 2026-09-11 | Windows verification passed; live `rocket-lsp` diagnostics, squiggles, Problems filtering/navigation, stale-version rejection, and offline clearing smoke-tested on commit `1b741bb`; GitHub CI green |
 | IDE-WP08 | IntelliSense + semantic tokens | DONE | 2026-09-11 | Windows verification passed with 164/164 tests; completion, hover, semantic-token presentation, dark popup/selection styling, cancellation/transport hardening, and standalone-file LSP stability smoke-tested; incomplete-call signature response is blocked by an upstream Rocket LSP limitation recorded below |
-| IDE-WP09 | Navigation + refactoring + fixes | READY |  | WP03 and WP06 dependencies satisfied |
+| IDE-WP09 | Navigation + refactoring + fixes | MANUAL SMOKE DEFERRED | 2026-09-13 | Automated verification passed: build, 221/221 tests, and publish smoke. At user direction, the final interactive Windows smoke remains deferred and must be completed before a release claim. |
 | IDE-WP10 | Check/build/run/test/output | READY |  | WP03 and WP05 dependencies satisfied |
 | IDE-WP11 | Search + productivity | READY |  | WP03 dependency satisfied |
 | IDE-WP12 | Large-file + performance hardening | BLOCKED by WP11 |  | WP02 and WP06 dependencies satisfied |
