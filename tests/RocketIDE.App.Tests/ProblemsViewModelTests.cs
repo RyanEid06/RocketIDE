@@ -77,6 +77,49 @@ public sealed class ProblemsViewModelTests
         Assert.AreEqual("No problems detected.", viewModel.StatusText);
     }
 
+
+    [TestMethod]
+    public void CompilerDiagnostics_RemainVisibleInStatusWhenLanguageServerIsOffline()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "compiler-only.rocket");
+        var viewModel = new ProblemsViewModel();
+        viewModel.BeginSession(1, isOnline: false);
+        viewModel.SetCompilerDiagnostics([
+            new RocketDiagnostic("rocketc", "R2001", "compiler", DiagnosticSeverity.Error, path, new SourceRange(0, 0, 0, 1), Provenance: "Build"),
+        ]);
+
+        Assert.AreEqual(1, viewModel.Items.Count);
+        StringAssert.Contains(viewModel.StatusText, "1 problem");
+        StringAssert.Contains(viewModel.StatusText, "offline");
+    }
+
+    [TestMethod]
+    public void CompilerDiagnostics_AreMergedWithLiveDiagnosticsAndCanBeClearedSeparately()
+    {
+        using var temp = new TempDirectory();
+        var path = Path.Combine(temp.Path, "main.rocket");
+        var viewModel = new ProblemsViewModel();
+        viewModel.BeginSession(3, isOnline: true);
+        viewModel.TrackDocument(path, 1, isSupported: true);
+        viewModel.ApplyPublication(new RocketDiagnosticPublication(
+            3,
+            new Uri(path).AbsoluteUri,
+            path,
+            1,
+            [Diagnostic(path, "R2001", DiagnosticSeverity.Error, "live") ]));
+        viewModel.SetCompilerDiagnostics([
+            new RocketDiagnostic("rocketc", "R4002", "compiler", DiagnosticSeverity.Error, path, new SourceRange(4, 2, 4, 3), Provenance: "Compiler"),
+        ]);
+
+        Assert.AreEqual(2, viewModel.Items.Count);
+        Assert.IsTrue(viewModel.Items.Any(item => item.SourceText.StartsWith("Compiler", StringComparison.Ordinal)));
+
+        viewModel.ClearCompilerDiagnostics();
+
+        Assert.AreEqual(1, viewModel.Items.Count);
+        Assert.AreEqual("R2001", viewModel.Items[0].Code);
+    }
+
     [TestMethod]
     public void ProblemItem_ExposesNavigationFileAndOneBasedLocation()
     {

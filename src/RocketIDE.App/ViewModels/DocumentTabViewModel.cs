@@ -15,17 +15,23 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
 {
     private readonly IDocumentStore _documentStore;
     private DocumentSnapshot _snapshot;
+    private LargeFileDecision _largeFileDecision;
     private bool _suppressEditorDocumentChange;
     private int _caretLine = 1;
     private int _caretColumn = 1;
     private IReadOnlyList<RocketDiagnostic> _diagnostics = [];
     private LiveDiagnosticDocumentState _diagnosticState = LiveDiagnosticDocumentState.Offline;
     private SourceRange? _pendingNavigation;
+    private bool _hasRecoveryConflict;
+    private string? _recoveryConflictMessage;
+    private IReadOnlySet<int> _debugBreakpointLines = new HashSet<int>();
+    private int? _debugCurrentLine;
 
     public DocumentTabViewModel(IDocumentStore documentStore, DocumentSnapshot snapshot)
     {
         _documentStore = documentStore;
         _snapshot = snapshot;
+        _largeFileDecision = LargeFilePolicy.Decide(snapshot.ByteLength);
         EditorDocument = new TextDocument(snapshot.Text);
         EditorDocument.UndoStack.MarkAsOriginalFile();
         EditorDocument.Changed += EditorDocument_Changed;
@@ -39,6 +45,8 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
 
     public event EventHandler<DocumentNavigationRequestedEventArgs>? NavigationRequested;
 
+    public event EventHandler? DebugMarkersChanged;
+
     public DocumentId Id => _snapshot.Id;
 
     public string Path => _snapshot.Path;
@@ -50,6 +58,20 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
     public long ByteLength => _snapshot.ByteLength;
 
     public bool IsDirty => _snapshot.IsDirty;
+
+    public bool IsLargeFileMode => _largeFileDecision.IsLargeFileMode;
+
+    public bool AllowLsp => _largeFileDecision.AllowLsp;
+
+    public bool AllowLocalEditing => _largeFileDecision.AllowLocalEditing;
+
+    public bool AllowFindAndGoto => _largeFileDecision.AllowFindAndGoto;
+
+    public bool AllowSyntaxColoring => _largeFileDecision.AllowSyntaxColoring;
+
+    public string LargeFileReason => !AllowSyntaxColoring
+        ? $"{_largeFileDecision.Reason} Syntax coloring is also disabled above the 16 MiB editor performance cutoff."
+        : _largeFileDecision.Reason;
 
     public string DisplayName => System.IO.Path.GetFileName(_snapshot.Path);
 
@@ -65,6 +87,27 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
 
     public LiveDiagnosticDocumentState DiagnosticState => _diagnosticState;
 
+    public bool HasRecoveryConflict => _hasRecoveryConflict;
+
+    public string? RecoveryConflictMessage => _recoveryConflictMessage;
+
+    public IReadOnlySet<int> DebugBreakpointLines => _debugBreakpointLines;
+
+    public int? DebugCurrentLine => _debugCurrentLine;
+
+    public void SetDebugMarkers(IEnumerable<int> breakpointLines, int? currentLine)
+    {
+        ArgumentNullException.ThrowIfNull(breakpointLines);
+        var normalized = breakpointLines.Where(line => line > 0).ToHashSet();
+        currentLine = currentLine is > 0 ? currentLine : null;
+        if (_debugBreakpointLines.SetEquals(normalized) && _debugCurrentLine == currentLine) return;
+        _debugBreakpointLines = normalized;
+        _debugCurrentLine = currentLine;
+        OnPropertyChanged(nameof(DebugBreakpointLines));
+        OnPropertyChanged(nameof(DebugCurrentLine));
+        DebugMarkersChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     public void UpdateSnapshot(DocumentSnapshot snapshot)
     {
         if (snapshot.Id != Id)
@@ -73,6 +116,7 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
         }
 
         _snapshot = snapshot;
+        _largeFileDecision = LargeFilePolicy.Decide(snapshot.ByteLength);
 
         if (!string.Equals(EditorDocument.Text, snapshot.Text, StringComparison.Ordinal))
         {
@@ -94,6 +138,47 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
         }
 
         RaiseSnapshotPropertiesChanged();
+    }
+
+    public void MarkRecoveryConflict(string? message)
+    {
+        _hasRecoveryConflict = true;
+        _recoveryConflictMessage = string.IsNullOrWhiteSpace(message)
+            ? "The source file changed, was deleted, or was recreated after this recovery buffer was based on disk."
+            : message;
+        OnPropertyChanged(nameof(HasRecoveryConflict));
+        OnPropertyChanged(nameof(RecoveryConflictMessage));
+    }
+
+    public void ClearRecoveryConflict()
+    {
+        if (!_hasRecoveryConflict && _recoveryConflictMessage is null)
+        {
+            return;
+        }
+
+        _hasRecoveryConflict = false;
+        _recoveryConflictMessage = null;
+        OnPropertyChanged(nameof(HasRecoveryConflict));
+        OnPropertyChanged(nameof(RecoveryConflictMessage));
+    }
+
+    public void ApplyWorkspaceReplacement(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (!AllowLocalEditing)
+        {
+            throw new InvalidOperationException("Local editing is disabled because this document exceeds the editor safety limit.");
+        }
+        if (string.Equals(EditorDocument.Text, text, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        using (EditorDocument.RunUpdate())
+        {
+            EditorDocument.Replace(0, EditorDocument.TextLength, text);
+        }
     }
 
     public void UpdateCaret(int line, int column)
@@ -145,6 +230,7 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
         }
 
         _snapshot = _documentStore.UpdateText(Id, EditorDocument.Text);
+        _largeFileDecision = LargeFilePolicy.Decide(_snapshot.ByteLength);
         RaiseSnapshotPropertiesChanged();
     }
 
@@ -154,6 +240,12 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(Version));
         OnPropertyChanged(nameof(ByteLength));
         OnPropertyChanged(nameof(IsDirty));
+        OnPropertyChanged(nameof(IsLargeFileMode));
+        OnPropertyChanged(nameof(AllowLsp));
+        OnPropertyChanged(nameof(AllowLocalEditing));
+        OnPropertyChanged(nameof(AllowFindAndGoto));
+        OnPropertyChanged(nameof(AllowSyntaxColoring));
+        OnPropertyChanged(nameof(LargeFileReason));
         OnPropertyChanged(nameof(DisplayName));
         OnPropertyChanged(nameof(HeaderText));
     }

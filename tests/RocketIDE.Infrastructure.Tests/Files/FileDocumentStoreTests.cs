@@ -216,4 +216,56 @@ public sealed class FileDocumentStoreTests
         await Assert.ThrowsExactlyAsync<UnsupportedTextFileException>(
             () => store.OpenAsync(path, CancellationToken.None));
     }
+    [TestMethod]
+    public async Task RecoveryBaseline_RemainsSavedVersionWhenDiskChangesAfterOpen()
+    {
+        var path = Path.Combine(_tempDirectory, "recovery-baseline.rocket");
+        await File.WriteAllTextAsync(path, "disk-v1", new UTF8Encoding(false));
+        var store = new FileDocumentStore();
+        var opened = await store.OpenAsync(path, CancellationToken.None);
+        var baseline = store.GetRecoveryBaseline(opened.Id);
+
+        await File.WriteAllTextAsync(path, "external-v2", new UTF8Encoding(false));
+        var afterExternalChange = store.GetRecoveryBaseline(opened.Id);
+
+        Assert.AreEqual(baseline.Fingerprint, afterExternalChange.Fingerprint);
+        Assert.AreEqual(baseline.LastWriteUtc, afterExternalChange.LastWriteUtc);
+        Assert.AreNotEqual(
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes("external-v2"))),
+            afterExternalChange.Fingerprint);
+    }
+
+    [TestMethod]
+    public async Task OpenRecoveredAsync_DeletedSourceCreatesDirtyBufferAndRequiresExplicitOverwrite()
+    {
+        var path = Path.Combine(_tempDirectory, "deleted.rocket");
+        await File.WriteAllTextAsync(path, "disk-v1", new UTF8Encoding(false));
+        var originalStore = new FileDocumentStore();
+        var opened = await originalStore.OpenAsync(path, CancellationToken.None);
+        var baseline = originalStore.GetRecoveryBaseline(opened.Id);
+        File.Delete(path);
+
+        var store = new FileDocumentStore();
+        var recovered = await store.OpenRecoveredAsync(
+            path,
+            "unsaved recovery",
+            baseline.Fingerprint,
+            baseline.LastWriteUtc,
+            bufferVersion: 4,
+            CancellationToken.None);
+
+        Assert.IsTrue(recovered.IsDirty);
+        Assert.AreEqual("unsaved recovery", recovered.Text);
+        Assert.AreEqual(4, recovered.Version);
+
+        var protectedSave = await store.SaveAsync(recovered.Id, overwriteExternalChanges: false, CancellationToken.None);
+        Assert.AreEqual(DocumentSaveStatus.Conflict, protectedSave.Status);
+        Assert.IsFalse(File.Exists(path));
+
+        var explicitSave = await store.SaveAsync(recovered.Id, overwriteExternalChanges: true, CancellationToken.None);
+        Assert.AreEqual(DocumentSaveStatus.Saved, explicitSave.Status);
+        Assert.IsFalse(explicitSave.Document.IsDirty);
+        Assert.AreEqual("unsaved recovery", await File.ReadAllTextAsync(path));
+    }
+
 }

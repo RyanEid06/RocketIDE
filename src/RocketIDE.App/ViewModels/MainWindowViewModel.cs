@@ -3,11 +3,15 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using RocketIDE.App.Commands;
 using RocketIDE.App.ViewModels.Explorer;
 using RocketIDE.Core.Diagnostics;
 using RocketIDE.Core.Documents;
+using RocketIDE.Core.Search;
 using RocketIDE.Core.Workspaces;
+using RocketIDE.Infrastructure.Files;
 using RocketIDE.Rocket.Diagnostics;
+using RocketIDE.Debugger;
 
 namespace RocketIDE.App.ViewModels;
 
@@ -19,18 +23,31 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private string _activeTargetStatus = "Target: none";
     private string _caretStatus = "Ln 1, Col 1";
     private string _encodingStatus = "UTF-8";
+    private bool _rocketCommandRunning;
+    private bool _hasRocketCommandTarget;
+    private bool _rocketRunAvailable;
 
-    public MainWindowViewModel(IWorkspaceFileSystem workspaceFileSystem)
+    public MainWindowViewModel(IWorkspaceFileSystem workspaceFileSystem, IWorkspaceSearchService? searchService = null)
     {
         ArgumentNullException.ThrowIfNull(workspaceFileSystem);
         Explorer = new WorkspaceExplorerViewModel(workspaceFileSystem);
         Problems = new ProblemsViewModel();
         References = new ReferencesViewModel();
+        Output = new OutputViewModel();
+        Tests = new TestsViewModel();
+        Debug = new DebugViewModel();
+        Debug.PropertyChanged += (_, _) => RaiseRocketCommandProperties();
+        Search = new SearchViewModel(searchService ?? new WorkspaceSearchService())
+        {
+            OpenBufferProvider = GetOpenBufferTexts,
+        };
+        CommandRegistry = new RocketCommandRegistry();
         Explorer.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName == nameof(WorkspaceExplorerViewModel.HasWorkspace))
             {
                 OnPropertyChanged(nameof(HasWorkspace));
+                RaiseRocketCommandProperties();
             }
         };
         Problems.Changed += Problems_Changed;
@@ -47,9 +64,29 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public ReferencesViewModel References { get; }
 
+    public OutputViewModel Output { get; }
+
+    public TestsViewModel Tests { get; }
+
+    public DebugViewModel Debug { get; }
+
+    public SearchViewModel Search { get; }
+
+    public RocketCommandRegistry CommandRegistry { get; }
+
+    public RocketCommandState GetCommandState(string commandId) =>
+        CommandRegistry.Evaluate(commandId, new RocketCommandContext(
+            HasDocuments,
+            _hasRocketCommandTarget,
+            _rocketRunAvailable,
+            _rocketCommandRunning,
+            HasWorkspace,
+            Debug.IsActive,
+            Debug.IsRunning,
+            Debug.IsStopped));
+
     public ObservableCollection<string> RecentWorkspaces { get; } = new();
 
-    public ObservableCollection<string> OutputLines { get; } = new();
 
     public bool HasWorkspace => Explorer.HasWorkspace;
 
@@ -84,6 +121,44 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     }
 
     public string WindowTitle => ActiveDocument is null ? "RocketIDE" : $"{ActiveDocument.DisplayName} — RocketIDE";
+
+
+    public bool CanRocketCheck => GetCommandState(RocketCommandRegistry.Check).IsEnabled;
+    public bool CanRocketBuild => GetCommandState(RocketCommandRegistry.Build).IsEnabled;
+    public bool CanRocketTest => GetCommandState(RocketCommandRegistry.Test).IsEnabled;
+    public bool CanRocketRun => GetCommandState(RocketCommandRegistry.Run).IsEnabled;
+    public bool CanRocketStop => GetCommandState(RocketCommandRegistry.Stop).IsEnabled;
+    public bool CanRocketNewProject => GetCommandState(RocketCommandRegistry.NewProject).IsEnabled;
+    public bool CanRocketAdvanced => GetCommandState(RocketCommandRegistry.Resolve).IsEnabled;
+    public bool CanQuickOpen => GetCommandState(RocketCommandRegistry.QuickOpen).IsEnabled;
+    public bool CanDebugStartContinue => GetCommandState(RocketCommandRegistry.DebugStartContinue).IsEnabled;
+    public bool CanDebugPause => GetCommandState(RocketCommandRegistry.DebugPause).IsEnabled;
+    public bool CanDebugStop => GetCommandState(RocketCommandRegistry.DebugStop).IsEnabled;
+    public bool CanDebugToggleBreakpoint => GetCommandState(RocketCommandRegistry.DebugToggleBreakpoint).IsEnabled;
+    public bool CanDebugStepOver => GetCommandState(RocketCommandRegistry.DebugStepOver).IsEnabled;
+    public bool CanDebugStepInto => GetCommandState(RocketCommandRegistry.DebugStepInto).IsEnabled;
+    public bool CanDebugStepOut => GetCommandState(RocketCommandRegistry.DebugStepOut).IsEnabled;
+
+    public void SetRocketCommandAvailability(bool hasTarget, bool canRun)
+    {
+        if (_hasRocketCommandTarget == hasTarget && _rocketRunAvailable == canRun)
+        {
+            return;
+        }
+        _hasRocketCommandTarget = hasTarget;
+        _rocketRunAvailable = canRun;
+        RaiseRocketCommandProperties();
+    }
+
+    public void SetRocketCommandRunning(bool running)
+    {
+        if (_rocketCommandRunning == running)
+        {
+            return;
+        }
+        _rocketCommandRunning = running;
+        RaiseRocketCommandProperties();
+    }
 
     public string RocketSdkStatus
     {
@@ -150,20 +225,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         Problems.TrackDocument(document.Path, version, isSupported);
     }
 
-    public void AppendOutput(string line)
-    {
-        if (string.IsNullOrWhiteSpace(line))
-        {
-            return;
-        }
-
-        OutputLines.Add(line);
-        const int maxLines = 2000;
-        while (OutputLines.Count > maxLines)
-        {
-            OutputLines.RemoveAt(0);
-        }
-    }
+    public void AppendOutput(string line) => Output.Append(line);
 
     public void SetRecentWorkspaces(IEnumerable<string> paths)
     {
@@ -237,6 +299,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
 
         OnPropertyChanged(nameof(HasDocuments));
+        RaiseRocketCommandProperties();
     }
 
     private void Document_DiagnosticsPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -260,12 +323,21 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    private IReadOnlyDictionary<string, string> GetOpenBufferTexts() =>
+        Documents
+            .GroupBy(document => document.Path, PathComparer)
+            .ToDictionary(group => group.Key, group => group.Last().Text, PathComparer);
+
     private static bool IsRocketPath(string path) =>
         string.Equals(Path.GetExtension(path), ".rocket", StringComparison.OrdinalIgnoreCase);
 
     private static StringComparison PathComparison => OperatingSystem.IsWindows()
         ? StringComparison.OrdinalIgnoreCase
         : StringComparison.Ordinal;
+
+    private static IEqualityComparer<string> PathComparer => OperatingSystem.IsWindows()
+        ? StringComparer.OrdinalIgnoreCase
+        : StringComparer.Ordinal;
 
     private static string NormalizeWorkspacePath(string path)
     {
@@ -283,6 +355,25 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         CaretStatus = ActiveDocument is null
             ? "Ln 1, Col 1"
             : $"Ln {ActiveDocument.CaretLine}, Col {ActiveDocument.CaretColumn}";
+    }
+
+    private void RaiseRocketCommandProperties()
+    {
+        OnPropertyChanged(nameof(CanRocketCheck));
+        OnPropertyChanged(nameof(CanRocketBuild));
+        OnPropertyChanged(nameof(CanRocketRun));
+        OnPropertyChanged(nameof(CanRocketTest));
+        OnPropertyChanged(nameof(CanRocketStop));
+        OnPropertyChanged(nameof(CanRocketNewProject));
+        OnPropertyChanged(nameof(CanRocketAdvanced));
+        OnPropertyChanged(nameof(CanQuickOpen));
+        OnPropertyChanged(nameof(CanDebugStartContinue));
+        OnPropertyChanged(nameof(CanDebugPause));
+        OnPropertyChanged(nameof(CanDebugStop));
+        OnPropertyChanged(nameof(CanDebugToggleBreakpoint));
+        OnPropertyChanged(nameof(CanDebugStepOver));
+        OnPropertyChanged(nameof(CanDebugStepInto));
+        OnPropertyChanged(nameof(CanDebugStepOut));
     }
 
     private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

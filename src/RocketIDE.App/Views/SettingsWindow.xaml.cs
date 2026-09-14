@@ -19,6 +19,7 @@ public partial class SettingsWindow : Window
         SourceInitialized += (_, _) => WindowsTitleBar.ApplyDarkMode(this);
         CompilerPathTextBox.Text = settings.CompilerPath ?? string.Empty;
         LanguageServerPathTextBox.Text = settings.LanguageServerPath ?? string.Empty;
+        ProgramArgumentsTextBox.Text = settings.ProgramArguments ?? string.Empty;
         _trustedRoots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var root in settings.TrustedCheckoutRoots ?? [])
         {
@@ -67,7 +68,8 @@ public partial class SettingsWindow : Window
             return new RocketToolSettings(
                 NullIfWhiteSpace(CompilerPathTextBox.Text),
                 NullIfWhiteSpace(LanguageServerPathTextBox.Text),
-                roots.OrderBy(path => path, StringComparer.OrdinalIgnoreCase).ToArray());
+                roots.OrderBy(path => path, StringComparer.OrdinalIgnoreCase).ToArray(),
+                NullIfWhiteSpace(ProgramArgumentsTextBox.Text));
         }
     }
 

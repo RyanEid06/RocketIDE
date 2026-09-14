@@ -26,6 +26,7 @@ public partial class MainWindow
     private RocketToolSettings? _rocketToolSettings;
     private RocketSessionCoordinator _rocketSession = null!;
     private WorkspaceEditTransactionService _workspaceEdits = null!;
+    private DocumentChangeScheduler? _documentChangeScheduler;
     private CancellationTokenSource? _wp09RequestCancellation;
 
     public IRocketEditorFeatureService RocketEditorFeatures => _rocketSession;
@@ -42,6 +43,9 @@ public partial class MainWindow
             AppendRocketOutput,
             ShowOutputPanel);
         _workspaceEdits = WorkspaceEditTransactionService.CreateFileSystemService(GetOpenWorkspaceEditDocuments);
+        _documentChangeScheduler = new DocumentChangeScheduler(
+            (document, cancellationToken) => _rocketSession.ChangeDocumentAsync(document, cancellationToken),
+            onError: exception => AppendRocketOutput($"Rocket LSP document synchronization failed: {exception.Message}"));
         _rocketSession.NotificationReceived += RocketSession_NotificationReceived;
         _rocketSession.DiagnosticSessionChanged += RocketSession_DiagnosticSessionChanged;
         _rocketSession.DiagnosticsPublished += RocketSession_DiagnosticsPublished;
@@ -179,6 +183,7 @@ public partial class MainWindow
                 foreach (DocumentTabViewModel tab in e.OldItems)
                 {
                     tab.PropertyChanged -= RocketDocument_PropertyChanged;
+                    _documentChangeScheduler?.Cancel(tab.Path);
                     _documentDirtyStates.Remove(tab.Id);
                     await _rocketSession.CloseDocumentAsync(tab.Path, CancellationToken.None);
                 }
@@ -219,7 +224,7 @@ public partial class MainWindow
             if (e.PropertyName == nameof(DocumentTabViewModel.Version))
             {
                 _wp09RequestCancellation?.Cancel();
-                await _rocketSession.ChangeDocumentAsync(ToSessionDocument(tab), CancellationToken.None);
+                _documentChangeScheduler?.Schedule(ToSessionDocument(tab));
             }
             else if (e.PropertyName == nameof(DocumentTabViewModel.IsDirty))
             {
@@ -247,6 +252,7 @@ public partial class MainWindow
 
         try
         {
+            UpdateActiveTargetStatus();
             var activePath = GetRocketDiscoveryActivePath();
             await _rocketSession.RestartAsync(activePath, GetLspWorkspacePath(activePath), CancellationToken.None);
         }
@@ -260,8 +266,14 @@ public partial class MainWindow
     private async Task ShutdownRocketIntegrationAsync(CancellationToken cancellationToken)
     {
         CancelWp09Request();
+        ShutdownRocketCommands();
         try
         {
+            if (_documentChangeScheduler is not null)
+            {
+                await _documentChangeScheduler.DisposeAsync();
+                _documentChangeScheduler = null;
+            }
             await _rocketSession.ShutdownAsync(cancellationToken);
         }
         finally
@@ -653,22 +665,49 @@ public partial class MainWindow
 
     private void RocketSession_NotificationReceived(object? sender, RocketServerNotificationEventArgs e)
     {
-        if (!string.Equals(e.Method, "rocket/analysisStatus", StringComparison.Ordinal))
+        if (string.Equals(e.Method, "rocket/analysisStatus", StringComparison.Ordinal))
+        {
+            try
+            {
+                var status = e.Parameters.Deserialize<RocketAnalysisStatus>(LspJson.Options);
+                if (status is not null)
+                {
+                    SetLspStatus($"LSP: online · {status.Files} files · {status.ElapsedMilliseconds} ms");
+                }
+            }
+            catch (JsonException exception)
+            {
+                AppendRocketOutput($"Invalid rocket/analysisStatus payload: {exception.Message}");
+            }
+            return;
+        }
+
+        if (!string.Equals(e.Method, "rocket/projectStatus", StringComparison.Ordinal))
         {
             return;
         }
 
         try
         {
-            var status = e.Parameters.Deserialize<RocketAnalysisStatus>(LspJson.Options);
+            var status = e.Parameters.Deserialize<RocketProjectStatus>(LspJson.Options);
             if (status is not null)
             {
-                SetLspStatus($"LSP: online · {status.Files} files · {status.ElapsedMilliseconds} ms");
+                var overFiles = status.Files > status.MaximumProjectFiles;
+                var overBytes = status.Bytes > status.MaximumProjectBytes;
+                if (overFiles || overBytes)
+                {
+                    SetLspStatus($"LSP: project limit · {status.Files}/{status.MaximumProjectFiles} files · {status.Bytes}/{status.MaximumProjectBytes} bytes");
+                    AppendRocketOutput("The active project exceeds Rocket LSP bounds; semantic responses may be incomplete.");
+                }
+                else
+                {
+                    SetLspStatus($"LSP: project · {status.Files} files · {status.Symbols} symbols");
+                }
             }
         }
         catch (JsonException exception)
         {
-            AppendRocketOutput($"Invalid rocket/analysisStatus payload: {exception.Message}");
+            AppendRocketOutput($"Invalid rocket/projectStatus payload: {exception.Message}");
         }
     }
 
@@ -687,7 +726,7 @@ public partial class MainWindow
 
     private void AppendRocketOutput(string line) => DispatchUi(() => _viewModel.AppendOutput(line));
 
-    private void ShowOutputPanel() => DispatchUi(() => BottomTabs.SelectedIndex = 2);
+    private void ShowOutputPanel() => DispatchUi(() => ShowBottomPanelTab(2));
 
     private void DispatchUi(Action action)
     {

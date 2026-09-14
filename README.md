@@ -8,9 +8,10 @@ The goal is not to clone Visual Studio or VS Code. RocketIDE aims to provide a f
 
 RocketIDE is under active development through the work packages tracked in [`ROADMAP.md`](ROADMAP.md).
 
-- IDE-WP00 through IDE-WP06: **DONE** — repository/CI foundation, native shell, editor/document handling, workspace explorer, Rocket syntax ergonomics, Rocket tool discovery, and the LSP transport/lifecycle foundation have passed their recorded Windows verification gates.
-- Post-WP06 stabilization: harden trust boundaries, save/workspace races, verification determinism, line-ending fidelity, and LSP fault handling before adding more semantic UI.
-- Next feature package after stabilization: **IDE-WP07 — live diagnostics + Problems**.
+- IDE-WP00 through IDE-WP08: **DONE** with their recorded Windows verification evidence.
+- IDE-WP09: automated verification passed; final interactive smoke remains intentionally deferred.
+- IDE-WP10 through IDE-WP16: implementation/hardening is automated-green on Windows at commit `99b7351` with **324/324 tests** and publish smoke; the user intentionally deferred the remaining GUI acceptance pass to Codex.
+- IDE-WP17: standalone native debugger implementation is present using Microsoft's DbgX/DbgEng backend and Rocket's existing `--debug` PDB/source-map contract. Fresh Windows build/publish verification and the later live Rocket debug smoke are still required before it is marked verified.
 
 A work package is not considered complete because its UI looks finished. Focused tests, `scripts/verify.ps1`, and the Windows CI gate must pass before its status is changed to `DONE`.
 
@@ -31,6 +32,7 @@ A work package is not considered complete because its UI looks finished. Focused
 - MSTest
 - `rocket-lsp.exe` for editor semantics
 - `rocketc.exe` for compiler and tooling commands
+- Microsoft DbgX/DbgEng for standalone native Rocket debugging
 
 ## Core principle
 
@@ -67,7 +69,8 @@ RocketIDE/
   src/RocketIDE.Rocket/   Rocket LSP/compiler/tool adapters
   src/RocketIDE.Infrastructure/
                           filesystem, processes, settings, recovery, logging
-  tests/                  project-aligned automated tests
+  src/RocketIDE.Debugger/ native debugger transport, protocol, session state
+  tests/                  project-aligned automated tests, including debugger tests
   CONTRIBUTING.md         engineering rules
   ROADMAP.md              implementation WPs and progress ledger
 ```

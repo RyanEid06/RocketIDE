@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,11 +19,14 @@ namespace RocketIDE.App.Editor;
 public partial class EditorDocumentHost : UserControl
 {
     private readonly DiagnosticRenderer _diagnosticRenderer;
+    private readonly BracketMatchRenderer _bracketMatchRenderer;
+    private readonly DebugMarkerRenderer _debugMarkerRenderer;
     private readonly RocketCompletionController _completionController;
     private readonly RocketHoverController _hoverController;
     private readonly RocketSignatureHelpController _signatureHelpController;
     private readonly RocketSemanticTokenController _semanticTokenController;
     private DocumentTabViewModel? _document;
+    private bool _rocketFeaturesAttached;
 
     public event EventHandler<RocketEditorCommandRequestedEventArgs>? RocketCommandRequested;
 
@@ -42,6 +46,8 @@ public partial class EditorDocumentHost : UserControl
     {
         InitializeComponent();
         _diagnosticRenderer = new DiagnosticRenderer(Editor);
+        _bracketMatchRenderer = new BracketMatchRenderer(Editor);
+        _debugMarkerRenderer = new DebugMarkerRenderer(Editor);
         _completionController = new RocketCompletionController(Editor, () => FeatureService);
         _hoverController = new RocketHoverController(Editor, () => FeatureService);
         _signatureHelpController = new RocketSignatureHelpController(Editor, () => FeatureService);
@@ -64,6 +70,11 @@ public partial class EditorDocumentHost : UserControl
 
     public void ShowFind(bool includeReplace)
     {
+        if (_document is { AllowFindAndGoto: false })
+        {
+            return;
+        }
+
         if (string.IsNullOrEmpty(FindTextBox.Text) && !string.IsNullOrEmpty(Editor.SelectedText))
         {
             FindTextBox.Text = Editor.SelectedText;
@@ -77,6 +88,11 @@ public partial class EditorDocumentHost : UserControl
 
     public void GoToLine(int line)
     {
+        if (_document is { AllowFindAndGoto: false })
+        {
+            return;
+        }
+
         var clampedLine = Math.Clamp(line, 1, Math.Max(1, Editor.Document.LineCount));
         var documentLine = Editor.Document.GetLineByNumber(clampedLine);
         Editor.TextArea.Caret.Offset = documentLine.Offset;
@@ -121,32 +137,49 @@ public partial class EditorDocumentHost : UserControl
         }
 
         ReportCaret();
+        _bracketMatchRenderer.Update();
     }
 
     private void AttachDocument(DocumentTabViewModel document)
     {
         _document = document;
+        _document.PropertyChanged += Document_PropertyChanged;
         _document.DiagnosticsChanged += Document_DiagnosticsChanged;
         _document.NavigationRequested += Document_NavigationRequested;
+        _document.DebugMarkersChanged += Document_DebugMarkersChanged;
         Editor.Document = document.EditorDocument;
         if (IsRocketDocument(document))
         {
-            try
+            if (document.AllowSyntaxColoring)
             {
-                Editor.SyntaxHighlighting = RocketSyntaxHighlighting.Definition;
+                try
+                {
+                    Editor.SyntaxHighlighting = RocketSyntaxHighlighting.Definition;
+                }
+                catch (Exception exception)
+                {
+                    // Syntax coloring is optional editor presentation. A broken highlighting
+                    // definition must never make opening a source file fatal. CI directly tests
+                    // the definition so this fallback is defense in depth, not a hidden failure.
+                    Trace.TraceError($"Rocket syntax highlighting failed to load: {exception}");
+                    Editor.SyntaxHighlighting = null;
+                }
             }
-            catch (Exception exception)
+            else
             {
-                // Syntax coloring is optional editor presentation. A broken highlighting
-                // definition must never make opening a source file fatal. CI directly tests
-                // the definition so this fallback is defense in depth, not a hidden failure.
-                Trace.TraceError($"Rocket syntax highlighting failed to load: {exception}");
                 Editor.SyntaxHighlighting = null;
             }
 
-            RocketIndentationStrategy.Configure(Editor);
+            if (document.AllowLocalEditing)
+            {
+                RocketIndentationStrategy.Configure(Editor);
+            }
             _diagnosticRenderer.UpdateDiagnostics(document.Diagnostics);
-            AttachRocketFeatures(document);
+            if (document.AllowLsp)
+            {
+                AttachRocketFeatures(document);
+            }
+            _debugMarkerRenderer.UpdateMarkers(document.DebugBreakpointLines, document.DebugCurrentLine);
         }
         else
         {
@@ -184,9 +217,38 @@ public partial class EditorDocumentHost : UserControl
             return;
         }
 
+        _document.PropertyChanged -= Document_PropertyChanged;
         _document.DiagnosticsChanged -= Document_DiagnosticsChanged;
         _document.NavigationRequested -= Document_NavigationRequested;
+        _document.DebugMarkersChanged -= Document_DebugMarkersChanged;
         _document = null;
+        _debugMarkerRenderer.UpdateMarkers([], null);
+    }
+
+    private void Document_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is not DocumentTabViewModel document || !ReferenceEquals(document, _document) ||
+            e.PropertyName != nameof(DocumentTabViewModel.AllowLsp) || !IsRocketDocument(document))
+        {
+            return;
+        }
+
+        if (document.AllowLsp && !_rocketFeaturesAttached)
+        {
+            AttachRocketFeatures(document);
+        }
+        else if (!document.AllowLsp && _rocketFeaturesAttached)
+        {
+            DetachRocketFeatures();
+        }
+    }
+
+    private void Document_DebugMarkersChanged(object? sender, EventArgs e)
+    {
+        if (sender is DocumentTabViewModel document && ReferenceEquals(document, _document))
+        {
+            _debugMarkerRenderer.UpdateMarkers(document.DebugBreakpointLines, document.DebugCurrentLine);
+        }
     }
 
     private void Document_DiagnosticsChanged(object? sender, EventArgs e)
@@ -229,7 +291,11 @@ public partial class EditorDocumentHost : UserControl
         Editor.Focus();
     }
 
-    private void Caret_PositionChanged(object? sender, EventArgs e) => ReportCaret();
+    private void Caret_PositionChanged(object? sender, EventArgs e)
+    {
+        ReportCaret();
+        _bracketMatchRenderer.Update();
+    }
 
     private void ReportCaret()
     {
@@ -250,6 +316,11 @@ public partial class EditorDocumentHost : UserControl
 
         if (DataContext is DocumentTabViewModel document && IsRocketDocument(document))
         {
+            if (!document.AllowLocalEditing)
+            {
+                return;
+            }
+
             if (RocketEditorCommandBinding.TryGetCommand(e.Key, Keyboard.Modifiers, out var command))
             {
                 RequestRocketCommand(command);
@@ -267,6 +338,7 @@ public partial class EditorDocumentHost : UserControl
     private void Editor_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
         if (DataContext is DocumentTabViewModel document &&
+            document.AllowLocalEditing &&
             IsRocketDocument(document) &&
             EditorKeyBehavior.HandleTextInput(Editor, e.Text, _signatureHelpController.NotifyHandledTextInput))
         {
@@ -276,23 +348,36 @@ public partial class EditorDocumentHost : UserControl
 
     private void AttachRocketFeatures(DocumentTabViewModel document)
     {
+        if (_rocketFeaturesAttached)
+        {
+            return;
+        }
+
         _completionController.Attach(document);
         _hoverController.Attach(document);
         _signatureHelpController.Attach(document);
         _semanticTokenController.Attach(document);
+        _rocketFeaturesAttached = true;
     }
 
     private void DetachRocketFeatures()
     {
+        if (!_rocketFeaturesAttached)
+        {
+            return;
+        }
+
         _completionController.Detach();
         _hoverController.Detach();
         _signatureHelpController.Detach();
         _semanticTokenController.Detach();
+        _rocketFeaturesAttached = false;
     }
 
     private static void FeatureServiceChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
     {
-        if (dependencyObject is EditorDocumentHost host && host._document is { } document && IsRocketDocument(document))
+        if (dependencyObject is EditorDocumentHost host && host._document is { } document &&
+            IsRocketDocument(document) && document.AllowLsp)
         {
             host.DetachRocketFeatures();
             host.AttachRocketFeatures(document);

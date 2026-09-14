@@ -27,9 +27,20 @@ jobs:
         shell: powershell
         run: .\scripts\verify.ps1
 
+      - name: Package portable release
+        shell: powershell
+        run: .\scripts\package.ps1 -Version ${{ github.sha }} -OutputRoot artifacts/package-win-x64
+
       - name: Upload portable verification artifact
         uses: actions/upload-artifact@v4
         with:
           name: RocketIDE-win-x64
           path: artifacts/verify-win-x64/
+          if-no-files-found: error
+
+      - name: Upload portable package
+        uses: actions/upload-artifact@v4
+        with:
+          name: RocketIDE-portable-win-x64
+          path: artifacts/package-win-x64/*
           if-no-files-found: error

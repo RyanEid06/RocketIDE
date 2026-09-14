@@ -3,12 +3,14 @@ namespace RocketIDE.Infrastructure.Settings;
 public sealed record RocketToolSettings(
     string? CompilerPath,
     string? LanguageServerPath,
-    string[]? TrustedCheckoutRoots = null)
+    string[]? TrustedCheckoutRoots = null,
+    string? ProgramArguments = null)
 {
-    public static RocketToolSettings Automatic { get; } = new(null, null, []);
+    public static RocketToolSettings Automatic { get; } = new(null, null, [], null);
 
     public bool IsAutomatic =>
         string.IsNullOrWhiteSpace(CompilerPath) &&
         string.IsNullOrWhiteSpace(LanguageServerPath) &&
-        (TrustedCheckoutRoots is null || TrustedCheckoutRoots.Length == 0);
+        (TrustedCheckoutRoots is null || TrustedCheckoutRoots.Length == 0) &&
+        string.IsNullOrWhiteSpace(ProgramArguments);
 }

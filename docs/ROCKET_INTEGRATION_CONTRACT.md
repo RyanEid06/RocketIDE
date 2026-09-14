@@ -152,6 +152,18 @@ rocketc benchmark
 
 Exact flags must be verified against the active Rocket version before UI command construction is finalized.
 
+## Native debug artifacts
+
+WP17 uses Rocket's existing native debug contract; RocketIDE does not modify it. For an executable target, RocketIDE requests an unoptimized structured build:
+
+```text
+rocketc build <target> --debug --message-format=json
+```
+
+The successful `build-finished` message is authoritative for the executable artifact path. A debugger launch additionally requires the adjacent CodeView `.pdb` and `rocket-source-map-1` `.rocket.map.json` sidecar. RocketIDE validates all mapped sources before launch and rejects duplicate compiled source basenames because the frozen PDB/source-map identity contract cannot disambiguate them.
+
+The standalone debugger uses Microsoft DbgX/DbgEng only as a consumer of those artifacts. Breakpoint lines, stack frames, and locals must come from the native debugger/PDB; do not infer Rocket semantics in the IDE. Starting a debug target is an explicit user action and remains subject to the same trusted Rocket toolchain boundary as Build/Run.
+
 ## Tool discovery and trust
 
 Trusted automatic tool sources are RocketIDE explicit settings, `ROCKET_COMPILER` / `ROCKET_LANGUAGE_SERVER`, process `PATH`, a bundled Rocket SDK, and a developer Rocket checkout discovered from RocketIDE's own installation location (specifically a sibling `Rocket` checkout beside a recognized `RocketIDE` / `RocketIDE-Build` directory). The installation-adjacent fallback is independent of the opened workspace and exists only to support development builds without machine-specific source changes.

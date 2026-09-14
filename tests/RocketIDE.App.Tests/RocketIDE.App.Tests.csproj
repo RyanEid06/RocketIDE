@@ -9,5 +9,6 @@
     <PackageReference Include="MSTest.TestAdapter" />
     <PackageReference Include="MSTest.TestFramework" />
     <ProjectReference Include="..\..\src\RocketIDE.App\RocketIDE.App.csproj" />
+    <ProjectReference Include="..\..\src\RocketIDE.Debugger\RocketIDE.Debugger.csproj" />
   </ItemGroup>
 </Project>

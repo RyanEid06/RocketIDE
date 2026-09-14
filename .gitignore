@@ -33,6 +33,6 @@ Desktop.ini
 .vscode/
 
 # Recovery/logs must be per-user, never repo state
-recovery/
+/recovery/
 logs/
 /RocketIDE-Build/

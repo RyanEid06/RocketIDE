@@ -11,7 +11,7 @@ public sealed class RocketToolSettingsStoreTests
         using var temp = new TempDirectory();
         var path = Path.Combine(temp.Path, "rocket-tools.json");
         var store = new RocketToolSettingsStore(path);
-        var expected = new RocketToolSettings("C:\\sdk\\rocketc.exe", "D:\\rocket\\rocket-lsp.exe", ["E:\\trusted\\Rocket"]);
+        var expected = new RocketToolSettings("C:\\sdk\\rocketc.exe", "D:\\rocket\\rocket-lsp.exe", ["E:\\trusted\\Rocket"], "--seed 42 \"two words\"");
 
         await store.SaveAsync(expected, CancellationToken.None);
         var actual = await store.LoadAsync(CancellationToken.None);
@@ -19,6 +19,7 @@ public sealed class RocketToolSettingsStoreTests
         Assert.AreEqual(expected.CompilerPath, actual.CompilerPath);
         Assert.AreEqual(expected.LanguageServerPath, actual.LanguageServerPath);
         CollectionAssert.AreEqual(expected.TrustedCheckoutRoots ?? [], actual.TrustedCheckoutRoots ?? []);
+        Assert.AreEqual(expected.ProgramArguments, actual.ProgramArguments);
         Assert.IsTrue(File.Exists(path));
     }
 

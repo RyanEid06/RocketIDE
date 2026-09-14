@@ -7,7 +7,7 @@
         xmlns:views="clr-namespace:RocketIDE.App.Views"
         Title="{Binding WindowTitle}"
         Width="1280" Height="800" MinWidth="900" MinHeight="600"
-        WindowStartupLocation="CenterScreen"
+        WindowStartupLocation="Manual"
         Loaded="MainWindow_Loaded"
         SourceInitialized="MainWindow_SourceInitialized"
         PreviewKeyDown="MainWindow_PreviewKeyDown"
@@ -20,6 +20,7 @@
                 <Separator />
                 <MenuItem Header="_Open File..." InputGestureText="Ctrl+O" Click="OpenFile_Click" />
                 <MenuItem Header="Open _Folder..." InputGestureText="Ctrl+Shift+O" Click="OpenFolder_Click" />
+                <MenuItem Header="_Quick Open File..." InputGestureText="Ctrl+P" IsEnabled="{Binding CanQuickOpen}" Click="QuickOpenFile_Click" />
                 <MenuItem x:Name="RecentProjectsMenu" Header="Recent _Projects" SubmenuOpened="RecentProjects_SubmenuOpened" />
                 <Separator />
                 <MenuItem Header="_Save" InputGestureText="Ctrl+S" IsEnabled="{Binding HasDocuments}" Click="Save_Click" />
@@ -37,6 +38,8 @@
                 <Separator />
                 <MenuItem Header="_Find..." InputGestureText="Ctrl+F" IsEnabled="{Binding HasDocuments}" Click="Find_Click" />
                 <MenuItem Header="_Replace..." InputGestureText="Ctrl+H" IsEnabled="{Binding HasDocuments}" Click="Replace_Click" />
+                <MenuItem Header="Search in _Workspace..." InputGestureText="Ctrl+Shift+F" Click="SearchWorkspace_Click" />
+                <MenuItem Header="Replace in _Files..." InputGestureText="Ctrl+Shift+H" Click="ReplaceWorkspace_Click" />
                 <Separator />
                 <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="Rename _Symbol..." InputGestureText="F2" IsEnabled="{Binding HasDocuments}" Click="RenameSymbol_Click" />
                 <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Quick Fixes (server-provided)" InputGestureText="Ctrl+." IsEnabled="{Binding HasDocuments}" Click="CodeActions_Click" />
@@ -44,8 +47,11 @@
             </MenuItem>
             <MenuItem Header="_Selection"><MenuItem Header="Select _All" InputGestureText="Ctrl+A" IsEnabled="{Binding HasDocuments}" Click="SelectAll_Click" /></MenuItem>
             <MenuItem Header="_View">
-                <MenuItem Header="Explorer" IsEnabled="False" IsCheckable="True" IsChecked="True" ToolTip="Panel visibility persistence is implemented in a later reliability WP." />
-                <MenuItem Header="Bottom Panel" IsEnabled="False" IsCheckable="True" IsChecked="True" ToolTip="Panel visibility persistence is implemented in a later reliability WP." />
+                <MenuItem x:Name="ExplorerViewMenu" Header="Explorer" IsCheckable="True" IsChecked="True" Click="ExplorerViewMenu_Click" />
+                <MenuItem x:Name="BottomPanelViewMenu" Header="Bottom Panel" IsCheckable="True" IsChecked="True" Click="BottomPanelViewMenu_Click" />
+                <Separator />
+                <MenuItem Header="_Problems" InputGestureText="Ctrl+Shift+M" Click="ShowProblems_Click" />
+                <MenuItem Header="_Output" InputGestureText="Ctrl+Shift+U" Click="ShowOutput_Click" />
             </MenuItem>
             <MenuItem Header="_Navigate">
                 <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Go to Definition" InputGestureText="F12" IsEnabled="{Binding HasDocuments}" Click="GotoDefinition_Click" />
@@ -53,30 +59,62 @@
                 <Separator />
                 <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Go to Line..." InputGestureText="Ctrl+G" IsEnabled="{Binding HasDocuments}" Click="GotoLine_Click" />
             </MenuItem>
-            <MenuItem Header="_Build"><MenuItem Header="Build Project" IsEnabled="False" ToolTip="Implemented in IDE-WP10." /></MenuItem>
+            <MenuItem Header="_Build">
+                <MenuItem Header="_Check Rocket Target" IsEnabled="{Binding CanRocketCheck}" Click="CheckRocket_Click" />
+                <MenuItem Header="_Build Rocket Target" InputGestureText="Ctrl+B" IsEnabled="{Binding CanRocketBuild}" Click="BuildRocket_Click" />
+            </MenuItem>
             <MenuItem Header="_Run">
-                <MenuItem Header="Run" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
-                <MenuItem Header="Stop" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
-                <MenuItem Header="Test" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
+                <MenuItem Header="_Run Rocket Target" InputGestureText="Ctrl+R" IsEnabled="{Binding CanRocketRun}" Click="RunRocket_Click" />
+                <MenuItem Header="_Stop Rocket" InputGestureText="Ctrl+Shift+F5" IsEnabled="{Binding CanRocketStop}" Click="StopRocket_Click" />
+                <Separator />
+                <MenuItem Header="_Test Rocket Target" IsEnabled="{Binding CanRocketTest}" Click="TestRocket_Click" />
+            </MenuItem>
+            <MenuItem Header="_Debug">
+                <MenuItem Header="_Start / Continue" InputGestureText="F5" IsEnabled="{Binding CanDebugStartContinue}" Click="DebugStartContinue_Click" />
+                <MenuItem Header="_Pause" InputGestureText="Pause" IsEnabled="{Binding CanDebugPause}" Click="DebugPause_Click" />
+                <MenuItem Header="S_top" InputGestureText="Shift+F5" IsEnabled="{Binding CanDebugStop}" Click="DebugStop_Click" />
+                <Separator />
+                <MenuItem Header="Toggle _Breakpoint" InputGestureText="F9" IsEnabled="{Binding CanDebugToggleBreakpoint}" Click="DebugToggleBreakpoint_Click" />
+                <Separator />
+                <MenuItem Header="Step _Over" InputGestureText="F10" IsEnabled="{Binding CanDebugStepOver}" Click="DebugStepOver_Click" />
+                <MenuItem Header="Step _Into" InputGestureText="F11" IsEnabled="{Binding CanDebugStepInto}" Click="DebugStepInto_Click" />
+                <MenuItem Header="Step O_ut" InputGestureText="Shift+F11" IsEnabled="{Binding CanDebugStepOut}" Click="DebugStepOut_Click" />
             </MenuItem>
             <MenuItem Header="_Tools">
                 <MenuItem Header="Validate Rocket _Environment" Click="ValidateRocketEnvironment_Click" />
                 <MenuItem Header="Rocket SDK _Settings..." Click="RocketSdkSettings_Click" />
+                <Separator />
+                <MenuItem Header="_New Rocket Project..." IsEnabled="{Binding CanRocketNewProject}" Click="NewRocketProject_Click" />
+                <MenuItem Header="_Resolve Dependencies" IsEnabled="{Binding CanRocketAdvanced}">
+                    <MenuItem Header="_Normal" Click="ResolveDependencies_Click" />
+                    <MenuItem Header="_Locked (--locked)" Click="ResolveDependenciesLocked_Click" />
+                    <MenuItem Header="_Offline (--offline)" Click="ResolveDependenciesOffline_Click" />
+                </MenuItem>
+                <MenuItem Header="Dependency _Tree" IsEnabled="{Binding CanRocketAdvanced}" Click="DependencyTree_Click" />
+                <MenuItem Header="_Audit Dependencies" IsEnabled="{Binding CanRocketAdvanced}" Click="AuditDependencies_Click" />
+                <MenuItem Header="_Target Information" IsEnabled="{Binding CanRocketAdvanced}" Click="TargetInformation_Click" />
+                <MenuItem Header="Format _Target/Workspace" IsEnabled="{Binding CanRocketAdvanced}" Click="FormatTarget_Click" />
+                <MenuItem Header="_Coverage" IsEnabled="{Binding CanRocketAdvanced}" Click="Coverage_Click" />
+                <MenuItem Header="_Profile" IsEnabled="{Binding CanRocketAdvanced}" Click="Profile_Click" />
+                <MenuItem Header="_Benchmark" IsEnabled="{Binding CanRocketAdvanced}" Click="Benchmark_Click" />
             </MenuItem>
             <MenuItem Header="_Help"><MenuItem Header="About RocketIDE" Click="About_Click" /></MenuItem>
         </Menu>
 
         <Border DockPanel.Dock="Top" Background="{DynamicResource IDE.ChromeBrush}" BorderBrush="{DynamicResource IDE.BorderBrush}" BorderThickness="0,0,0,1" Padding="5,2">
             <StackPanel Orientation="Horizontal">
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="New" ToolTip="New file" Click="NewFile_Click" />
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Open" ToolTip="Open file" Click="OpenFile_Click" />
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Folder" ToolTip="Open folder" Click="OpenFolder_Click" />
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Save" IsEnabled="{Binding HasDocuments}" ToolTip="Save active file" Click="Save_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="New" ToolTip="New file" AutomationProperties.Name="New file button" Click="NewFile_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Open" ToolTip="Open file" AutomationProperties.Name="Open file button" Click="OpenFile_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Folder" ToolTip="Open folder" AutomationProperties.Name="Open folder button" Click="OpenFolder_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Save" IsEnabled="{Binding HasDocuments}" ToolTip="Save active file" AutomationProperties.Name="Save active file button" Click="Save_Click" />
                 <Border Width="1" Height="22" Margin="5,0" Background="{DynamicResource IDE.BorderBrush}" />
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Build" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Run" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Stop" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Test" IsEnabled="False" ToolTip="Implemented in IDE-WP10." />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Build" IsEnabled="{Binding CanRocketBuild}" ToolTip="Build active Rocket target" Click="BuildRocket_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Run" IsEnabled="{Binding CanRocketRun}" ToolTip="Run active Rocket executable target" Click="RunRocket_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Debug" IsEnabled="{Binding CanDebugStartContinue}" ToolTip="Start or continue Rocket debugging (F5)" AutomationProperties.Name="Start or continue Rocket debugging button" Click="DebugStartContinue_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Pause" IsEnabled="{Binding CanDebugPause}" ToolTip="Pause Rocket debugging" AutomationProperties.Name="Pause Rocket debugging button" Click="DebugPause_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Stop Debug" IsEnabled="{Binding CanDebugStop}" ToolTip="Stop Rocket debugging (Shift+F5)" AutomationProperties.Name="Stop Rocket debugging button" Click="DebugStop_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Stop" IsEnabled="{Binding CanRocketStop}" ToolTip="Stop active Rocket compiler/program process tree" AutomationProperties.Name="Stop Rocket compiler or program button" Click="StopRocket_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Test" IsEnabled="{Binding CanRocketTest}" ToolTip="Test active Rocket target" Click="TestRocket_Click" />
             </StackPanel>
         </Border>
 
@@ -90,16 +128,16 @@
 
         <Grid Background="{DynamicResource IDE.WindowBrush}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="250" MinWidth="170" />
-                <ColumnDefinition Width="5" />
+                <ColumnDefinition x:Name="ExplorerColumnDefinition" Width="250" MinWidth="170" />
+                <ColumnDefinition x:Name="ExplorerSplitterColumnDefinition" Width="5" />
                 <ColumnDefinition Width="*" MinWidth="420" />
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0" Background="{DynamicResource IDE.ChromeBrush}" BorderBrush="{DynamicResource IDE.BorderBrush}" BorderThickness="0,0,1,0">
+            <Border x:Name="ExplorerPane" Grid.Column="0" Background="{DynamicResource IDE.ChromeBrush}" BorderBrush="{DynamicResource IDE.BorderBrush}" BorderThickness="0,0,1,0">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Padding="12,9" BorderBrush="{DynamicResource IDE.BorderBrush}" BorderThickness="0,0,0,1">
                         <DockPanel>
-                            <Button DockPanel.Dock="Right" Style="{StaticResource IDE.SmallButtonStyle}" Content="↻" ToolTip="Refresh workspace" IsEnabled="{Binding HasWorkspace}" Click="RefreshWorkspace_Click" />
+                            <Button DockPanel.Dock="Right" Style="{StaticResource IDE.SmallButtonStyle}" Content="↻" ToolTip="Refresh workspace" AutomationProperties.Name="Refresh workspace" IsEnabled="{Binding HasWorkspace}" Click="RefreshWorkspace_Click" />
                             <TextBlock Text="EXPLORER" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource IDE.TextMutedBrush}" VerticalAlignment="Center" />
                         </DockPanel>
                     </Border>
@@ -156,32 +194,46 @@
                 </DockPanel>
             </Border>
 
-            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" ResizeDirection="Columns" />
+            <GridSplitter x:Name="ExplorerSplitter" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" ResizeDirection="Columns" />
 
             <Grid Grid.Column="2">
-                <Grid.RowDefinitions><RowDefinition Height="*" MinHeight="260" /><RowDefinition Height="5" /><RowDefinition Height="190" MinHeight="100" /></Grid.RowDefinitions>
+                <Grid.RowDefinitions><RowDefinition Height="*" MinHeight="260" /><RowDefinition Height="5" /><RowDefinition x:Name="BottomPanelRowDefinition" Height="190" MinHeight="100" /></Grid.RowDefinitions>
                 <Grid Grid.Row="0" Background="{DynamicResource IDE.EditorBrush}">
                     <TabControl x:Name="EditorTabs" ItemsSource="{Binding Documents}" SelectedItem="{Binding ActiveDocument, Mode=TwoWay}">
                         <TabControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type viewModels:DocumentTabViewModel}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock VerticalAlignment="Center" Text="{Binding HeaderText}" />
-                                    <Button Margin="7,0,0,0" Padding="2,0" MinWidth="18" Height="18" Background="Transparent" BorderBrush="Transparent" Foreground="{DynamicResource IDE.TextMutedBrush}" Content="×" ToolTip="Close" Tag="{Binding}" Click="CloseTabButton_Click" />
+                                    <Button Margin="7,0,0,0" Padding="2,0" MinWidth="18" Height="18" Background="Transparent" BorderBrush="Transparent" Foreground="{DynamicResource IDE.TextMutedBrush}" Content="×" ToolTip="Close" AutomationProperties.Name="Close document button" Tag="{Binding}" Click="CloseTabButton_Click" />
                                 </StackPanel>
                             </DataTemplate>
                         </TabControl.ItemTemplate>
                         <TabControl.ContentTemplate><DataTemplate DataType="{x:Type viewModels:DocumentTabViewModel}"><editor:EditorDocumentHost FeatureService="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=RocketEditorFeatures}" RocketCommandRequested="EditorHost_RocketCommandRequested" /></DataTemplate></TabControl.ContentTemplate>
                     </TabControl>
+                    <Border Background="{DynamicResource IDE.ChromeBrush}" BorderBrush="{DynamicResource IDE.WarningBrush}" BorderThickness="1"
+                            Margin="14,10,14,0" Padding="9,6" VerticalAlignment="Top" HorizontalAlignment="Stretch">
+                        <Border.Style>
+                            <Style TargetType="{x:Type Border}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ActiveDocument.IsLargeFileMode}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding ActiveDocument.LargeFileReason}" TextWrapping="Wrap" Foreground="{DynamicResource IDE.TextBrush}" />
+                    </Border>
                     <Border Background="{DynamicResource IDE.EditorBrush}">
                         <Border.Style><Style TargetType="{x:Type Border}"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding HasDocuments}" Value="False"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></Border.Style>
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="520">
                             <TextBlock Text="RocketIDE" FontSize="34" FontWeight="SemiBold" Foreground="{DynamicResource IDE.TextBrush}" HorizontalAlignment="Center" />
                             <TextBlock Margin="0,10,0,0" Text="Native Windows IDE for the Rocket language" Foreground="{DynamicResource IDE.TextMutedBrush}" FontSize="16" HorizontalAlignment="Center" />
-                            <TextBlock Margin="0,24,0,0" Text="Open a folder to browse a project, or open an individual Rocket file. Language intelligence, build and run remain disabled until their roadmap phases." Foreground="{DynamicResource IDE.TextMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" />
+                            <TextBlock Margin="0,24,0,0" Text="Open a folder to browse a Rocket project, or open an individual Rocket file. Language intelligence and Rocket Check/Build/Run/Test activate when a valid target is available." Foreground="{DynamicResource IDE.TextMutedBrush}" TextWrapping="Wrap" TextAlignment="Center" />
                         </StackPanel>
                     </Border>
                 </Grid>
-                <GridSplitter Grid.Row="1" Height="5" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ResizeDirection="Rows" />
+                <GridSplitter x:Name="BottomPanelSplitter" Grid.Row="1" Height="5" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" ResizeDirection="Rows" />
                 <TabControl x:Name="BottomTabs" Grid.Row="2">
                     <TabItem Header="{Binding Problems.HeaderText}">
                         <Grid Margin="8">
@@ -263,11 +315,78 @@
                     </TabItem>
                     <TabItem Header="OUTPUT">
                         <Grid Margin="8">
-                            <TextBlock Text="Rocket environment and language-server logs appear here. Compiler/program output is added in IDE-WP10." Foreground="{DynamicResource IDE.TextMutedBrush}" Margin="4,2,4,6" VerticalAlignment="Top" />
-                            <ListBox ItemsSource="{Binding OutputLines}" Margin="0,28,0,0" BorderThickness="0" Background="Transparent" FontFamily="Consolas" FontSize="12" ScrollViewer.HorizontalScrollBarVisibility="Auto" />
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                            <DockPanel Grid.Row="0" Margin="0,0,0,6">
+                                <TextBlock VerticalAlignment="Center" Text="Rocket compiler, program, debugger, environment, and language-server output" Foreground="{DynamicResource IDE.TextMutedBrush}" />
+                                <Button DockPanel.Dock="Right" Style="{StaticResource IDE.SmallButtonStyle}" Content="Clear" Click="ClearOutput_Click" />
+                            </DockPanel>
+                            <ListBox x:Name="OutputList" Grid.Row="1" ItemsSource="{Binding Output.Lines}" SelectionMode="Extended" BorderThickness="0" Background="Transparent" FontFamily="Consolas" FontSize="12" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" PreviewKeyDown="OutputList_PreviewKeyDown">
+                                <ListBox.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Copy Selected" Click="CopyOutputSelected_Click" />
+                                        <MenuItem Header="Copy All" Click="CopyOutputAll_Click" />
+                                    </ContextMenu>
+                                </ListBox.ContextMenu>
+                            </ListBox>
                         </Grid>
                     </TabItem>
-                    <TabItem Header="TESTS"><TextBlock Margin="12" Text="Structured Rocket test results begin in IDE-WP10." Foreground="{DynamicResource IDE.TextMutedBrush}" /></TabItem>
+                    <TabItem Header="{Binding Tests.HeaderText}">
+                        <Grid Margin="8">
+                            <Grid.RowDefinitions><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                            <ListView Grid.Row="0" ItemsSource="{Binding Tests.Items}" BorderThickness="0" Background="Transparent" Foreground="{DynamicResource IDE.TextBrush}">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="Status" Width="90" DisplayMemberBinding="{Binding Status}" />
+                                        <GridViewColumn Header="Test" Width="360" DisplayMemberBinding="{Binding Name}" />
+                                        <GridViewColumn Header="Exit" Width="60" DisplayMemberBinding="{Binding ExitCode}" />
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                            <TextBlock Grid.Row="1" Margin="4,5,4,0" Foreground="{DynamicResource IDE.TextMutedBrush}" FontSize="11" Text="{Binding Tests.SummaryText}" />
+                        </Grid>
+                    </TabItem>
+                    <TabItem Header="SEARCH">
+                        <views:SearchPanel x:Name="SearchPanelControl" DataContext="{Binding Search}" />
+                    </TabItem>
+                    <TabItem Header="DEBUG">
+                        <Grid Margin="8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Margin="4,0,4,6" Foreground="{DynamicResource IDE.TextMutedBrush}" Text="{Binding Debug.StatusText}" />
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="0.8*" MinWidth="160" />
+                                    <ColumnDefinition Width="1.4*" MinWidth="220" />
+                                    <ColumnDefinition Width="1.4*" MinWidth="220" />
+                                </Grid.ColumnDefinitions>
+                                <GroupBox Grid.Column="0" Header="Threads" Margin="0,0,6,0">
+                                    <ListView x:Name="DebugThreadsList" ItemsSource="{Binding Debug.Threads}" BorderThickness="0" Background="Transparent" MouseDoubleClick="DebugThreads_MouseDoubleClick">
+                                        <ListView.View><GridView><GridViewColumn Header="Thread" Width="180" DisplayMemberBinding="{Binding DisplayName}" /></GridView></ListView.View>
+                                    </ListView>
+                                </GroupBox>
+                                <GroupBox Grid.Column="1" Header="Call Stack" Margin="0,0,6,0">
+                                    <ListView x:Name="DebugFramesList" ItemsSource="{Binding Debug.Frames}" BorderThickness="0" Background="Transparent" MouseDoubleClick="DebugFrames_MouseDoubleClick">
+                                        <ListView.View><GridView>
+                                            <GridViewColumn Header="#" Width="36" DisplayMemberBinding="{Binding Index}" />
+                                            <GridViewColumn Header="Function" Width="190" DisplayMemberBinding="{Binding FunctionName}" />
+                                            <GridViewColumn Header="Line" Width="55" DisplayMemberBinding="{Binding Line}" />
+                                        </GridView></ListView.View>
+                                    </ListView>
+                                </GroupBox>
+                                <GroupBox Grid.Column="2" Header="Locals">
+                                    <ListView ItemsSource="{Binding Debug.Locals}" BorderThickness="0" Background="Transparent">
+                                        <ListView.View><GridView>
+                                            <GridViewColumn Header="Name" Width="120" DisplayMemberBinding="{Binding Name}" />
+                                            <GridViewColumn Header="Type" Width="110" DisplayMemberBinding="{Binding Type}" />
+                                            <GridViewColumn Header="Value" Width="190" DisplayMemberBinding="{Binding Value}" />
+                                        </GridView></ListView.View>
+                                    </ListView>
+                                </GroupBox>
+                            </Grid>
+                        </Grid>
+                    </TabItem>
                 </TabControl>
             </Grid>
         </Grid>

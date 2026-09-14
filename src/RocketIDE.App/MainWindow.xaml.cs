@@ -1,17 +1,22 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Win32;
+using RocketIDE.App.Commands;
 using RocketIDE.App.Editor;
 using RocketIDE.App.Interop;
+using RocketIDE.App.Integration;
 using RocketIDE.App.ViewModels;
 using RocketIDE.App.ViewModels.Explorer;
 using RocketIDE.Core.Documents;
+using RocketIDE.Core.Diagnostics;
+using RocketIDE.Core.Search;
 using RocketIDE.Core.Workspaces;
 using RocketIDE.Infrastructure.Files;
 using RocketIDE.Infrastructure.Settings;
@@ -37,8 +42,11 @@ public partial class MainWindow : Window
         InitializeComponent();
         _viewModel = new MainWindowViewModel(_workspaceFileSystem);
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        _viewModel.Search.MatchActivated += Search_MatchActivated;
+        _viewModel.Search.ReplaceApplier = ApplyWorkspaceReplaceAsync;
         DataContext = _viewModel;
         InitializeRocketIntegration();
+        InitializeReliability();
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -47,6 +55,7 @@ public partial class MainWindow : Window
         {
             var recent = await _recentWorkspaceStore.LoadAsync(CancellationToken.None);
             _viewModel.SetRecentWorkspaces(recent);
+            await LoadReliabilityAsync();
         }
         catch (Exception exception) when (IsExpectedFileException(exception))
         {
@@ -79,12 +88,42 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void QuickOpenFile_Click(object sender, RoutedEventArgs e)
+    {
+        var workspace = _viewModel.Explorer.Workspace;
+        if (workspace is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var finder = new QuickOpenFileFinder(_workspaceFileSystem);
+            var files = await finder.FindAsync(workspace.Path, maxFiles: 10000, CancellationToken.None);
+            var dialog = new QuickOpenDialog(workspace.Path, files) { Owner = this };
+            if (dialog.ShowDialog() == true && dialog.SelectedPath is not null)
+            {
+                await OpenDocumentAsync(dialog.SelectedPath);
+            }
+        }
+        catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
+        {
+            ShowFileError("Quick Open failed", workspace.Path, exception);
+        }
+    }
+
     private async Task<DocumentTabViewModel?> OpenDocumentAsync(string path)
     {
         try
         {
             var snapshot = await _documentStore.OpenAsync(path, CancellationToken.None);
-            return _viewModel.AddOrActivate(_documentStore, snapshot);
+            if (!_viewModel.HasWorkspace)
+            {
+                _viewModel.Search.RootPath = Path.GetDirectoryName(snapshot.Path) ?? snapshot.Path;
+            }
+            var tab = _viewModel.AddOrActivate(_documentStore, snapshot);
+            RefreshDebugEditorPresentation();
+            return tab;
         }
         catch (Exception exception) when (IsExpectedFileException(exception))
         {
@@ -123,6 +162,7 @@ public partial class MainWindow : Window
             DisposeWorkspaceWatcher(previousWatcher);
 
             _viewModel.AddRecentWorkspace(path);
+            _viewModel.Search.RootPath = Path.GetFullPath(path);
             await PersistRecentWorkspacesAsync();
         }
         catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
@@ -132,6 +172,18 @@ public partial class MainWindow : Window
         }
     }
 
+
+    private async Task OpenRecentWorkspaceAsync(string path)
+    {
+        if (!Directory.Exists(path))
+        {
+            _viewModel.RecentWorkspaces.Remove(path);
+            await PersistRecentWorkspacesAsync();
+            return;
+        }
+
+        await OpenWorkspaceAsync(path);
+    }
 
     private async Task PersistRecentWorkspacesAsync()
     {
@@ -157,7 +209,7 @@ public partial class MainWindow : Window
         foreach (var path in _viewModel.RecentWorkspaces)
         {
             var item = new MenuItem { Header = path, ToolTip = path };
-            item.Click += async (_, _) => await OpenWorkspaceAsync(path);
+            item.Click += async (_, _) => await OpenRecentWorkspaceAsync(path);
             RecentProjectsMenu.Items.Add(item);
         }
     }
@@ -456,8 +508,29 @@ public partial class MainWindow : Window
     {
         try
         {
+            var overwriteExternalChanges = false;
+            if (tab.HasRecoveryConflict)
+            {
+                var recoveryChoice = MessageBox.Show(
+                    this,
+                    $"'{tab.DisplayName}' was restored from recovery, but the source file changed, was deleted, or was recreated on disk.\n\n" +
+                    $"{tab.RecoveryConflictMessage ?? "The recovered buffer is based on an older disk state."}\n\n" +
+                    "Overwrite the current disk state with the recovered editor buffer?",
+                    "Recovered file conflicts with disk",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning,
+                    MessageBoxResult.No);
+
+                if (recoveryChoice != MessageBoxResult.Yes)
+                {
+                    return false;
+                }
+
+                overwriteExternalChanges = true;
+            }
+
             SuppressWorkspaceChange(tab.Path);
-            var result = await _documentStore.SaveAsync(tab.Id, overwriteExternalChanges: false, CancellationToken.None);
+            var result = await _documentStore.SaveAsync(tab.Id, overwriteExternalChanges, CancellationToken.None);
             if (result.Status == DocumentSaveStatus.Conflict)
             {
                 var choice = MessageBox.Show(
@@ -478,7 +551,13 @@ public partial class MainWindow : Window
             }
 
             tab.UpdateSnapshot(result.Document);
-            return !result.Document.IsDirty && result.Status is DocumentSaveStatus.Saved or DocumentSaveStatus.NoChanges;
+            var succeeded = !result.Document.IsDirty && (result.Status is DocumentSaveStatus.Saved or DocumentSaveStatus.NoChanges);
+            if (succeeded)
+            {
+                tab.ClearRecoveryConflict();
+                await SaveRecoverySnapshotAsync();
+            }
+            return succeeded;
         }
         catch (Exception exception) when (IsExpectedFileException(exception))
         {
@@ -518,6 +597,18 @@ public partial class MainWindow : Window
 
     private async Task<bool> TryCloseTabsAsync(IReadOnlyList<DocumentTabViewModel> tabs)
     {
+        if (!await ConfirmDirtyTabsAsync(tabs))
+        {
+            return false;
+        }
+
+        CloseTabsWithoutPrompt(tabs);
+        await SaveRecoverySnapshotAsync();
+        return true;
+    }
+
+    private async Task<bool> ConfirmDirtyTabsAsync(IReadOnlyList<DocumentTabViewModel> tabs)
+    {
         foreach (var tab in tabs)
         {
             if (!tab.IsDirty)
@@ -544,7 +635,6 @@ public partial class MainWindow : Window
             }
         }
 
-        CloseTabsWithoutPrompt(tabs);
         return true;
     }
 
@@ -616,7 +706,7 @@ public partial class MainWindow : Window
     private void About_Click(object sender, RoutedEventArgs e) =>
         MessageBox.Show(
             this,
-            "RocketIDE\nNative Windows IDE for the Rocket programming language.\n\nDevelopment follows ROADMAP.md and compiler/LSP behavior remains owned by Rocket.",
+            $"RocketIDE {typeof(MainWindow).Assembly.GetName().Version}\nNative Windows IDE for the Rocket programming language.\n\nBuild: {typeof(MainWindow).Assembly.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown"}\n\nDevelopment follows ROADMAP.md and compiler/LSP behavior remains owned by Rocket.",
             "About RocketIDE",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
@@ -642,10 +732,12 @@ public partial class MainWindow : Window
         try
         {
             if (_viewModel.Documents.Any(document => document.IsDirty) &&
-                !await TryCloseTabsAsync(_viewModel.Documents.ToArray()))
+                !await ConfirmDirtyTabsAsync(_viewModel.Documents.ToArray()))
             {
                 return;
             }
+
+            await ShutdownDebuggerAsync();
 
             try
             {
@@ -655,6 +747,8 @@ public partial class MainWindow : Window
             {
                 AppendRocketOutput($"Rocket LSP shutdown failed: {exception.Message}");
             }
+
+            await CompleteReliabilityShutdownAsync();
 
             // Force at least one dispatcher turn even when shutdown completed synchronously.
             // That guarantees the original Closing event has returned before Close() is called.
@@ -672,13 +766,60 @@ public partial class MainWindow : Window
         }
     }
 
+    private static string FormatControlGesture(Key key, bool shift) =>
+        shift ? $"Ctrl+Shift+{key}" : $"Ctrl+{key}";
+
     private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (TryHandleDebuggerGesture(e.Key, Keyboard.Modifiers))
+        {
+            e.Handled = true;
+            return;
+        }
+
         var control = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
         var shift = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
         if (!control)
         {
             return;
+        }
+
+        var registered = _viewModel.CommandRegistry.FindByGesture(FormatControlGesture(e.Key, shift));
+        if (registered is not null)
+        {
+            e.Handled = true;
+            if (!_viewModel.GetCommandState(registered.Id).IsEnabled)
+            {
+                return;
+            }
+
+            switch (registered.Id)
+            {
+                case RocketCommandRegistry.Stop:
+                    StopRocket_Click(sender, e);
+                    return;
+                case RocketCommandRegistry.Problems:
+                    ShowProblems_Click(sender, e);
+                    return;
+                case RocketCommandRegistry.Output:
+                    ShowOutput_Click(sender, e);
+                    return;
+                case RocketCommandRegistry.QuickOpen:
+                    QuickOpenFile_Click(sender, e);
+                    return;
+                case RocketCommandRegistry.Search:
+                    SearchWorkspace_Click(sender, e);
+                    return;
+                case RocketCommandRegistry.Replace:
+                    ReplaceWorkspace_Click(sender, e);
+                    return;
+                case RocketCommandRegistry.Build:
+                    BuildRocket_Click(sender, e);
+                    return;
+                case RocketCommandRegistry.Run:
+                    RunRocket_Click(sender, e);
+                    return;
+            }
         }
 
         switch (e.Key)
@@ -735,6 +876,64 @@ public partial class MainWindow : Window
                 e.Handled = true;
                 ShowGotoLine();
                 break;
+        }
+    }
+
+    private void ShowProblems_Click(object sender, RoutedEventArgs e) => ToggleBottomPanelTab(0);
+
+    private void ShowOutput_Click(object sender, RoutedEventArgs e) => ToggleBottomPanelTab(2);
+
+    private void ToggleBottomPanelTab(int index)
+    {
+        if (BottomTabs.Visibility == Visibility.Visible && BottomTabs.SelectedIndex == index)
+        {
+            BottomPanelViewMenu.IsChecked = false;
+            BottomTabs.Visibility = Visibility.Collapsed;
+            BottomPanelSplitter.Visibility = Visibility.Collapsed;
+            BottomPanelRowDefinition.Height = new GridLength(0);
+            return;
+        }
+
+        ShowBottomPanelTab(index);
+    }
+
+    private void ShowBottomPanelTab(int index)
+    {
+        BottomPanelViewMenu.IsChecked = true;
+        BottomTabs.Visibility = Visibility.Visible;
+        BottomPanelSplitter.Visibility = Visibility.Visible;
+        BottomPanelRowDefinition.Height = new GridLength(Math.Max(100, BottomPanelRowDefinition.Height.Value));
+        BottomTabs.SelectedIndex = index;
+    }
+
+    private void SearchWorkspace_Click(object sender, RoutedEventArgs e)
+    {
+        ShowBottomPanelTab(4);
+        SearchPanelControl.FocusPattern(includeReplace: false);
+    }
+
+    private void ReplaceWorkspace_Click(object sender, RoutedEventArgs e)
+    {
+        ShowBottomPanelTab(4);
+        SearchPanelControl.FocusPattern(includeReplace: true);
+    }
+
+    private async void Search_MatchActivated(object? sender, SearchMatch match)
+    {
+        try
+        {
+            var tab = FindOpenDocument(match.FilePath) ?? await OpenDocumentAsync(match.FilePath);
+            if (tab is null)
+            {
+                return;
+            }
+
+            _viewModel.ActiveDocument = tab;
+            tab.RequestNavigation(new SourceRange(match.Line - 1, match.Column - 1, match.Line - 1, match.Column - 1 + match.Length));
+        }
+        catch (Exception exception) when (IsExpectedFileException(exception))
+        {
+            ShowFileError("Search result navigation failed", match.FilePath, exception);
         }
     }
 
@@ -929,14 +1128,16 @@ public partial class MainWindow : Window
 
     private void UpdateActiveTargetStatus()
     {
-        var activePath = _viewModel.ActiveDocument?.Path;
+        var activePath = GetRocketCommandActivePath();
         var target = activePath is null ? null : _targetDiscovery.Discover(activePath);
         _viewModel.ActiveTargetStatus = target switch
         {
             null => "Target: none",
             { IsStandalone: true } => $"Target: {Path.GetFileName(target.InputPath)} (standalone)",
+            { IsExecutable: false } => $"Target: {Path.GetFileName(target.WorkingDirectory)} ({target.OutputKind})",
             _ => $"Target: {Path.GetFileName(target.WorkingDirectory)}",
         };
+        _viewModel.SetRocketCommandAvailability(target is not null, target?.IsExecutable == true);
     }
 
     private string? GetSelectedDirectory()

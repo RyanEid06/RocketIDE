@@ -108,4 +108,20 @@ public sealed class DocumentStateTests
         Assert.AreEqual(5L, snapshot.ByteLength);
     }
 
+    [TestMethod]
+    public void MarkRecoveredUnsaved_KeepsUnknownBaselineDirtyUntilPersisted()
+    {
+        var state = new DocumentState(new DocumentId(Guid.NewGuid()), @"C:\work\missing.rocket", "recovered", 9);
+
+        var recovered = state.MarkRecoveredUnsaved(bufferVersion: 7);
+        var editedBackToSameText = state.ApplyEdit("recovered");
+
+        Assert.IsTrue(recovered.IsDirty);
+        Assert.AreEqual(7, recovered.Version);
+        Assert.IsTrue(editedBackToSameText.IsDirty, "A recovered buffer has no known saved text baseline and must stay dirty until explicitly persisted.");
+
+        var persisted = state.MarkPersisted("recovered", 9);
+        Assert.IsFalse(persisted.IsDirty);
+    }
+
 }

@@ -9,4 +9,5 @@ public sealed record RocketDiagnostic(
     DiagnosticSeverity Severity,
     string FilePath,
     SourceRange Range,
-    JsonElement Data = default);
+    JsonElement Data = default,
+    string Provenance = "LSP");

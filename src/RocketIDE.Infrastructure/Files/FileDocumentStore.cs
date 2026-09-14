@@ -4,6 +4,8 @@ using RocketIDE.Core.Documents;
 
 namespace RocketIDE.Infrastructure.Files;
 
+public sealed record DocumentRecoveryBaseline(string? Fingerprint, DateTimeOffset LastWriteUtc);
+
 public sealed class FileDocumentStore : IDocumentStore
 {
     private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
@@ -52,7 +54,7 @@ public sealed class FileDocumentStore : IDocumentStore
 
         var loaded = await ReadTextFileAsync(normalizedPath, cancellationToken).ConfigureAwait(false);
         var state = new DocumentState(DocumentId.New(), normalizedPath, loaded.Text, StrictUtf8.GetByteCount(loaded.Text));
-        var entry = new Entry(state, loaded.Hash, loaded.HasUtf8Bom);
+        var entry = new Entry(state, loaded.Hash, loaded.HasUtf8Bom, loaded.LastWriteUtc);
 
         lock (_gate)
         {
@@ -75,6 +77,67 @@ public sealed class FileDocumentStore : IDocumentStore
         lock (_gate)
         {
             return GetEntry(id).State.ApplyEdit(text);
+        }
+    }
+
+    public Task<DocumentSnapshot> OpenRecoveredAsync(
+        string path,
+        string text,
+        string? savedFileFingerprint,
+        DateTimeOffset savedFileLastWriteUtc,
+        int bufferVersion,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(text);
+        if (bufferVersion < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(bufferVersion));
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        var normalizedPath = NormalizePath(path);
+        lock (_gate)
+        {
+            if (_byPath.TryGetValue(normalizedPath, out var existing))
+            {
+                return Task.FromResult(existing.State.Snapshot);
+            }
+
+            long byteLength;
+            try
+            {
+                byteLength = StrictUtf8.GetByteCount(text);
+            }
+            catch (EncoderFallbackException exception)
+            {
+                throw new UnsupportedTextFileException(normalizedPath, "the recovery buffer contains invalid Unicode data", exception);
+            }
+
+            if (byteLength > LargeFilePolicy.MaxEditorBufferBytes)
+            {
+                throw new UnsupportedTextFileException(
+                    normalizedPath,
+                    $"the recovery buffer is larger than the {LargeFilePolicy.MaxEditorBufferBytes / (1024 * 1024)} MiB local editor buffer safety limit");
+            }
+
+            var state = new DocumentState(DocumentId.New(), normalizedPath, text, byteLength);
+            var snapshot = state.MarkRecoveredUnsaved(bufferVersion);
+            var entry = new Entry(state, DecodeFingerprint(savedFileFingerprint), false, savedFileLastWriteUtc);
+            _byPath.Add(normalizedPath, entry);
+            _byId.Add(state.Id, entry);
+            _order.Add(state.Id);
+            return Task.FromResult(snapshot);
+        }
+    }
+
+    public DocumentRecoveryBaseline GetRecoveryBaseline(DocumentId id)
+    {
+        lock (_gate)
+        {
+            var entry = GetEntry(id);
+            var fingerprint = entry.BaselineHash.Length == 0 ? null : Convert.ToHexString(entry.BaselineHash);
+            return new DocumentRecoveryBaseline(fingerprint, entry.BaselineLastWriteUtc);
         }
     }
 
@@ -103,6 +166,7 @@ public sealed class FileDocumentStore : IDocumentStore
             }
 
             current.BaselineHash = loaded.Hash;
+            current.BaselineLastWriteUtc = loaded.LastWriteUtc;
             current.HasUtf8Bom = loaded.HasUtf8Bom;
             return current.State.ReplaceFromDisk(loaded.Text, StrictUtf8.GetByteCount(loaded.Text));
         }
@@ -158,6 +222,7 @@ public sealed class FileDocumentStore : IDocumentStore
             var bytes = Encode(snapshot.Path, snapshot.Text, hasUtf8Bom);
             await _writeAtomicallyAsync(snapshot.Path, bytes, cancellationToken).ConfigureAwait(false);
             var newHash = SHA256.HashData(bytes);
+            var newLastWriteUtc = GetLastWriteUtc(snapshot.Path);
 
             lock (_gate)
             {
@@ -165,6 +230,7 @@ public sealed class FileDocumentStore : IDocumentStore
                 // always become the exact snapshot that was persisted, independently of current text.
                 var current = GetEntry(id);
                 current.BaselineHash = newHash;
+                current.BaselineLastWriteUtc = newLastWriteUtc;
                 var persisted = current.State.MarkPersisted(snapshot.Text, StrictUtf8.GetByteCount(snapshot.Text));
                 return new DocumentSaveResult(DocumentSaveStatus.Saved, persisted);
             }
@@ -237,6 +303,18 @@ public sealed class FileDocumentStore : IDocumentStore
 
     private static async Task<LoadedTextFile> ReadTextFileAsync(string path, CancellationToken cancellationToken)
     {
+        var metadata = new FileInfo(path);
+        if (!metadata.Exists)
+        {
+            throw new FileNotFoundException("The document no longer exists.", path);
+        }
+        if (metadata.Length > LargeFilePolicy.MaxEditorBufferBytes)
+        {
+            throw new UnsupportedTextFileException(
+                path,
+                $"the file is larger than the {LargeFilePolicy.MaxEditorBufferBytes / (1024 * 1024)} MiB local editor buffer safety limit");
+        }
+
         var bytes = await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false);
         if (Array.IndexOf(bytes, (byte)0) >= 0)
         {
@@ -257,7 +335,42 @@ public sealed class FileDocumentStore : IDocumentStore
             throw new UnsupportedTextFileException(path, "the file is not valid UTF-8", exception);
         }
 
-        return new LoadedTextFile(text, bytes, SHA256.HashData(bytes), hasBom);
+        return new LoadedTextFile(text, bytes, SHA256.HashData(bytes), hasBom, GetLastWriteUtc(path));
+    }
+
+    private static byte[] DecodeFingerprint(string? fingerprint)
+    {
+        if (string.IsNullOrWhiteSpace(fingerprint))
+        {
+            return [];
+        }
+
+        try
+        {
+            return Convert.FromHexString(fingerprint);
+        }
+        catch (FormatException)
+        {
+            return [];
+        }
+    }
+
+    private static DateTimeOffset GetLastWriteUtc(string path)
+    {
+        try
+        {
+            return File.Exists(path)
+                ? new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero)
+                : DateTimeOffset.UnixEpoch;
+        }
+        catch (IOException)
+        {
+            return DateTimeOffset.UnixEpoch;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return DateTimeOffset.UnixEpoch;
+        }
     }
 
     private static async Task<byte[]?> TryGetCurrentHashAsync(string path, CancellationToken cancellationToken)
@@ -329,16 +442,18 @@ public sealed class FileDocumentStore : IDocumentStore
         }
     }
 
-    private sealed class Entry(DocumentState state, byte[] baselineHash, bool hasUtf8Bom)
+    private sealed class Entry(DocumentState state, byte[] baselineHash, bool hasUtf8Bom, DateTimeOffset baselineLastWriteUtc)
     {
         public DocumentState State { get; } = state;
 
         public byte[] BaselineHash { get; set; } = baselineHash;
+
+        public DateTimeOffset BaselineLastWriteUtc { get; set; } = baselineLastWriteUtc;
 
         public bool HasUtf8Bom { get; set; } = hasUtf8Bom;
 
         public SemaphoreSlim SaveGate { get; } = new(1, 1);
     }
 
-    private sealed record LoadedTextFile(string Text, byte[] Bytes, byte[] Hash, bool HasUtf8Bom);
+    private sealed record LoadedTextFile(string Text, byte[] Bytes, byte[] Hash, bool HasUtf8Bom, DateTimeOffset LastWriteUtc);
 }

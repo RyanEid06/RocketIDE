@@ -46,11 +46,28 @@ public sealed class RocketTargetDiscovery : IRocketTargetDiscovery
                 return null;
             }
 
-            var input = isManifest
-                ? Path.GetFullPath(Path.Combine(root, RocketManifest.Read(manifestPath).Entry))
-                : fullPath;
+            try
+            {
+                var manifest = RocketManifest.Read(manifestPath);
+                var input = isManifest
+                    ? Path.GetFullPath(Path.Combine(root, manifest.Entry))
+                    : fullPath;
 
-            return new RocketTarget(input, Path.GetFullPath(root), Path.GetFullPath(manifestPath), IsStandalone: false);
+                return new RocketTarget(
+                    input,
+                    Path.GetFullPath(root),
+                    Path.GetFullPath(manifestPath),
+                    IsStandalone: false,
+                    manifest.OutputKind,
+                    manifest.OutputName);
+            }
+            catch (Exception exception) when (exception is IOException
+                                               or UnauthorizedAccessException
+                                               or ArgumentException
+                                               or NotSupportedException)
+            {
+                return null;
+            }
         }
 
         return isManifest

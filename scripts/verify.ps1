@@ -16,6 +16,23 @@ try {
     }
     Write-Host "Using .NET SDK $dotnetVersion"
 
+    Write-Host '== RocketIDE source ignore guard =='
+    $requiredSourcePaths = @(
+        'src/RocketIDE.Core/Recovery/RecoverySnapshot.cs',
+        'src/RocketIDE.Infrastructure/Recovery/JsonRecoveryStore.cs',
+        'tests/RocketIDE.Core.Tests/Recovery/RecoveryModelTests.cs',
+        'tests/RocketIDE.Infrastructure.Tests/Recovery/JsonRecoveryStoreTests.cs'
+    )
+    foreach ($requiredSourcePath in $requiredSourcePaths) {
+        & git check-ignore --no-index --quiet -- $requiredSourcePath
+        if ($LASTEXITCODE -eq 0) {
+            throw "Required source/test path is ignored by .gitignore: $requiredSourcePath"
+        }
+        if ($LASTEXITCODE -ne 1) {
+            throw "git check-ignore failed for '$requiredSourcePath' with exit code $LASTEXITCODE."
+        }
+    }
+
     Write-Host '== RocketIDE clean generated build state =='
     # Patch ZIP extraction can preserve source timestamps older than an existing incremental build.
     # Clean only each MSBuild project's own bin/obj directories so verification cannot reuse stale
@@ -57,8 +74,6 @@ try {
         -r win-x64 `
         --self-contained true `
         --no-restore `
-        -p:PublishSingleFile=true `
-        -p:IncludeNativeLibrariesForSelfExtract=true `
         -o $publish
     if ($LASTEXITCODE -ne 0) { throw 'win-x64 publish failed.' }
 
@@ -72,7 +87,25 @@ try {
         throw "Published executable is empty: $exe"
     }
 
+    $debuggerAssembly = Join-Path $publish 'RocketIDE.Debugger.dll'
+    if (-not (Test-Path -LiteralPath $debuggerAssembly)) {
+        throw "Publish completed without expected debugger assembly: $debuggerAssembly"
+    }
+    if ((Get-Item -LiteralPath $debuggerAssembly).Length -le 0) {
+        throw "Published debugger assembly is empty: $debuggerAssembly"
+    }
+
+    $engHosts = @(Get-ChildItem -LiteralPath $publish -Filter 'EngHost.exe' -File -Recurse)
+    if ($engHosts.Count -eq 0) {
+        throw 'Publish completed without DbgX EngHost.exe.'
+    }
+    $x64EngHost = $engHosts | Where-Object { $_.Directory.Name -in @('x64', 'amd64') } | Select-Object -First 1
+    if ($null -eq $x64EngHost) {
+        throw 'Publish completed without x64/amd64 EngHost.exe required by the win-x64 debugger.'
+    }
+
     Write-Host "Published $($exeInfo.FullName) ($($exeInfo.Length) bytes)"
+    Write-Host "Debugger engine host $($x64EngHost.FullName)"
     Write-Host 'RocketIDE verification PASSED.' -ForegroundColor Green
 }
 finally {
