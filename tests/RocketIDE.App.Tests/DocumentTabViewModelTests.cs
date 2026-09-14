@@ -41,6 +41,26 @@ public sealed class DocumentTabViewModelTests
         StringAssert.Contains(viewModel.LargeFileReason, "64 MiB");
     }
 
+    [TestMethod]
+    public void RecoveryConflict_MustRemainExplicitUntilClearedAfterConfirmedSave()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "recovered.rocket");
+        var id = DocumentId.New();
+        var state = new DocumentState(id, path, "disk", Encoding.UTF8.GetByteCount("disk"));
+        var store = new FakeDocumentStore(state);
+        var viewModel = new DocumentTabViewModel(store, state.Snapshot);
+
+        viewModel.MarkRecoveryConflict("disk changed");
+
+        Assert.IsTrue(viewModel.HasRecoveryConflict);
+        Assert.AreEqual("disk changed", viewModel.RecoveryConflictMessage);
+
+        viewModel.ClearRecoveryConflict();
+
+        Assert.IsFalse(viewModel.HasRecoveryConflict);
+        Assert.IsNull(viewModel.RecoveryConflictMessage);
+    }
+
     private sealed class LimitCrossingDocumentStore(DocumentSnapshot initial) : IDocumentStore
     {
         private DocumentSnapshot _snapshot = initial;

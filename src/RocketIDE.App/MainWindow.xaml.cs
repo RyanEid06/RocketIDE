@@ -506,8 +506,29 @@ public partial class MainWindow : Window
     {
         try
         {
+            var overwriteExternalChanges = false;
+            if (tab.HasRecoveryConflict)
+            {
+                var recoveryChoice = MessageBox.Show(
+                    this,
+                    $"'{tab.DisplayName}' was restored from recovery, but the source file changed, was deleted, or was recreated on disk.\n\n" +
+                    $"{tab.RecoveryConflictMessage ?? "The recovered buffer is based on an older disk state."}\n\n" +
+                    "Overwrite the current disk state with the recovered editor buffer?",
+                    "Recovered file conflicts with disk",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning,
+                    MessageBoxResult.No);
+
+                if (recoveryChoice != MessageBoxResult.Yes)
+                {
+                    return false;
+                }
+
+                overwriteExternalChanges = true;
+            }
+
             SuppressWorkspaceChange(tab.Path);
-            var result = await _documentStore.SaveAsync(tab.Id, overwriteExternalChanges: false, CancellationToken.None);
+            var result = await _documentStore.SaveAsync(tab.Id, overwriteExternalChanges, CancellationToken.None);
             if (result.Status == DocumentSaveStatus.Conflict)
             {
                 var choice = MessageBox.Show(
@@ -528,7 +549,13 @@ public partial class MainWindow : Window
             }
 
             tab.UpdateSnapshot(result.Document);
-            return !result.Document.IsDirty && result.Status is DocumentSaveStatus.Saved or DocumentSaveStatus.NoChanges;
+            var succeeded = !result.Document.IsDirty && (result.Status is DocumentSaveStatus.Saved or DocumentSaveStatus.NoChanges);
+            if (succeeded)
+            {
+                tab.ClearRecoveryConflict();
+                await SaveRecoverySnapshotAsync();
+            }
+            return succeeded;
         }
         catch (Exception exception) when (IsExpectedFileException(exception))
         {
@@ -568,6 +595,18 @@ public partial class MainWindow : Window
 
     private async Task<bool> TryCloseTabsAsync(IReadOnlyList<DocumentTabViewModel> tabs)
     {
+        if (!await ConfirmDirtyTabsAsync(tabs))
+        {
+            return false;
+        }
+
+        CloseTabsWithoutPrompt(tabs);
+        await SaveRecoverySnapshotAsync();
+        return true;
+    }
+
+    private async Task<bool> ConfirmDirtyTabsAsync(IReadOnlyList<DocumentTabViewModel> tabs)
+    {
         foreach (var tab in tabs)
         {
             if (!tab.IsDirty)
@@ -594,7 +633,6 @@ public partial class MainWindow : Window
             }
         }
 
-        CloseTabsWithoutPrompt(tabs);
         return true;
     }
 
@@ -692,7 +730,7 @@ public partial class MainWindow : Window
         try
         {
             if (_viewModel.Documents.Any(document => document.IsDirty) &&
-                !await TryCloseTabsAsync(_viewModel.Documents.ToArray()))
+                !await ConfirmDirtyTabsAsync(_viewModel.Documents.ToArray()))
             {
                 return;
             }

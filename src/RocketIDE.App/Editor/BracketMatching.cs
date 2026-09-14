@@ -10,6 +10,17 @@ public readonly record struct BracketPair(int OpenOffset, int CloseOffset);
 
 public static class BracketMatcher
 {
+    public static bool TryFindAtCaret(string text, int caretOffset, out BracketPair pair)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (TryFind(text, caretOffset, out pair))
+        {
+            return true;
+        }
+
+        return caretOffset > 0 && TryFind(text, caretOffset - 1, out pair);
+    }
+
     public static bool TryFind(string text, int offset, out BracketPair pair)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -118,7 +129,7 @@ public sealed class BracketMatchRenderer : IBackgroundRenderer, IDisposable
         {
             _pair = null;
         }
-        else if (BracketMatcher.TryFind(_editor.Document.Text, _editor.CaretOffset, out var pair))
+        else if (BracketMatcher.TryFindAtCaret(_editor.Document.Text, _editor.CaretOffset, out var pair))
         {
             _pair = pair;
         }

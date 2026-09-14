@@ -22,6 +22,8 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
     private IReadOnlyList<RocketDiagnostic> _diagnostics = [];
     private LiveDiagnosticDocumentState _diagnosticState = LiveDiagnosticDocumentState.Offline;
     private SourceRange? _pendingNavigation;
+    private bool _hasRecoveryConflict;
+    private string? _recoveryConflictMessage;
 
     public DocumentTabViewModel(IDocumentStore documentStore, DocumentSnapshot snapshot)
     {
@@ -81,6 +83,10 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
 
     public LiveDiagnosticDocumentState DiagnosticState => _diagnosticState;
 
+    public bool HasRecoveryConflict => _hasRecoveryConflict;
+
+    public string? RecoveryConflictMessage => _recoveryConflictMessage;
+
     public void UpdateSnapshot(DocumentSnapshot snapshot)
     {
         if (snapshot.Id != Id)
@@ -111,6 +117,29 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
         }
 
         RaiseSnapshotPropertiesChanged();
+    }
+
+    public void MarkRecoveryConflict(string? message)
+    {
+        _hasRecoveryConflict = true;
+        _recoveryConflictMessage = string.IsNullOrWhiteSpace(message)
+            ? "The source file changed, was deleted, or was recreated after this recovery buffer was based on disk."
+            : message;
+        OnPropertyChanged(nameof(HasRecoveryConflict));
+        OnPropertyChanged(nameof(RecoveryConflictMessage));
+    }
+
+    public void ClearRecoveryConflict()
+    {
+        if (!_hasRecoveryConflict && _recoveryConflictMessage is null)
+        {
+            return;
+        }
+
+        _hasRecoveryConflict = false;
+        _recoveryConflictMessage = null;
+        OnPropertyChanged(nameof(HasRecoveryConflict));
+        OnPropertyChanged(nameof(RecoveryConflictMessage));
     }
 
     public void ApplyWorkspaceReplacement(string text)

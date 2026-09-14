@@ -3,6 +3,7 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Threading;
+using RocketIDE.App.ViewModels;
 using RocketIDE.Core.Logging;
 using RocketIDE.Core.Recovery;
 using RocketIDE.Infrastructure.Recovery;
@@ -110,59 +111,105 @@ public partial class MainWindow
 
     private async Task RestoreRecoverySetAsync(RecoverySet recovery)
     {
-        var restored = new List<RecoverySnapshot>();
+        var unrestored = new List<RecoverySnapshot>();
         foreach (var snapshot in recovery.Snapshots)
         {
             try
             {
-                var tab = FindOpenDocument(snapshot.OriginalPath) ?? await OpenDocumentAsync(snapshot.OriginalPath);
-                if (tab is null)
+                DocumentTabViewModel? tab;
+                if (File.Exists(snapshot.OriginalPath))
                 {
-                    restored.Add(snapshot);
-                    continue;
+                    tab = FindOpenDocument(snapshot.OriginalPath) ?? await OpenDocumentAsync(snapshot.OriginalPath);
+                    if (tab is null)
+                    {
+                        unrestored.Add(snapshot);
+                        continue;
+                    }
+
+                    var current = _documentStore.UpdateText(tab.Id, snapshot.Text);
+                    tab.UpdateSnapshot(current);
+                }
+                else
+                {
+                    var recovered = await _documentStore.OpenRecoveredAsync(
+                        snapshot.OriginalPath,
+                        snapshot.Text,
+                        snapshot.SavedFileFingerprint,
+                        snapshot.SavedFileLastWriteUtc,
+                        snapshot.BufferVersion,
+                        CancellationToken.None);
+                    tab = _viewModel.AddOrActivate(_documentStore, recovered);
+                    if (!_viewModel.HasWorkspace)
+                    {
+                        _viewModel.Search.RootPath = Path.GetDirectoryName(recovered.Path) ?? recovered.Path;
+                    }
                 }
 
-                var current = _documentStore.UpdateText(tab.Id, snapshot.Text);
-                tab.UpdateSnapshot(current);
+                if (snapshot.IsConflict)
+                {
+                    tab.MarkRecoveryConflict(snapshot.ConflictMessage);
+                }
+
                 _viewModel.ActiveDocument = tab;
             }
             catch (Exception exception) when (IsExpectedReliabilityException(exception))
             {
-                restored.Add(snapshot);
+                unrestored.Add(snapshot);
                 Logger.Warning($"Could not restore '{snapshot.OriginalPath}'.", exception);
             }
         }
 
-        if (restored.Count == 0)
+        var pendingSnapshots = CreateRecoverySnapshots().ToList();
+        foreach (var snapshot in unrestored)
+        {
+            if (!pendingSnapshots.Any(candidate =>
+                    string.Equals(candidate.OriginalPath, snapshot.OriginalPath, StringComparison.OrdinalIgnoreCase)))
+            {
+                pendingSnapshots.Add(snapshot);
+            }
+        }
+
+        if (pendingSnapshots.Count == 0)
         {
             await _recoveryStore.ClearAsync(CancellationToken.None);
         }
         else
         {
-            await _recoveryStore.SaveAsync(new RecoverySet(restored, recovery.CapturedUtc), CancellationToken.None);
+            await _recoveryStore.SaveAsync(new RecoverySet(pendingSnapshots, DateTimeOffset.UtcNow), CancellationToken.None);
         }
+    }
+
+    private IReadOnlyList<RecoverySnapshot> CreateRecoverySnapshots()
+    {
+        var snapshots = new List<RecoverySnapshot>();
+        foreach (var tab in _viewModel.Documents.Where(document => document.IsDirty))
+        {
+            var baseline = _documentStore.GetRecoveryBaseline(tab.Id);
+            snapshots.Add(new RecoverySnapshot(
+                tab.Path,
+                baseline.Fingerprint,
+                baseline.LastWriteUtc,
+                tab.Version,
+                tab.Text,
+                DateTimeOffset.UtcNow,
+                CurrentDiskFingerprint: null,
+                HasDiskConflict: tab.HasRecoveryConflict,
+                ConflictMessage: tab.RecoveryConflictMessage));
+        }
+
+        return snapshots;
     }
 
     private async Task SaveRecoverySnapshotAsync()
     {
-        if (!_reliabilityLoaded)
+        if (!_reliabilityLoaded || _recoveryNeedsDecision)
         {
             return;
         }
 
         try
         {
-            var snapshots = new List<RecoverySnapshot>();
-            foreach (var tab in _viewModel.Documents.Where(document => document.IsDirty))
-            {
-                var fingerprint = await JsonRecoveryStore.ComputeFingerprintAsync(tab.Path, CancellationToken.None);
-                var lastWrite = File.Exists(tab.Path)
-                    ? new DateTimeOffset(File.GetLastWriteTimeUtc(tab.Path), TimeSpan.Zero)
-                    : DateTimeOffset.UnixEpoch;
-                snapshots.Add(new RecoverySnapshot(tab.Path, fingerprint, lastWrite, tab.Version, tab.Text,
-                    DateTimeOffset.UtcNow));
-            }
-
+            var snapshots = CreateRecoverySnapshots();
             if (snapshots.Count == 0)
             {
                 await _recoveryStore.ClearAsync(CancellationToken.None);

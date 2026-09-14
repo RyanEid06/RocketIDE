@@ -8,6 +8,7 @@ public sealed class DocumentState
     private string _savedText;
     private int _version;
     private bool _isDirty;
+    private bool _forceDirty;
     private long _byteLength;
 
     public DocumentState(DocumentId id, string path, string text, long byteLength)
@@ -47,7 +48,7 @@ public sealed class DocumentState
         _text = text;
         _byteLength = Encoding.UTF8.GetByteCount(text);
         _version = checked(_version + 1);
-        _isDirty = !string.Equals(_text, _savedText, StringComparison.Ordinal);
+        _isDirty = _forceDirty || !string.Equals(_text, _savedText, StringComparison.Ordinal);
         return Snapshot;
     }
 
@@ -67,6 +68,7 @@ public sealed class DocumentState
 
         _savedText = text;
         _byteLength = byteLength;
+        _forceDirty = false;
         _isDirty = false;
         return Snapshot;
     }
@@ -80,12 +82,26 @@ public sealed class DocumentState
         }
 
         _savedText = persistedText;
+        _forceDirty = false;
         if (string.Equals(_text, persistedText, StringComparison.Ordinal))
         {
             _byteLength = persistedByteLength;
         }
 
         _isDirty = !string.Equals(_text, _savedText, StringComparison.Ordinal);
+        return Snapshot;
+    }
+
+    public DocumentSnapshot MarkRecoveredUnsaved(int bufferVersion)
+    {
+        if (bufferVersion < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(bufferVersion));
+        }
+
+        _version = Math.Max(_version, bufferVersion);
+        _forceDirty = true;
+        _isDirty = true;
         return Snapshot;
     }
 

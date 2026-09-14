@@ -102,14 +102,18 @@ public sealed class JsonRecoveryStore : IRecoveryStore
         {
             cancellationToken.ThrowIfCancellationRequested();
             var current = await ComputeFingerprintAsync(snapshot.OriginalPath, cancellationToken).ConfigureAwait(false);
-            var conflict = !string.Equals(current, snapshot.SavedFileFingerprint, StringComparison.OrdinalIgnoreCase);
+            var diskConflict = !string.Equals(current, snapshot.SavedFileFingerprint, StringComparison.OrdinalIgnoreCase);
+            var conflict = snapshot.HasDiskConflict || diskConflict;
+            var conflictMessage = snapshot.HasDiskConflict && !string.IsNullOrWhiteSpace(snapshot.ConflictMessage)
+                ? snapshot.ConflictMessage
+                : conflict
+                    ? "The file changed, was deleted, or was recreated after this recovery snapshot."
+                    : null;
             snapshots.Add(snapshot with
             {
                 CurrentDiskFingerprint = current,
                 HasDiskConflict = conflict,
-                ConflictMessage = conflict
-                    ? "The file changed, was deleted, or was recreated after this recovery snapshot."
-                    : null,
+                ConflictMessage = conflictMessage,
             });
         }
 

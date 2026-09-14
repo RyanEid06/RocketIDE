@@ -40,6 +40,33 @@ public sealed class JsonRecoveryStoreTests
         Assert.IsFalse((await store.LoadAsync(CancellationToken.None)).HasSnapshots);
     }
 
+    [TestMethod]
+    public async Task Load_PreservesExplicitRecoveryConflictAcrossAnotherCrash()
+    {
+        using var temp = new TempDirectory();
+        var source = Path.Combine(temp.Path, "main.rocket");
+        await File.WriteAllTextAsync(source, "current disk");
+        var fingerprint = await JsonRecoveryStore.ComputeFingerprintAsync(source, CancellationToken.None);
+        var store = new JsonRecoveryStore(Path.Combine(temp.Path, "state", "recovery.json"));
+        await store.SaveAsync(new RecoverySet([
+            new RecoverySnapshot(
+                source,
+                fingerprint,
+                File.GetLastWriteTimeUtc(source),
+                2,
+                "older recovered buffer",
+                DateTimeOffset.UtcNow,
+                CurrentDiskFingerprint: fingerprint,
+                HasDiskConflict: true,
+                ConflictMessage: "Explicit overwrite is still required.")
+        ], DateTimeOffset.UtcNow), CancellationToken.None);
+
+        var loaded = await store.LoadAsync(CancellationToken.None);
+
+        Assert.IsTrue(loaded.Snapshots[0].IsConflict);
+        Assert.AreEqual("Explicit overwrite is still required.", loaded.Snapshots[0].ConflictMessage);
+    }
+
     private sealed class TempDirectory : IDisposable
     {
         public TempDirectory()

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,6 +25,7 @@ public partial class EditorDocumentHost : UserControl
     private readonly RocketSignatureHelpController _signatureHelpController;
     private readonly RocketSemanticTokenController _semanticTokenController;
     private DocumentTabViewModel? _document;
+    private bool _rocketFeaturesAttached;
 
     public event EventHandler<RocketEditorCommandRequestedEventArgs>? RocketCommandRequested;
 
@@ -139,6 +141,7 @@ public partial class EditorDocumentHost : UserControl
     private void AttachDocument(DocumentTabViewModel document)
     {
         _document = document;
+        _document.PropertyChanged += Document_PropertyChanged;
         _document.DiagnosticsChanged += Document_DiagnosticsChanged;
         _document.NavigationRequested += Document_NavigationRequested;
         Editor.Document = document.EditorDocument;
@@ -164,7 +167,7 @@ public partial class EditorDocumentHost : UserControl
                 Editor.SyntaxHighlighting = null;
             }
 
-            if (document.AllowLsp)
+            if (document.AllowLocalEditing)
             {
                 RocketIndentationStrategy.Configure(Editor);
             }
@@ -210,9 +213,28 @@ public partial class EditorDocumentHost : UserControl
             return;
         }
 
+        _document.PropertyChanged -= Document_PropertyChanged;
         _document.DiagnosticsChanged -= Document_DiagnosticsChanged;
         _document.NavigationRequested -= Document_NavigationRequested;
         _document = null;
+    }
+
+    private void Document_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is not DocumentTabViewModel document || !ReferenceEquals(document, _document) ||
+            e.PropertyName != nameof(DocumentTabViewModel.AllowLsp) || !IsRocketDocument(document))
+        {
+            return;
+        }
+
+        if (document.AllowLsp && !_rocketFeaturesAttached)
+        {
+            AttachRocketFeatures(document);
+        }
+        else if (!document.AllowLsp && _rocketFeaturesAttached)
+        {
+            DetachRocketFeatures();
+        }
     }
 
     private void Document_DiagnosticsChanged(object? sender, EventArgs e)
@@ -312,23 +334,36 @@ public partial class EditorDocumentHost : UserControl
 
     private void AttachRocketFeatures(DocumentTabViewModel document)
     {
+        if (_rocketFeaturesAttached)
+        {
+            return;
+        }
+
         _completionController.Attach(document);
         _hoverController.Attach(document);
         _signatureHelpController.Attach(document);
         _semanticTokenController.Attach(document);
+        _rocketFeaturesAttached = true;
     }
 
     private void DetachRocketFeatures()
     {
+        if (!_rocketFeaturesAttached)
+        {
+            return;
+        }
+
         _completionController.Detach();
         _hoverController.Detach();
         _signatureHelpController.Detach();
         _semanticTokenController.Detach();
+        _rocketFeaturesAttached = false;
     }
 
     private static void FeatureServiceChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
     {
-        if (dependencyObject is EditorDocumentHost host && host._document is { } document && IsRocketDocument(document))
+        if (dependencyObject is EditorDocumentHost host && host._document is { } document &&
+            IsRocketDocument(document) && document.AllowLsp)
         {
             host.DetachRocketFeatures();
             host.AttachRocketFeatures(document);

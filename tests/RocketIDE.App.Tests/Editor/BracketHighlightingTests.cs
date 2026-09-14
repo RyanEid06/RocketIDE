@@ -36,4 +36,25 @@ public sealed class BracketHighlightingTests
 
         Assert.IsTrue(BracketMatcher.TryFind(text, returnOpen, out _));
     }
+    [TestMethod]
+    public void TryFindAtCaret_MatchesBracketImmediatelyBeforeCaret()
+    {
+        var text = "fn f() { return (x) }";
+        var close = text.IndexOf(")", text.IndexOf("(x)", StringComparison.Ordinal), StringComparison.Ordinal);
+
+        Assert.IsTrue(BracketMatcher.TryFindAtCaret(text, close + 1, out var pair));
+        Assert.AreEqual(text.IndexOf("(x)", StringComparison.Ordinal), pair.OpenOffset);
+        Assert.AreEqual(close, pair.CloseOffset);
+    }
+
+    [TestMethod]
+    public void TryFindAtCaret_PrefersBracketAtCaretBeforePreviousCharacter()
+    {
+        const string text = "()[]";
+
+        Assert.IsTrue(BracketMatcher.TryFindAtCaret(text, 2, out var pair));
+        Assert.AreEqual(2, pair.OpenOffset);
+        Assert.AreEqual(3, pair.CloseOffset);
+    }
+
 }
