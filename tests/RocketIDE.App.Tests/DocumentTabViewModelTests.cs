@@ -103,4 +103,22 @@ public sealed class DocumentTabViewModelTests
         }
         public bool Close(DocumentId id) => true;
     }
+    [TestMethod]
+    public void DebugMarkersTrackBreakpointsAndCurrentStoppedLine()
+    {
+        var id = DocumentId.New();
+        var path = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "debug-markers.rocket"));
+        var state = new DocumentState(id, path, "fn main():\n    return 0\n", Encoding.UTF8.GetByteCount("fn main():\n    return 0\n"));
+        var store = new FakeDocumentStore(state);
+        var tab = new DocumentTabViewModel(store, state.Snapshot);
+        var changed = 0;
+        tab.DebugMarkersChanged += (_, _) => changed++;
+
+        tab.SetDebugMarkers([1, 2], 2);
+
+        CollectionAssert.AreEquivalent(new[] { 1, 2 }, tab.DebugBreakpointLines.ToArray());
+        Assert.AreEqual(2, tab.DebugCurrentLine);
+        Assert.AreEqual(1, changed);
+    }
+
 }

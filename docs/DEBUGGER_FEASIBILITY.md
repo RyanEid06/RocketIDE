@@ -1,11 +1,46 @@
-# WP17 debugger feasibility
+# WP17 standalone debugger feasibility and implementation
 
-The current Rocket reference contract is native Windows debugging through Visual Studio. The preserved Rocket documentation says a debug build produces an executable, CodeView PDB, and `rocket-source-map-1` sidecar; Visual Studio consumes the native engine for source breakpoints, stepping, call frames, and locals where represented. The source-map contract records source basenames, so duplicate basenames are rejected as ambiguous.
+## Decision
 
-RocketIDE now validates those three artifacts without launching the target in `RocketDebugArtifactValidator`. It checks that the executable, PDB, and sidecar exist, verifies the sidecar format, and reports missing or duplicate source mappings. This is an artifact-safety boundary, not a debugger implementation.
+WP17 is feasible without changing the Rocket compiler, Rocket LSP, runtime ABI, or `rocket-source-map-1` format. Rocket already owns the native debug contract: an unoptimized `rocketc build ... --debug` produces a Windows executable, CodeView PDB, and Rocket source-map sidecar. The existing Rocket Visual Studio integration is evidence that those artifacts carry source-line, stack-frame, thread, and local-variable information suitable for native debugging.
 
-No redistributable native debugger backend or Rocket DAP adapter is present in this repository, and no real Rocket debug session was run during the code-only pass. Embedding or automating Visual Studio would not satisfy the standalone portable IDE requirement.
+RocketIDE therefore consumes Rocket's existing artifacts rather than implementing Rocket semantics locally.
 
-`ROCKET-UPSTREAM-REQUEST: provide a supported, redistributable Rocket DAP/debug adapter exposing launch, stop, continue, pause, step, breakpoints, threads, call stacks, and locals over the existing PDB/source-map contract.`
+## Backend choice
 
-Recommendation: keep WP17 deferred until that adapter or another legally redistributable backend is supplied and a tiny Rocket debug build proves breakpoint binding, continue, stepping, call stacks, and locals. No cosmetic debugger UI is shipped.
+RocketIDE uses Microsoft's `Microsoft.Debugging.Platform.DbgX` / DbgEng stack. The pinned DbgX package targets .NET 10/Windows and hosts the native engine out of process through `EngHost.exe`. `Microsoft.Debugging.Platform.SymSrv` supplies the redistributable engine-side files used by the portable application. The debugger backend is isolated in `src/RocketIDE.Debugger`; WPF, compiler, and LSP projects depend only on RocketIDE-owned debugger contracts.
+
+Alternatives were rejected for the current Windows-only IDE:
+
+- `lldb-dap`: attractive protocol boundary, but weaker fit for the already-proven Windows CodeView/PDB Rocket contract.
+- Raw Win32 debugging or direct DbgEng COM interop: unnecessary engine plumbing and a much larger maintenance/safety surface.
+- Visual Studio automation/embedding: violates the standalone portable IDE requirement.
+- Cosmetic debugger UI: explicitly forbidden by WP17.
+
+## Implemented architecture
+
+The implementation adds:
+
+- `RocketIDE.Debugger` and `RocketIDE.Debugger.Tests` projects.
+- `DbgXCommandTransport`, which owns the DbgX engine, dedicated synchronization context, bundled-engine path customization, `EngHost.exe` process launch, `.noshell` hardening, command execution, debugger output, native pause, and shutdown.
+- `RocketNativeDebugger`, which owns session state and exposes launch/stop, continue/pause, step over/in/out, live breakpoints, threads, call stack, locals, current source location, and output through RocketIDE-owned models.
+- `RocketDebugSourceMap`, which reads only the frozen `rocket-source-map-1` identity contract and rejects missing/ambiguous source basenames instead of guessing.
+- `DbgEngProtocol`, which is the only place that builds/parses the small set of native debugger commands RocketIDE requires. No raw debugger console is exposed.
+- A real `rocketc build --debug --message-format=json` launch path. RocketIDE consumes the compiler-reported executable artifact and derives only its required adjacent `.pdb` and `.rocket.map.json`, then passes them through the existing `RocketDebugArtifactValidator`.
+- WPF debugger commands and presentation for F5, Pause, Shift+F5, F9, F10, F11, Shift+F11, breakpoint/current-line markers, Threads, Call Stack, Locals, and debugger output. Panels are populated only from a live backend snapshot.
+
+## Source identity and safety
+
+The current Rocket source-map/PDB contract identifies sources by basename in debugger-facing locations. RocketIDE resolves every mapped source against the active Rocket source root before launch and rejects duplicate basenames. Breakpoints are stored as absolute Rocket source path + one-based line, then translated to the debugger's basename/line identity only after source-map validation.
+
+The debugger never changes the Rocket compiler or invents source locations. Build/debug artifacts remain authoritative. `.noshell` disables debugger shell execution; RocketIDE exposes no arbitrary command entry point. Opening a workspace still never launches user code: starting a debug target is an explicit user command.
+
+## Distribution
+
+DbgX uses `EngHost.exe` as a real child process. WP17 therefore changes the portable release from single-file self-extraction to a self-contained **multi-file** `win-x64` folder/ZIP. No .NET runtime, Visual Studio, or separately installed WinDbg is required, but the application directory must remain intact. Verification/package scripts fail if `RocketIDE.Debugger.dll` or the x64 `EngHost.exe` is missing.
+
+## Remaining acceptance evidence
+
+The implementation and automated tests are present, but WP17 must not be called verified until a Windows checkout runs `scripts\verify.ps1` successfully with the new DbgX dependencies and publish guards. The final interactive acceptance is intentionally deferred to the later Codex/manual GUI pass requested by the user and must include a tiny real Rocket debug target proving breakpoint binding, continue/pause, step over/in/out, source navigation, threads, call stack, locals, output, stop, and packaged-launch behavior.
+
+Known contract limitation: duplicate Rocket source basenames cannot be debugged safely under the frozen current source-map identity model and are rejected before launch.

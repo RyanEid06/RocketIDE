@@ -43,14 +43,14 @@ Change only `Status`, `Completed`, and `Evidence` after the WP gate passes.
 | IDE-WP07 | Live diagnostics + Problems | DONE | 2026-09-11 | Windows verification passed; live `rocket-lsp` diagnostics, squiggles, Problems filtering/navigation, stale-version rejection, and offline clearing smoke-tested on commit `1b741bb`; GitHub CI green |
 | IDE-WP08 | IntelliSense + semantic tokens | DONE | 2026-09-11 | Windows verification passed with 164/164 tests; completion, hover, semantic-token presentation, dark popup/selection styling, cancellation/transport hardening, and standalone-file LSP stability smoke-tested; incomplete-call signature response is blocked by an upstream Rocket LSP limitation recorded below |
 | IDE-WP09 | Navigation + refactoring + fixes | MANUAL SMOKE DEFERRED | 2026-09-13 | Automated verification passed: build, 221/221 tests, and publish smoke. At user direction, the final interactive Windows smoke remains deferred and must be completed before a release claim. |
-| IDE-WP10 | Check/build/run/test/output | READY |  | WP03 and WP05 dependencies satisfied |
-| IDE-WP11 | Search + productivity | READY |  | WP03 dependency satisfied |
-| IDE-WP12 | Large-file + performance hardening | BLOCKED by WP11 |  | WP02 and WP06 dependencies satisfied |
-| IDE-WP13 | Advanced Rocket tooling | BLOCKED by WP10 |  |  |
-| IDE-WP14 | Reliability + recovery | BLOCKED by WP10 |  | WP03 dependency satisfied |
-| IDE-WP15 | Distribution | BLOCKED by WP14 |  |  |
-| IDE-WP16 | Polish + accessibility | BLOCKED by WP15 |  |  |
-| IDE-WP17 | Standalone debugger feasibility/optional | BLOCKED by WP16 |  |  |
+| IDE-WP10 | Check/build/run/test/output | AUTOMATED VERIFIED / MANUAL DEFERRED | 2026-09-14 | Included in the hardened branch verification; full Windows build/tests/publish passed. Final interactive smoke intentionally deferred with the later GUI acceptance pass. |
+| IDE-WP11 | Search + productivity | AUTOMATED VERIFIED / MANUAL DEFERRED | 2026-09-14 | Hardened on commit `99b7351`; `scripts/verify.ps1` passed with 324/324 tests and publish smoke. GUI/search-replace smoke intentionally deferred. |
+| IDE-WP12 | Large-file + performance hardening | AUTOMATED VERIFIED / MANUAL DEFERRED | 2026-09-14 | Hardened on `99b7351`; 324/324 tests and publish smoke passed. Real >4 MiB editor/LSP smoke intentionally deferred. |
+| IDE-WP13 | Advanced Rocket tooling | AUTOMATED VERIFIED / MANUAL DEFERRED | 2026-09-14 | Implemented and covered by the hardened Windows verification; real SDK command smoke intentionally deferred. |
+| IDE-WP14 | Reliability + recovery | AUTOMATED VERIFIED / MANUAL DEFERRED | 2026-09-14 | Recovery lifecycle/data-safety hardening committed as `99b7351`; 324/324 tests and publish smoke passed. Forced-crash/external-change GUI smoke deferred. |
+| IDE-WP15 | Distribution | AUTOMATED VERIFIED / WP17 UPDATE PENDING | 2026-09-14 | Pre-WP17 portable publish passed on `99b7351`. WP17 changes distribution to multi-file so a fresh publish/package gate is required. |
+| IDE-WP16 | Polish + accessibility | AUTOMATED VERIFIED / MANUAL DEFERRED | 2026-09-14 | Hardened on `99b7351`; 324/324 tests and publish smoke passed. DPI/accessibility/keyboard GUI matrix intentionally deferred. |
+| IDE-WP17 | Standalone debugger feasibility/optional | IMPLEMENTED / WINDOWS VERIFY + LIVE SMOKE PENDING |  | DbgX/DbgEng backend, real Rocket debug build/artifact flow, breakpoints/stepping/threads/frames/locals/output and UI are implemented; fresh Windows verification and live Rocket acceptance remain required. |
 
 ## Upstream Rocket requests
 
@@ -58,7 +58,7 @@ Add missing compiler/LSP capabilities here instead of faking them in the IDE.
 
 - **LSP-PERF-01 — large-workspace interactive analysis:** `textDocument/didChange` currently causes broad workspace re-analysis in the full Rocket checkout (~239 files, observed ~20–25 s per analysis) and rapid edits can backlog obsolete work. Profile and optimize in the main Rocket repository without duplicating language intelligence in RocketIDE; target sub-second normal edit feedback while preserving full-analysis equivalence.
 - **LSP-SIG-01 — signature help for incomplete calls:** `textDocument/signatureHelp` should continue returning callable signature/active-parameter information while the user is in a temporarily invalid/incomplete call such as `print(|)`. RocketIDE's trigger/request/presentation path is implemented, but the current Rocket LSP can lose the callable information after semantic analysis reports the incomplete call.
-- **ROCKET-UPSTREAM-REQUEST — standalone debugger adapter:** RocketIDE's WP17 artifact validator understands the existing CodeView/PDB plus `rocket-source-map-1` contract, but the repository does not contain a redistributable DAP/native debug backend. Provide a supported adapter for launch, stop, continue, pause, stepping, breakpoints, threads, call stacks, and locals before RocketIDE attempts a standalone debugger.
+- **WP17 debugger backend resolution:** the prior standalone-debugger upstream request is resolved in RocketIDE by the redistributable Microsoft DbgX/DbgEng backend. Rocket still owns the existing `--debug` EXE/PDB/`rocket-source-map-1` contract; no Rocket compiler/LSP change is required.
 
 ---
 
@@ -105,11 +105,14 @@ RocketIDE/
       Settings/
       Recovery/
       Logging/
+    RocketIDE.Debugger/
+      native debugger transport, protocol, session state, source-map identity
   tests/
     RocketIDE.App.Tests/
     RocketIDE.Core.Tests/
     RocketIDE.Rocket.Tests/
     RocketIDE.Infrastructure.Tests/
+    RocketIDE.Debugger.Tests/
   Directory.Build.props
   Directory.Packages.props
   RocketIDE.sln
@@ -522,7 +525,7 @@ public sealed record RocketDiagnostic(string Source, string Code, string Message
 - [ ] Implement Format Document via LSP for open supported files.
 - [ ] Implement Format Target/Workspace through `rocketc fmt` later in tool-command service where appropriate; do not conflate it with document formatting.
 - [ ] Test conflicting/invalid/out-of-workspace edit rejection.
-- [ ] Run verification and CI.
+- [ ] Run fresh Windows `scripts/verify.ps1`, portable package checks, then CI.
 
 **Acceptance:** rename across files changes only server-resolved symbol edits and no regex/textual rename fallback exists.
 
@@ -603,7 +606,7 @@ public interface IProcessRunner
 - [ ] Persist recent project list and remove nonexistent entries gracefully.
 - [ ] Add keyboard shortcuts for open, quick file navigation, search, build, run, stop, problems/output toggle.
 - [ ] Run stress fixture with thousands of small files and verify cancellation keeps UI responsive.
-- [ ] Run verification and CI.
+- [ ] Run fresh Windows `scripts/verify.ps1`, portable package checks, then CI.
 
 **Acceptance:** searching a multi-thousand-file fixture can be cancelled and does not freeze the editor or scan generated folders by default.
 
@@ -634,7 +637,7 @@ public interface IProcessRunner
 - [ ] Use `rocket/analysisStatus` to show analysis activity/latency unobtrusively, not as modal UI.
 - [ ] Test project-status response and surface if project exceeds server bounds.
 - [ ] Profile memory with generated large fixture and fix retained closed documents/event subscriptions.
-- [ ] Run verification and CI.
+- [ ] Run fresh Windows `scripts/verify.ps1`, portable package checks, then CI.
 
 **Acceptance:** opening >4 MiB Rocket text does not crash/freeze LSP; editor stays usable with explicit degraded semantics.
 
@@ -662,7 +665,7 @@ public interface IProcessRunner
 - [ ] Add Profile and Benchmark analogously; never run these automatically on file open or save.
 - [ ] Commands that may execute native code require explicit user action and show active target.
 - [ ] Add tests for command argument construction and output-path quoting.
-- [ ] Run verification and CI.
+- [ ] Run fresh Windows `scripts/verify.ps1`, portable package checks, then CI.
 
 **Acceptance:** advanced tools are explicit, cancellable, use the selected Rocket SDK, and do not make project opening executable.
 
@@ -694,7 +697,7 @@ public interface IProcessRunner
 - [ ] Add global unhandled-exception logging/recovery boundary without swallowing fatal corrupted-state cases.
 - [ ] Test recovery serialization and stale/conflict decisions with temp files.
 - [ ] Run forced-kill/manual recovery smoke on Windows.
-- [ ] Run verification and CI.
+- [ ] Run fresh Windows `scripts/verify.ps1`, portable package checks, then CI.
 
 **Acceptance:** killing RocketIDE with an unsaved buffer allows recovery on next launch without silently overwriting a changed source file.
 
@@ -725,7 +728,7 @@ public interface IProcessRunner
 - [ ] Generate SHA-256 checksums for release archive.
 - [ ] Document portable install/update/uninstall behavior.
 - [ ] Only after portable release is reliable, optionally add installer; installer is not allowed to hide unresolved portable bugs.
-- [ ] Run verification and CI.
+- [ ] Run fresh Windows `scripts/verify.ps1`, portable package checks, then CI.
 
 **Acceptance:** CI produces a clean downloadable Windows x64 artifact and checksum from a tagged/release build path.
 
@@ -766,22 +769,22 @@ public interface IProcessRunner
 
 ### Phase A — Feasibility (mandatory before implementation)
 
-- [ ] Read current Rocket PDB/source-map contract and existing Visual Studio debugger integration snapshot.
-- [ ] Determine available Windows debugger backend choices that can legally/technically be redistributed and support CodeView PDB stepping, breakpoints, threads, call stacks, and locals.
-- [ ] Prefer a DAP-capable or well-isolated debug engine over writing Win32 debugging from scratch unless no reasonable option exists.
-- [ ] Prototype against a tiny Rocket debug build and prove breakpoint binding to Rocket source, continue, step, call stack, locals.
-- [ ] Document limitations including duplicate source basenames in the frozen current Rocket source-map contract if still applicable.
-- [ ] If feasibility is poor, record `ROCKET-UPSTREAM-REQUEST:` for a Rocket DAP/debug adapter and close WP17 as DEFERRED with evidence. Do not ship a fake debugger.
+- [x] Read current Rocket PDB/source-map contract and existing Visual Studio debugger integration snapshot.
+- [x] Determine available Windows debugger backend choices that can legally/technically be redistributed and support CodeView PDB stepping, breakpoints, threads, call stacks, and locals; Microsoft DbgX/DbgEng is selected.
+- [x] Use an isolated DbgX/DbgEng backend project instead of writing a native debugging engine from scratch.
+- [ ] Run the standalone DbgX backend against a tiny real Rocket debug build and prove breakpoint binding, continue/pause, stepping, call stack, threads, locals, output, and stop. Existing Rocket Visual Studio integration proves the artifact contract; this standalone live smoke is intentionally deferred to the final Codex/manual pass.
+- [x] Document limitations including duplicate source basenames in the frozen current Rocket source-map contract.
+- [x] Feasibility is sufficient with DbgX/DbgEng; retire the standalone-debugger upstream request and do not ship fake debugger data.
 
 ### Phase B — Implementation (only if Phase A passes)
 
-- [ ] Create isolated `RocketIDE.Debugger` project so debugger complexity does not infect Core/LSP/compiler services.
-- [ ] Implement debug build command and artifact validation (`.exe`, `.pdb`, `.rocket.map.json` as applicable).
-- [ ] Implement breakpoints, launch/stop, continue/pause, step over/in/out.
-- [ ] Add call stack, locals, threads panels only when backend data is real.
-- [ ] Capture program output consistently with Run where backend permits.
-- [ ] Add integration tests for protocol/backend adapter plus manual real Rocket debug acceptance.
-- [ ] Run verification and CI.
+- [x] Create isolated `RocketIDE.Debugger` project so debugger complexity does not infect Core/LSP/compiler services.
+- [x] Implement debug build command and artifact validation (`.exe`, `.pdb`, `.rocket.map.json`).
+- [x] Implement breakpoints, launch/stop, continue/pause, step over/in/out.
+- [x] Add call stack, locals, threads panels populated only from real backend data.
+- [x] Route debugger/target output through the Rocket Output surface where DbgX provides it.
+- [ ] Automated protocol/session/source-map/command/UI tests are implemented; run them on Windows and complete the manual real Rocket debug acceptance.
+- [ ] Run fresh Windows `scripts/verify.ps1`, portable package checks, then CI.
 
 **Acceptance:** either a real verified debugger exists, or the WP ends explicitly deferred with a documented upstream requirement. There is no cosmetic debugger mode.
 
@@ -823,7 +826,11 @@ RocketIDE 1.0 must not be declared ready until every non-deferred row passes on 
 - [ ] Missing compiler/LSP gives clear setup state, not crash.
 - [ ] LSP crash can recover/restart without losing text.
 - [ ] Unclean IDE exit can recover dirty buffers.
-- [ ] Self-contained Windows x64 release artifact launches.
+- [ ] Debug build launches through Rocket's compiler-owned `.exe` + `.pdb` + `.rocket.map.json` contract.
+- [ ] Source breakpoint binds and stops on the expected Rocket line.
+- [ ] Continue, pause, step over, step into, step out, and stop work against a real Rocket target.
+- [ ] Debug Threads, Call Stack, and Locals show real backend data and source navigation works.
+- [ ] Self-contained Windows x64 release artifact launches with the bundled DbgX `EngHost.exe`.
 - [ ] GitHub Windows CI passes.
 
 ---

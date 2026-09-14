@@ -18,6 +18,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RocketIDE.Infrastructure.Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RocketIDE.App.Tests", "tests\RocketIDE.App.Tests\RocketIDE.App.Tests.csproj", "{A8100240-6D1A-4A87-9144-1800D10CDE08}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RocketIDE.Debugger", "src\RocketIDE.Debugger\RocketIDE.Debugger.csproj", "{A8100240-6D1A-4A87-9144-1800D10CDE09}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RocketIDE.Debugger.Tests", "tests\RocketIDE.Debugger.Tests\RocketIDE.Debugger.Tests.csproj", "{A8100240-6D1A-4A87-9144-1800D10CDE10}"
+EndProject
 Global
   GlobalSection(SolutionConfigurationPlatforms) = preSolution
     Debug|Any CPU = Debug|Any CPU
@@ -56,5 +60,13 @@ Global
     {A8100240-6D1A-4A87-9144-1800D10CDE08}.Debug|Any CPU.Build.0 = Debug|Any CPU
     {A8100240-6D1A-4A87-9144-1800D10CDE08}.Release|Any CPU.ActiveCfg = Release|Any CPU
     {A8100240-6D1A-4A87-9144-1800D10CDE08}.Release|Any CPU.Build.0 = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE09}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE09}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE09}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE09}.Release|Any CPU.Build.0 = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {A8100240-6D1A-4A87-9144-1800D10CDE10}.Release|Any CPU.Build.0 = Release|Any CPU
   EndGlobalSection
 EndGlobal

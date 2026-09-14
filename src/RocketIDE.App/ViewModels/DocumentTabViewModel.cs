@@ -24,6 +24,8 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
     private SourceRange? _pendingNavigation;
     private bool _hasRecoveryConflict;
     private string? _recoveryConflictMessage;
+    private IReadOnlySet<int> _debugBreakpointLines = new HashSet<int>();
+    private int? _debugCurrentLine;
 
     public DocumentTabViewModel(IDocumentStore documentStore, DocumentSnapshot snapshot)
     {
@@ -42,6 +44,8 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
     public event EventHandler? DiagnosticsChanged;
 
     public event EventHandler<DocumentNavigationRequestedEventArgs>? NavigationRequested;
+
+    public event EventHandler? DebugMarkersChanged;
 
     public DocumentId Id => _snapshot.Id;
 
@@ -86,6 +90,23 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
     public bool HasRecoveryConflict => _hasRecoveryConflict;
 
     public string? RecoveryConflictMessage => _recoveryConflictMessage;
+
+    public IReadOnlySet<int> DebugBreakpointLines => _debugBreakpointLines;
+
+    public int? DebugCurrentLine => _debugCurrentLine;
+
+    public void SetDebugMarkers(IEnumerable<int> breakpointLines, int? currentLine)
+    {
+        ArgumentNullException.ThrowIfNull(breakpointLines);
+        var normalized = breakpointLines.Where(line => line > 0).ToHashSet();
+        currentLine = currentLine is > 0 ? currentLine : null;
+        if (_debugBreakpointLines.SetEquals(normalized) && _debugCurrentLine == currentLine) return;
+        _debugBreakpointLines = normalized;
+        _debugCurrentLine = currentLine;
+        OnPropertyChanged(nameof(DebugBreakpointLines));
+        OnPropertyChanged(nameof(DebugCurrentLine));
+        DebugMarkersChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     public void UpdateSnapshot(DocumentSnapshot snapshot)
     {

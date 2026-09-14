@@ -121,7 +121,9 @@ public partial class MainWindow : Window
             {
                 _viewModel.Search.RootPath = Path.GetDirectoryName(snapshot.Path) ?? snapshot.Path;
             }
-            return _viewModel.AddOrActivate(_documentStore, snapshot);
+            var tab = _viewModel.AddOrActivate(_documentStore, snapshot);
+            RefreshDebugEditorPresentation();
+            return tab;
         }
         catch (Exception exception) when (IsExpectedFileException(exception))
         {
@@ -735,6 +737,8 @@ public partial class MainWindow : Window
                 return;
             }
 
+            await ShutdownDebuggerAsync();
+
             try
             {
                 await ShutdownRocketIntegrationAsync(CancellationToken.None);
@@ -767,6 +771,12 @@ public partial class MainWindow : Window
 
     private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (TryHandleDebuggerGesture(e.Key, Keyboard.Modifiers))
+        {
+            e.Handled = true;
+            return;
+        }
+
         var control = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
         var shift = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
         if (!control)

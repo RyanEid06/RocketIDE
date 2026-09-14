@@ -38,6 +38,30 @@ public sealed class RocketCommandBuilderTests
     }
 
     [TestMethod]
+    public void Build_DebugBuildUsesRocketDebugFlagAndStructuredMessages()
+    {
+        var compiler = Path.GetFullPath(Path.Combine("sdk", "rocketc.exe"));
+        var source = Path.GetFullPath(Path.Combine("scratch", "hello.rocket"));
+        var target = new RocketTarget(source, Path.GetDirectoryName(source)!, null, true);
+
+        var spec = RocketCommandBuilder.Build(compiler, RocketCommandKind.DebugBuild, target, []);
+
+        CollectionAssert.AreEqual(new[] { "build", source, "--debug", "--message-format=json" }, spec.Request.Arguments.ToArray());
+        Assert.IsTrue(spec.UsesStructuredMessages);
+    }
+
+    [TestMethod]
+    public void Build_DebugBuildRejectsLibraryTarget()
+    {
+        var compiler = Path.GetFullPath(Path.Combine("sdk", "rocketc.exe"));
+        var root = Path.GetFullPath(Path.Combine("work", "library"));
+        var target = new RocketTarget(Path.Combine(root, "src", "lib.rocket"), root, Path.Combine(root, "rocket.toml"), false, "static-library", "library");
+
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => RocketCommandBuilder.Build(compiler, RocketCommandKind.DebugBuild, target, []));
+        StringAssert.Contains(exception.Message, "Debugging is unavailable");
+    }
+
+    [TestMethod]
     public void Build_RunUsesProgramArgumentSeparator()
     {
         var compiler = Path.GetFullPath(Path.Combine("sdk", "rocketc.exe"));
@@ -73,4 +97,5 @@ public sealed class RocketCommandBuilderTests
         Assert.AreNotEqual(workspace, spec.Request.WorkingDirectory);
         Assert.AreEqual(workspace, spec.Request.Arguments[1]);
     }
+
 }

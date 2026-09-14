@@ -5,7 +5,10 @@ public sealed record RocketCommandContext(
     bool HasTarget,
     bool CanRun,
     bool IsBusy,
-    bool HasWorkspace = false);
+    bool HasWorkspace = false,
+    bool IsDebugging = false,
+    bool IsDebuggerRunning = false,
+    bool IsDebuggerStopped = false);
 
 public sealed record RocketCommandDefinition(
     string Id,
@@ -36,15 +39,22 @@ public sealed class RocketCommandRegistry
     public const string QuickOpen = "workspace.quickOpen";
     public const string Problems = "view.problems";
     public const string Output = "view.output";
+    public const string DebugStartContinue = "debug.startContinue";
+    public const string DebugPause = "debug.pause";
+    public const string DebugStop = "debug.stop";
+    public const string DebugToggleBreakpoint = "debug.toggleBreakpoint";
+    public const string DebugStepOver = "debug.stepOver";
+    public const string DebugStepInto = "debug.stepInto";
+    public const string DebugStepOut = "debug.stepOut";
 
     private readonly IReadOnlyList<RocketCommandDefinition> _definitions =
     [
         new(Check, "Check Rocket target", "", TargetReady),
         new(Build, "Build Rocket target", "Ctrl+B", TargetReady),
-        new(Run, "Run Rocket target", "Ctrl+R", context => context.HasTarget && context.CanRun && !context.IsBusy),
+        new(Run, "Run Rocket target", "Ctrl+R", context => context.HasTarget && context.CanRun && !context.IsBusy && !context.IsDebugging),
         new(Stop, "Stop Rocket", "Ctrl+Shift+F5", context => context.IsBusy),
         new(Test, "Test Rocket target", "", TargetReady),
-        new(NewProject, "New Rocket project", "", context => context.HasWorkspace && !context.IsBusy),
+        new(NewProject, "New Rocket project", "", context => context.HasWorkspace && !context.IsBusy && !context.IsDebugging),
         new(Resolve, "Resolve dependencies", "", TargetReady),
         new(DependencyTree, "Dependency tree", "", TargetReady),
         new(Audit, "Audit dependencies", "", TargetReady),
@@ -58,6 +68,14 @@ public sealed class RocketCommandRegistry
         new(QuickOpen, "Quick open file", "Ctrl+P", context => context.HasWorkspace),
         new(Problems, "Show Problems", "Ctrl+Shift+M", _ => true),
         new(Output, "Show Output", "Ctrl+Shift+U", _ => true),
+        new(DebugStartContinue, "Start/Continue Debugging", "F5", context =>
+            !context.IsBusy && context.HasTarget && context.CanRun && (!context.IsDebugging || context.IsDebuggerStopped)),
+        new(DebugPause, "Pause Debugging", "Pause", context => context.IsDebuggerRunning),
+        new(DebugStop, "Stop Debugging", "Shift+F5", context => context.IsDebugging),
+        new(DebugToggleBreakpoint, "Toggle Breakpoint", "F9", context => context.HasDocument && !context.IsDebuggerRunning),
+        new(DebugStepOver, "Step Over", "F10", context => context.IsDebuggerStopped),
+        new(DebugStepInto, "Step Into", "F11", context => context.IsDebuggerStopped),
+        new(DebugStepOut, "Step Out", "Shift+F11", context => context.IsDebuggerStopped),
     ];
 
     public IReadOnlyList<RocketCommandDefinition> Definitions => _definitions;
@@ -77,5 +95,5 @@ public sealed class RocketCommandRegistry
         return new RocketCommandState(id, definition.CanExecute(context), context.IsBusy);
     }
 
-    private static bool TargetReady(RocketCommandContext context) => context.HasTarget && !context.IsBusy;
+    private static bool TargetReady(RocketCommandContext context) => context.HasTarget && !context.IsBusy && !context.IsDebugging;
 }

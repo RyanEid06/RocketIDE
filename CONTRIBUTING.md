@@ -39,6 +39,7 @@ Engineering discipline is evidence-based. Do not substitute optimistic claims, v
    - `RocketIDE.Core`: domain models and interfaces; no WPF, no process APIs.
    - `RocketIDE.Rocket`: Rocket-specific LSP/compiler/tool contracts and adapters; no WPF.
    - `RocketIDE.Infrastructure`: Windows/filesystem/process/settings/session implementations; no editor UI.
+   - `RocketIDE.Debugger`: standalone native debugger transport/protocol/session implementation; no WPF and no Rocket compiler semantics.
    - `RocketIDE.App`: WPF composition, views, view-models, AvalonEdit adapters.
    - Tests mirror the owning project.
    No circular references.
@@ -81,6 +82,13 @@ Engineering discipline is evidence-based. Do not substitute optimistic claims, v
     - update the plan ledger,
     - add a short completion note containing evidence,
     - then commit.
+
+16. **Native debugging consumes compiler-owned artifacts.**
+    - RocketIDE must not invent a second Rocket debug-info format, parser, runtime ABI, or source-mapping scheme.
+    - `rocketc build ... --debug` and its compiler-reported executable, adjacent CodeView PDB, and `rocket-source-map-1` sidecar are authoritative.
+    - Microsoft DbgX/DbgEng integration stays isolated under `RocketIDE.Debugger`; normal editor/LSP/compiler services must not depend on DbgX APIs.
+    - Reject missing or ambiguous mapped sources rather than guessing.
+    - Never expose an arbitrary debugger command console; keep `.noshell` enabled before debugger command execution.
 
 ## Coding conventions
 

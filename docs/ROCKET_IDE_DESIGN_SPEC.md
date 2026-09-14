@@ -30,7 +30,7 @@ The following are explicitly outside the initial 1.0 critical path:
 - implementing an independent package resolver;
 - a custom native debugger engine.
 
-A debugger may be added after the core IDE is stable. Rocket currently emits Windows PDB and Rocket source-map information, but the existing Visual Studio extension relies on Visual Studio's native debug engine. RocketIDE must not pretend that this already gives it a standalone debugger.
+RocketIDE does not implement a custom native debugger engine. WP17 integrates Microsoft's redistributable DbgX/DbgEng backend behind an isolated `RocketIDE.Debugger` project and consumes Rocket's existing compiler-produced executable, CodeView PDB, and `rocket-source-map-1` sidecar. Rocket semantics remain compiler-owned; the IDE must never fabricate debugger source/locals data.
 
 ## 3. Architectural principle
 

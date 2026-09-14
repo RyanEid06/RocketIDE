@@ -20,6 +20,7 @@ public partial class EditorDocumentHost : UserControl
 {
     private readonly DiagnosticRenderer _diagnosticRenderer;
     private readonly BracketMatchRenderer _bracketMatchRenderer;
+    private readonly DebugMarkerRenderer _debugMarkerRenderer;
     private readonly RocketCompletionController _completionController;
     private readonly RocketHoverController _hoverController;
     private readonly RocketSignatureHelpController _signatureHelpController;
@@ -46,6 +47,7 @@ public partial class EditorDocumentHost : UserControl
         InitializeComponent();
         _diagnosticRenderer = new DiagnosticRenderer(Editor);
         _bracketMatchRenderer = new BracketMatchRenderer(Editor);
+        _debugMarkerRenderer = new DebugMarkerRenderer(Editor);
         _completionController = new RocketCompletionController(Editor, () => FeatureService);
         _hoverController = new RocketHoverController(Editor, () => FeatureService);
         _signatureHelpController = new RocketSignatureHelpController(Editor, () => FeatureService);
@@ -144,6 +146,7 @@ public partial class EditorDocumentHost : UserControl
         _document.PropertyChanged += Document_PropertyChanged;
         _document.DiagnosticsChanged += Document_DiagnosticsChanged;
         _document.NavigationRequested += Document_NavigationRequested;
+        _document.DebugMarkersChanged += Document_DebugMarkersChanged;
         Editor.Document = document.EditorDocument;
         if (IsRocketDocument(document))
         {
@@ -176,6 +179,7 @@ public partial class EditorDocumentHost : UserControl
             {
                 AttachRocketFeatures(document);
             }
+            _debugMarkerRenderer.UpdateMarkers(document.DebugBreakpointLines, document.DebugCurrentLine);
         }
         else
         {
@@ -216,7 +220,9 @@ public partial class EditorDocumentHost : UserControl
         _document.PropertyChanged -= Document_PropertyChanged;
         _document.DiagnosticsChanged -= Document_DiagnosticsChanged;
         _document.NavigationRequested -= Document_NavigationRequested;
+        _document.DebugMarkersChanged -= Document_DebugMarkersChanged;
         _document = null;
+        _debugMarkerRenderer.UpdateMarkers([], null);
     }
 
     private void Document_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -234,6 +240,14 @@ public partial class EditorDocumentHost : UserControl
         else if (!document.AllowLsp && _rocketFeaturesAttached)
         {
             DetachRocketFeatures();
+        }
+    }
+
+    private void Document_DebugMarkersChanged(object? sender, EventArgs e)
+    {
+        if (sender is DocumentTabViewModel document && ReferenceEquals(document, _document))
+        {
+            _debugMarkerRenderer.UpdateMarkers(document.DebugBreakpointLines, document.DebugCurrentLine);
         }
     }
 

@@ -35,4 +35,23 @@ public sealed class CommandRegistryTests
         Assert.IsFalse(registry.Evaluate(RocketCommandRegistry.NewProject, ready with { HasWorkspace = false }).IsEnabled);
     }
 
+    [TestMethod]
+    public void DebugCommandsReflectLiveDebuggerState()
+    {
+        var registry = new RocketCommandRegistry();
+        var idle = new RocketCommandContext(true, true, true, false, true);
+        var running = idle with { IsDebugging = true, IsDebuggerRunning = true };
+        var stopped = idle with { IsDebugging = true, IsDebuggerStopped = true };
+
+        Assert.IsTrue(registry.Evaluate(RocketCommandRegistry.DebugStartContinue, idle).IsEnabled);
+        Assert.IsFalse(registry.Evaluate(RocketCommandRegistry.DebugStartContinue, running).IsEnabled);
+        Assert.IsTrue(registry.Evaluate(RocketCommandRegistry.DebugPause, running).IsEnabled);
+        Assert.IsTrue(registry.Evaluate(RocketCommandRegistry.DebugStop, running).IsEnabled);
+        Assert.IsFalse(registry.Evaluate(RocketCommandRegistry.Build, running).IsEnabled);
+        Assert.IsTrue(registry.Evaluate(RocketCommandRegistry.DebugStartContinue, stopped).IsEnabled);
+        Assert.IsTrue(registry.Evaluate(RocketCommandRegistry.DebugStepOver, stopped).IsEnabled);
+        Assert.IsTrue(registry.Evaluate(RocketCommandRegistry.DebugStepInto, stopped).IsEnabled);
+        Assert.IsTrue(registry.Evaluate(RocketCommandRegistry.DebugStepOut, stopped).IsEnabled);
+    }
+
 }

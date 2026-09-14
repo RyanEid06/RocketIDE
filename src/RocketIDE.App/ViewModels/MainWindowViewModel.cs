@@ -11,6 +11,7 @@ using RocketIDE.Core.Search;
 using RocketIDE.Core.Workspaces;
 using RocketIDE.Infrastructure.Files;
 using RocketIDE.Rocket.Diagnostics;
+using RocketIDE.Debugger;
 
 namespace RocketIDE.App.ViewModels;
 
@@ -34,6 +35,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         References = new ReferencesViewModel();
         Output = new OutputViewModel();
         Tests = new TestsViewModel();
+        Debug = new DebugViewModel();
+        Debug.PropertyChanged += (_, _) => RaiseRocketCommandProperties();
         Search = new SearchViewModel(searchService ?? new WorkspaceSearchService())
         {
             OpenBufferProvider = GetOpenBufferTexts,
@@ -65,6 +68,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public TestsViewModel Tests { get; }
 
+    public DebugViewModel Debug { get; }
+
     public SearchViewModel Search { get; }
 
     public RocketCommandRegistry CommandRegistry { get; }
@@ -75,7 +80,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             _hasRocketCommandTarget,
             _rocketRunAvailable,
             _rocketCommandRunning,
-            HasWorkspace));
+            HasWorkspace,
+            Debug.IsActive,
+            Debug.IsRunning,
+            Debug.IsStopped));
 
     public ObservableCollection<string> RecentWorkspaces { get; } = new();
 
@@ -123,6 +131,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public bool CanRocketNewProject => GetCommandState(RocketCommandRegistry.NewProject).IsEnabled;
     public bool CanRocketAdvanced => GetCommandState(RocketCommandRegistry.Resolve).IsEnabled;
     public bool CanQuickOpen => GetCommandState(RocketCommandRegistry.QuickOpen).IsEnabled;
+    public bool CanDebugStartContinue => GetCommandState(RocketCommandRegistry.DebugStartContinue).IsEnabled;
+    public bool CanDebugPause => GetCommandState(RocketCommandRegistry.DebugPause).IsEnabled;
+    public bool CanDebugStop => GetCommandState(RocketCommandRegistry.DebugStop).IsEnabled;
+    public bool CanDebugToggleBreakpoint => GetCommandState(RocketCommandRegistry.DebugToggleBreakpoint).IsEnabled;
+    public bool CanDebugStepOver => GetCommandState(RocketCommandRegistry.DebugStepOver).IsEnabled;
+    public bool CanDebugStepInto => GetCommandState(RocketCommandRegistry.DebugStepInto).IsEnabled;
+    public bool CanDebugStepOut => GetCommandState(RocketCommandRegistry.DebugStepOut).IsEnabled;
 
     public void SetRocketCommandAvailability(bool hasTarget, bool canRun)
     {
@@ -284,6 +299,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
 
         OnPropertyChanged(nameof(HasDocuments));
+        RaiseRocketCommandProperties();
     }
 
     private void Document_DiagnosticsPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -351,6 +367,13 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(CanRocketNewProject));
         OnPropertyChanged(nameof(CanRocketAdvanced));
         OnPropertyChanged(nameof(CanQuickOpen));
+        OnPropertyChanged(nameof(CanDebugStartContinue));
+        OnPropertyChanged(nameof(CanDebugPause));
+        OnPropertyChanged(nameof(CanDebugStop));
+        OnPropertyChanged(nameof(CanDebugToggleBreakpoint));
+        OnPropertyChanged(nameof(CanDebugStepOver));
+        OnPropertyChanged(nameof(CanDebugStepInto));
+        OnPropertyChanged(nameof(CanDebugStepOut));
     }
 
     private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

@@ -39,8 +39,6 @@ try {
         '-r', 'win-x64',
         '--self-contained', 'true',
         '--no-restore',
-        '-p:PublishSingleFile=true',
-        '-p:IncludeNativeLibrariesForSelfExtract=true',
         "-p:RocketIDEInformationalVersion=$versionLabel",
         '-o', $publishRoot
     )
@@ -49,6 +47,17 @@ try {
 
     $exe = Join-Path $packageRoot 'RocketIDE.exe'
     if (-not (Test-Path -LiteralPath $exe)) { throw "Published executable not found: $exe" }
+    if ((Get-Item -LiteralPath $exe).Length -le 0) { throw "Published executable is empty: $exe" }
+
+    $debuggerAssembly = Join-Path $packageRoot 'RocketIDE.Debugger.dll'
+    if (-not (Test-Path -LiteralPath $debuggerAssembly)) { throw "Debugger assembly not found: $debuggerAssembly" }
+    if ((Get-Item -LiteralPath $debuggerAssembly).Length -le 0) { throw "Debugger assembly is empty: $debuggerAssembly" }
+
+    $engHosts = @(Get-ChildItem -LiteralPath $packageRoot -Filter 'EngHost.exe' -File -Recurse)
+    if ($engHosts.Count -eq 0) { throw 'DbgX EngHost.exe was not published. The portable debugger cannot start without it.' }
+    if (-not ($engHosts | Where-Object { $_.Directory.Name -in @('x64', 'amd64') })) {
+        throw 'DbgX x64/amd64 EngHost.exe was not published. The win-x64 portable debugger cannot start without it.'
+    }
     if (-not $KeepSymbols) {
         Get-ChildItem -LiteralPath $packageRoot -Filter '*.pdb' -File -Recurse | Remove-Item -Force
     }
@@ -59,6 +68,7 @@ try {
         '',
         'Run RocketIDE.exe. Configure the Rocket SDK from Tools > Rocket SDK Settings.',
         'User settings, logs, and recovery snapshots are stored under LocalApplicationData.',
+        'The portable package includes RocketIDE''s Microsoft DbgX/DbgEng native debugger engine.',
         'This portable package does not bundle a Rocket SDK.'
     ) | Set-Content -LiteralPath $readme -Encoding UTF8
 

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Debugging.Platform.DbgX" />
+    <PackageReference Include="Microsoft.Debugging.Platform.SymSrv" GeneratePathProperty="true" />
+    <PackageReference Include="System.ComponentModel.Composition" />
+    <PackageReference Include="System.Security.Cryptography.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(PkgMicrosoft_Debugging_Platform_SymSrv)\content\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Visible="False" Link="%(RecursiveDir)%(FileName)%(Extension)" />
+  </ItemGroup>
+</Project>

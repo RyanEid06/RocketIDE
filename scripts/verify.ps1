@@ -74,8 +74,6 @@ try {
         -r win-x64 `
         --self-contained true `
         --no-restore `
-        -p:PublishSingleFile=true `
-        -p:IncludeNativeLibrariesForSelfExtract=true `
         -o $publish
     if ($LASTEXITCODE -ne 0) { throw 'win-x64 publish failed.' }
 
@@ -89,7 +87,25 @@ try {
         throw "Published executable is empty: $exe"
     }
 
+    $debuggerAssembly = Join-Path $publish 'RocketIDE.Debugger.dll'
+    if (-not (Test-Path -LiteralPath $debuggerAssembly)) {
+        throw "Publish completed without expected debugger assembly: $debuggerAssembly"
+    }
+    if ((Get-Item -LiteralPath $debuggerAssembly).Length -le 0) {
+        throw "Published debugger assembly is empty: $debuggerAssembly"
+    }
+
+    $engHosts = @(Get-ChildItem -LiteralPath $publish -Filter 'EngHost.exe' -File -Recurse)
+    if ($engHosts.Count -eq 0) {
+        throw 'Publish completed without DbgX EngHost.exe.'
+    }
+    $x64EngHost = $engHosts | Where-Object { $_.Directory.Name -in @('x64', 'amd64') } | Select-Object -First 1
+    if ($null -eq $x64EngHost) {
+        throw 'Publish completed without x64/amd64 EngHost.exe required by the win-x64 debugger.'
+    }
+
     Write-Host "Published $($exeInfo.FullName) ($($exeInfo.Length) bytes)"
+    Write-Host "Debugger engine host $($x64EngHost.FullName)"
     Write-Host 'RocketIDE verification PASSED.' -ForegroundColor Green
 }
 finally {

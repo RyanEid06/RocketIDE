@@ -12,5 +12,6 @@
     <ProjectReference Include="..\RocketIDE.Core\RocketIDE.Core.csproj" />
     <ProjectReference Include="..\RocketIDE.Rocket\RocketIDE.Rocket.csproj" />
     <ProjectReference Include="..\RocketIDE.Infrastructure\RocketIDE.Infrastructure.csproj" />
+    <ProjectReference Include="..\RocketIDE.Debugger\RocketIDE.Debugger.csproj" />
   </ItemGroup>
 </Project>
