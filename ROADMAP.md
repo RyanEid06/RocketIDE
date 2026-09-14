@@ -58,6 +58,7 @@ Add missing compiler/LSP capabilities here instead of faking them in the IDE.
 
 - **LSP-PERF-01 — large-workspace interactive analysis:** `textDocument/didChange` currently causes broad workspace re-analysis in the full Rocket checkout (~239 files, observed ~20–25 s per analysis) and rapid edits can backlog obsolete work. Profile and optimize in the main Rocket repository without duplicating language intelligence in RocketIDE; target sub-second normal edit feedback while preserving full-analysis equivalence.
 - **LSP-SIG-01 — signature help for incomplete calls:** `textDocument/signatureHelp` should continue returning callable signature/active-parameter information while the user is in a temporarily invalid/incomplete call such as `print(|)`. RocketIDE's trigger/request/presentation path is implemented, but the current Rocket LSP can lose the callable information after semantic analysis reports the incomplete call.
+- **ROCKET-UPSTREAM-REQUEST — standalone debugger adapter:** RocketIDE's WP17 artifact validator understands the existing CodeView/PDB plus `rocket-source-map-1` contract, but the repository does not contain a redistributable DAP/native debug backend. Provide a supported adapter for launch, stop, continue, pause, stepping, breakpoints, threads, call stacks, and locals before RocketIDE attempts a standalone debugger.
 
 ---
 

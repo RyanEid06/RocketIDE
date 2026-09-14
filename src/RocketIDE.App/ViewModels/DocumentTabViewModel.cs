@@ -15,6 +15,7 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
 {
     private readonly IDocumentStore _documentStore;
     private DocumentSnapshot _snapshot;
+    private LargeFileDecision _largeFileDecision;
     private bool _suppressEditorDocumentChange;
     private int _caretLine = 1;
     private int _caretColumn = 1;
@@ -26,6 +27,7 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
     {
         _documentStore = documentStore;
         _snapshot = snapshot;
+        _largeFileDecision = LargeFilePolicy.Decide(snapshot.ByteLength);
         EditorDocument = new TextDocument(snapshot.Text);
         EditorDocument.UndoStack.MarkAsOriginalFile();
         EditorDocument.Changed += EditorDocument_Changed;
@@ -51,6 +53,16 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
 
     public bool IsDirty => _snapshot.IsDirty;
 
+    public bool IsLargeFileMode => _largeFileDecision.IsLargeFileMode;
+
+    public bool AllowLsp => _largeFileDecision.AllowLsp;
+
+    public bool AllowSyntaxColoring => _largeFileDecision.AllowSyntaxColoring;
+
+    public string LargeFileReason => !AllowSyntaxColoring
+        ? $"{_largeFileDecision.Reason} Syntax coloring is also disabled above the 16 MiB editor performance cutoff."
+        : _largeFileDecision.Reason;
+
     public string DisplayName => System.IO.Path.GetFileName(_snapshot.Path);
 
     public string HeaderText => _snapshot.IsDirty ? $"{DisplayName} ●" : DisplayName;
@@ -73,6 +85,7 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
         }
 
         _snapshot = snapshot;
+        _largeFileDecision = LargeFilePolicy.Decide(snapshot.ByteLength);
 
         if (!string.Equals(EditorDocument.Text, snapshot.Text, StringComparison.Ordinal))
         {
@@ -154,6 +167,10 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(Version));
         OnPropertyChanged(nameof(ByteLength));
         OnPropertyChanged(nameof(IsDirty));
+        OnPropertyChanged(nameof(IsLargeFileMode));
+        OnPropertyChanged(nameof(AllowLsp));
+        OnPropertyChanged(nameof(AllowSyntaxColoring));
+        OnPropertyChanged(nameof(LargeFileReason));
         OnPropertyChanged(nameof(DisplayName));
         OnPropertyChanged(nameof(HeaderText));
     }

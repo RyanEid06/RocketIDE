@@ -18,6 +18,7 @@ namespace RocketIDE.App.Editor;
 public partial class EditorDocumentHost : UserControl
 {
     private readonly DiagnosticRenderer _diagnosticRenderer;
+    private readonly BracketMatchRenderer _bracketMatchRenderer;
     private readonly RocketCompletionController _completionController;
     private readonly RocketHoverController _hoverController;
     private readonly RocketSignatureHelpController _signatureHelpController;
@@ -42,6 +43,7 @@ public partial class EditorDocumentHost : UserControl
     {
         InitializeComponent();
         _diagnosticRenderer = new DiagnosticRenderer(Editor);
+        _bracketMatchRenderer = new BracketMatchRenderer(Editor);
         _completionController = new RocketCompletionController(Editor, () => FeatureService);
         _hoverController = new RocketHoverController(Editor, () => FeatureService);
         _signatureHelpController = new RocketSignatureHelpController(Editor, () => FeatureService);
@@ -121,6 +123,7 @@ public partial class EditorDocumentHost : UserControl
         }
 
         ReportCaret();
+        _bracketMatchRenderer.Update();
     }
 
     private void AttachDocument(DocumentTabViewModel document)
@@ -131,22 +134,35 @@ public partial class EditorDocumentHost : UserControl
         Editor.Document = document.EditorDocument;
         if (IsRocketDocument(document))
         {
-            try
+            if (document.AllowSyntaxColoring)
             {
-                Editor.SyntaxHighlighting = RocketSyntaxHighlighting.Definition;
+                try
+                {
+                    Editor.SyntaxHighlighting = RocketSyntaxHighlighting.Definition;
+                }
+                catch (Exception exception)
+                {
+                    // Syntax coloring is optional editor presentation. A broken highlighting
+                    // definition must never make opening a source file fatal. CI directly tests
+                    // the definition so this fallback is defense in depth, not a hidden failure.
+                    Trace.TraceError($"Rocket syntax highlighting failed to load: {exception}");
+                    Editor.SyntaxHighlighting = null;
+                }
             }
-            catch (Exception exception)
+            else
             {
-                // Syntax coloring is optional editor presentation. A broken highlighting
-                // definition must never make opening a source file fatal. CI directly tests
-                // the definition so this fallback is defense in depth, not a hidden failure.
-                Trace.TraceError($"Rocket syntax highlighting failed to load: {exception}");
                 Editor.SyntaxHighlighting = null;
             }
 
-            RocketIndentationStrategy.Configure(Editor);
+            if (document.AllowLsp)
+            {
+                RocketIndentationStrategy.Configure(Editor);
+            }
             _diagnosticRenderer.UpdateDiagnostics(document.Diagnostics);
-            AttachRocketFeatures(document);
+            if (document.AllowLsp)
+            {
+                AttachRocketFeatures(document);
+            }
         }
         else
         {
@@ -229,7 +245,11 @@ public partial class EditorDocumentHost : UserControl
         Editor.Focus();
     }
 
-    private void Caret_PositionChanged(object? sender, EventArgs e) => ReportCaret();
+    private void Caret_PositionChanged(object? sender, EventArgs e)
+    {
+        ReportCaret();
+        _bracketMatchRenderer.Update();
+    }
 
     private void ReportCaret()
     {

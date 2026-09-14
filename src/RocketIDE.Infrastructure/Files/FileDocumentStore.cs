@@ -237,6 +237,18 @@ public sealed class FileDocumentStore : IDocumentStore
 
     private static async Task<LoadedTextFile> ReadTextFileAsync(string path, CancellationToken cancellationToken)
     {
+        var metadata = new FileInfo(path);
+        if (!metadata.Exists)
+        {
+            throw new FileNotFoundException("The document no longer exists.", path);
+        }
+        if (metadata.Length > LargeFilePolicy.MaxEditorBufferBytes)
+        {
+            throw new UnsupportedTextFileException(
+                path,
+                $"the file is larger than the {LargeFilePolicy.MaxEditorBufferBytes / (1024 * 1024)} MiB local editor buffer safety limit");
+        }
+
         var bytes = await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false);
         if (Array.IndexOf(bytes, (byte)0) >= 0)
         {

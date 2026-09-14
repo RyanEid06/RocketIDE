@@ -2,12 +2,21 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Threading;
+using RocketIDE.Core.Logging;
+using RocketIDE.Infrastructure.Logging;
 
 namespace RocketIDE.App;
 
 public partial class App : Application
 {
+    private readonly IApplicationLogger _logger = RotatingFileLogger.CreateDefault();
     private bool _handlingFatalDispatcherException;
+
+    public App()
+    {
+        AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+        Exit += App_Exit;
+    }
 
     private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
@@ -22,6 +31,7 @@ public partial class App : Application
         }
 
         _handlingFatalDispatcherException = true;
+        _logger.Error("Unhandled dispatcher exception.", e.Exception);
         var logPath = TryWriteCrashLog(e.Exception);
         var location = logPath is null
             ? "RocketIDE could not write a crash log."
@@ -34,6 +44,23 @@ public partial class App : Application
             MessageBoxImage.Error);
 
         Shutdown(-1);
+    }
+
+    private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        if (e.ExceptionObject is Exception exception)
+        {
+            _logger.Error("Unhandled application-domain exception.", exception);
+        }
+    }
+
+    private void App_Exit(object sender, ExitEventArgs e)
+    {
+        AppDomain.CurrentDomain.UnhandledException -= CurrentDomain_UnhandledException;
+        if (_logger is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
     }
 
     private static string? TryWriteCrashLog(Exception exception)
@@ -51,7 +78,7 @@ public partial class App : Application
                 .AppendLine($"OS: {Environment.OSVersion}")
                 .AppendLine($".NET: {Environment.Version}")
                 .AppendLine()
-                .AppendLine(exception.ToString())
+                .AppendLine(RotatingFileLogger.Redact(exception.ToString()))
                 .ToString();
             File.WriteAllText(path, text, Encoding.UTF8);
             return path;

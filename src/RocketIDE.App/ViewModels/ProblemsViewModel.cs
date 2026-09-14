@@ -21,7 +21,7 @@ public sealed class ProblemItemViewModel
     public string Code => Diagnostic.Code;
     public string Message => Diagnostic.Message;
     public string Source => Diagnostic.Source;
-    public string SourceText => string.IsNullOrWhiteSpace(Source) ? "LSP" : $"LSP · {Source}";
+    public string SourceText => string.IsNullOrWhiteSpace(Source) ? Diagnostic.Provenance : $"{Diagnostic.Provenance} · {Source}";
     public string FilePath => Diagnostic.FilePath;
     public string FileName => Path.GetFileName(Diagnostic.FilePath);
     public int Line => Diagnostic.Range.StartLine + 1;
@@ -40,6 +40,7 @@ public sealed class ProblemsViewModel : INotifyPropertyChanged
     private string _filterText = string.Empty;
     private string _statusText = "Live diagnostics unavailable — Rocket language server is offline.";
     private string _headerText = "PROBLEMS";
+    private IReadOnlyList<RocketDiagnostic> _compilerDiagnostics = [];
 
     public ProblemsViewModel()
     {
@@ -141,6 +142,23 @@ public sealed class ProblemsViewModel : INotifyPropertyChanged
         Rebuild();
     }
 
+    public void SetCompilerDiagnostics(IEnumerable<RocketDiagnostic> diagnostics)
+    {
+        ArgumentNullException.ThrowIfNull(diagnostics);
+        _compilerDiagnostics = diagnostics.ToArray();
+        Rebuild();
+    }
+
+    public void ClearCompilerDiagnostics()
+    {
+        if (_compilerDiagnostics.Count == 0)
+        {
+            return;
+        }
+        _compilerDiagnostics = [];
+        Rebuild();
+    }
+
     public void ApplyPublication(RocketDiagnosticPublication publication)
     {
         ArgumentNullException.ThrowIfNull(publication);
@@ -160,10 +178,11 @@ public sealed class ProblemsViewModel : INotifyPropertyChanged
     private void Rebuild()
     {
         var snapshots = _store.Snapshots;
-        var allCurrent = snapshots
+        var liveCurrent = snapshots
             .Where(snapshot => snapshot.State == LiveDiagnosticDocumentState.Current)
             .SelectMany(snapshot => snapshot.Diagnostics)
             .ToArray();
+        var allCurrent = liveCurrent.Concat(_compilerDiagnostics).ToArray();
 
         IEnumerable<RocketDiagnostic> filtered = allCurrent.Where(IsSeverityVisible);
         var filter = _filterText.Trim();
@@ -191,7 +210,9 @@ public sealed class ProblemsViewModel : INotifyPropertyChanged
     {
         if (!_store.IsOnline)
         {
-            return "Live diagnostics unavailable — Rocket language server is offline.";
+            return problemCount == 0
+                ? "Live diagnostics unavailable — Rocket language server is offline."
+                : $"{FormatProblemCount(problemCount)} · live diagnostics offline.";
         }
 
         var unsupported = snapshots.Count(item => item.State == LiveDiagnosticDocumentState.Unsupported);

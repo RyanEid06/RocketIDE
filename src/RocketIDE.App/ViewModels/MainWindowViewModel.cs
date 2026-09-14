@@ -3,10 +3,13 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using RocketIDE.App.Commands;
 using RocketIDE.App.ViewModels.Explorer;
 using RocketIDE.Core.Diagnostics;
 using RocketIDE.Core.Documents;
+using RocketIDE.Core.Search;
 using RocketIDE.Core.Workspaces;
+using RocketIDE.Infrastructure.Files;
 using RocketIDE.Rocket.Diagnostics;
 
 namespace RocketIDE.App.ViewModels;
@@ -19,13 +22,23 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private string _activeTargetStatus = "Target: none";
     private string _caretStatus = "Ln 1, Col 1";
     private string _encodingStatus = "UTF-8";
+    private bool _rocketCommandRunning;
+    private bool _hasRocketCommandTarget;
+    private bool _rocketRunAvailable;
 
-    public MainWindowViewModel(IWorkspaceFileSystem workspaceFileSystem)
+    public MainWindowViewModel(IWorkspaceFileSystem workspaceFileSystem, IWorkspaceSearchService? searchService = null)
     {
         ArgumentNullException.ThrowIfNull(workspaceFileSystem);
         Explorer = new WorkspaceExplorerViewModel(workspaceFileSystem);
         Problems = new ProblemsViewModel();
         References = new ReferencesViewModel();
+        Output = new OutputViewModel();
+        Tests = new TestsViewModel();
+        Search = new SearchViewModel(searchService ?? new WorkspaceSearchService())
+        {
+            OpenBufferProvider = GetDirtyBufferTexts,
+        };
+        CommandRegistry = new RocketCommandRegistry();
         Explorer.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName == nameof(WorkspaceExplorerViewModel.HasWorkspace))
@@ -47,9 +60,23 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public ReferencesViewModel References { get; }
 
+    public OutputViewModel Output { get; }
+
+    public TestsViewModel Tests { get; }
+
+    public SearchViewModel Search { get; }
+
+    public RocketCommandRegistry CommandRegistry { get; }
+
+    public RocketCommandState GetCommandState(string commandId) =>
+        CommandRegistry.Evaluate(commandId, new RocketCommandContext(
+            HasDocuments,
+            _hasRocketCommandTarget,
+            _rocketRunAvailable,
+            _rocketCommandRunning));
+
     public ObservableCollection<string> RecentWorkspaces { get; } = new();
 
-    public ObservableCollection<string> OutputLines { get; } = new();
 
     public bool HasWorkspace => Explorer.HasWorkspace;
 
@@ -84,6 +111,34 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     }
 
     public string WindowTitle => ActiveDocument is null ? "RocketIDE" : $"{ActiveDocument.DisplayName} — RocketIDE";
+
+
+    public bool CanRocketCheck => _hasRocketCommandTarget && !_rocketCommandRunning;
+    public bool CanRocketBuild => _hasRocketCommandTarget && !_rocketCommandRunning;
+    public bool CanRocketTest => _hasRocketCommandTarget && !_rocketCommandRunning;
+    public bool CanRocketRun => _hasRocketCommandTarget && _rocketRunAvailable && !_rocketCommandRunning;
+    public bool CanRocketStop => _rocketCommandRunning;
+
+    public void SetRocketCommandAvailability(bool hasTarget, bool canRun)
+    {
+        if (_hasRocketCommandTarget == hasTarget && _rocketRunAvailable == canRun)
+        {
+            return;
+        }
+        _hasRocketCommandTarget = hasTarget;
+        _rocketRunAvailable = canRun;
+        RaiseRocketCommandProperties();
+    }
+
+    public void SetRocketCommandRunning(bool running)
+    {
+        if (_rocketCommandRunning == running)
+        {
+            return;
+        }
+        _rocketCommandRunning = running;
+        RaiseRocketCommandProperties();
+    }
 
     public string RocketSdkStatus
     {
@@ -150,20 +205,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         Problems.TrackDocument(document.Path, version, isSupported);
     }
 
-    public void AppendOutput(string line)
-    {
-        if (string.IsNullOrWhiteSpace(line))
-        {
-            return;
-        }
-
-        OutputLines.Add(line);
-        const int maxLines = 2000;
-        while (OutputLines.Count > maxLines)
-        {
-            OutputLines.RemoveAt(0);
-        }
-    }
+    public void AppendOutput(string line) => Output.Append(line);
 
     public void SetRecentWorkspaces(IEnumerable<string> paths)
     {
@@ -260,12 +302,22 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
+    private IReadOnlyDictionary<string, string> GetDirtyBufferTexts() =>
+        Documents
+            .Where(document => document.IsDirty)
+            .GroupBy(document => document.Path, PathComparer)
+            .ToDictionary(group => group.Key, group => group.Last().Text, PathComparer);
+
     private static bool IsRocketPath(string path) =>
         string.Equals(Path.GetExtension(path), ".rocket", StringComparison.OrdinalIgnoreCase);
 
     private static StringComparison PathComparison => OperatingSystem.IsWindows()
         ? StringComparison.OrdinalIgnoreCase
         : StringComparison.Ordinal;
+
+    private static IEqualityComparer<string> PathComparer => OperatingSystem.IsWindows()
+        ? StringComparer.OrdinalIgnoreCase
+        : StringComparer.Ordinal;
 
     private static string NormalizeWorkspacePath(string path)
     {
@@ -283,6 +335,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         CaretStatus = ActiveDocument is null
             ? "Ln 1, Col 1"
             : $"Ln {ActiveDocument.CaretLine}, Col {ActiveDocument.CaretColumn}";
+    }
+
+    private void RaiseRocketCommandProperties()
+    {
+        OnPropertyChanged(nameof(CanRocketCheck));
+        OnPropertyChanged(nameof(CanRocketBuild));
+        OnPropertyChanged(nameof(CanRocketRun));
+        OnPropertyChanged(nameof(CanRocketTest));
+        OnPropertyChanged(nameof(CanRocketStop));
     }
 
     private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

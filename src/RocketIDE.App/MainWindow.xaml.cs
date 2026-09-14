@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -12,6 +13,8 @@ using RocketIDE.App.Interop;
 using RocketIDE.App.ViewModels;
 using RocketIDE.App.ViewModels.Explorer;
 using RocketIDE.Core.Documents;
+using RocketIDE.Core.Diagnostics;
+using RocketIDE.Core.Search;
 using RocketIDE.Core.Workspaces;
 using RocketIDE.Infrastructure.Files;
 using RocketIDE.Infrastructure.Settings;
@@ -37,8 +40,10 @@ public partial class MainWindow : Window
         InitializeComponent();
         _viewModel = new MainWindowViewModel(_workspaceFileSystem);
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        _viewModel.Search.MatchActivated += Search_MatchActivated;
         DataContext = _viewModel;
         InitializeRocketIntegration();
+        InitializeReliability();
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -47,6 +52,7 @@ public partial class MainWindow : Window
         {
             var recent = await _recentWorkspaceStore.LoadAsync(CancellationToken.None);
             _viewModel.SetRecentWorkspaces(recent);
+            await LoadReliabilityAsync();
         }
         catch (Exception exception) when (IsExpectedFileException(exception))
         {
@@ -84,6 +90,10 @@ public partial class MainWindow : Window
         try
         {
             var snapshot = await _documentStore.OpenAsync(path, CancellationToken.None);
+            if (!_viewModel.HasWorkspace)
+            {
+                _viewModel.Search.RootPath = Path.GetDirectoryName(snapshot.Path) ?? snapshot.Path;
+            }
             return _viewModel.AddOrActivate(_documentStore, snapshot);
         }
         catch (Exception exception) when (IsExpectedFileException(exception))
@@ -123,6 +133,7 @@ public partial class MainWindow : Window
             DisposeWorkspaceWatcher(previousWatcher);
 
             _viewModel.AddRecentWorkspace(path);
+            _viewModel.Search.RootPath = Path.GetFullPath(path);
             await PersistRecentWorkspacesAsync();
         }
         catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
@@ -616,7 +627,7 @@ public partial class MainWindow : Window
     private void About_Click(object sender, RoutedEventArgs e) =>
         MessageBox.Show(
             this,
-            "RocketIDE\nNative Windows IDE for the Rocket programming language.\n\nDevelopment follows ROADMAP.md and compiler/LSP behavior remains owned by Rocket.",
+            $"RocketIDE {typeof(MainWindow).Assembly.GetName().Version}\nNative Windows IDE for the Rocket programming language.\n\nBuild: {typeof(MainWindow).Assembly.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown"}\n\nDevelopment follows ROADMAP.md and compiler/LSP behavior remains owned by Rocket.",
             "About RocketIDE",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
@@ -656,6 +667,8 @@ public partial class MainWindow : Window
                 AppendRocketOutput($"Rocket LSP shutdown failed: {exception.Message}");
             }
 
+            await CompleteReliabilityShutdownAsync();
+
             // Force at least one dispatcher turn even when shutdown completed synchronously.
             // That guarantees the original Closing event has returned before Close() is called.
             await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
@@ -683,6 +696,22 @@ public partial class MainWindow : Window
 
         switch (e.Key)
         {
+            case Key.F when shift:
+                e.Handled = true;
+                SearchWorkspace_Click(sender, e);
+                break;
+            case Key.H when shift:
+                e.Handled = true;
+                ReplaceWorkspace_Click(sender, e);
+                break;
+            case Key.B:
+                e.Handled = true;
+                BuildRocket_Click(sender, e);
+                break;
+            case Key.R:
+                e.Handled = true;
+                RunRocket_Click(sender, e);
+                break;
             case Key.N:
                 e.Handled = true;
                 NewFile_Click(sender, e);
@@ -735,6 +764,37 @@ public partial class MainWindow : Window
                 e.Handled = true;
                 ShowGotoLine();
                 break;
+        }
+    }
+
+    private void SearchWorkspace_Click(object sender, RoutedEventArgs e)
+    {
+        BottomTabs.SelectedIndex = 4;
+        SearchPanelControl.FocusPattern(includeReplace: false);
+    }
+
+    private void ReplaceWorkspace_Click(object sender, RoutedEventArgs e)
+    {
+        BottomTabs.SelectedIndex = 4;
+        SearchPanelControl.FocusPattern(includeReplace: true);
+    }
+
+    private async void Search_MatchActivated(object? sender, SearchMatch match)
+    {
+        try
+        {
+            var tab = FindOpenDocument(match.FilePath) ?? await OpenDocumentAsync(match.FilePath);
+            if (tab is null)
+            {
+                return;
+            }
+
+            _viewModel.ActiveDocument = tab;
+            tab.RequestNavigation(new SourceRange(match.Line - 1, match.Column - 1, match.Line - 1, match.Column - 1 + match.Length));
+        }
+        catch (Exception exception) when (IsExpectedFileException(exception))
+        {
+            ShowFileError("Search result navigation failed", match.FilePath, exception);
         }
     }
 
@@ -929,14 +989,16 @@ public partial class MainWindow : Window
 
     private void UpdateActiveTargetStatus()
     {
-        var activePath = _viewModel.ActiveDocument?.Path;
+        var activePath = GetRocketCommandActivePath();
         var target = activePath is null ? null : _targetDiscovery.Discover(activePath);
         _viewModel.ActiveTargetStatus = target switch
         {
             null => "Target: none",
             { IsStandalone: true } => $"Target: {Path.GetFileName(target.InputPath)} (standalone)",
+            { IsExecutable: false } => $"Target: {Path.GetFileName(target.WorkingDirectory)} ({target.OutputKind})",
             _ => $"Target: {Path.GetFileName(target.WorkingDirectory)}",
         };
+        _viewModel.SetRocketCommandAvailability(target is not null, target?.IsExecutable == true);
     }
 
     private string? GetSelectedDirectory()

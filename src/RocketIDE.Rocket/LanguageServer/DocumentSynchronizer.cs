@@ -1,4 +1,5 @@
 using System.Text;
+using RocketIDE.Core.Documents;
 using RocketIDE.Rocket.LanguageServer.LspDtos;
 
 namespace RocketIDE.Rocket.LanguageServer;
@@ -12,7 +13,7 @@ public enum LspDocumentSyncState
 
 public sealed class DocumentSynchronizer(IRocketLanguageClient client)
 {
-    public const int MaxDocumentBytes = 4 * 1024 * 1024;
+    public const int MaxDocumentBytes = (int)LargeFilePolicy.MaxLspDocumentBytes;
 
     private readonly Dictionary<string, DocumentEntry> _documents = new(StringComparer.OrdinalIgnoreCase);
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -37,7 +38,7 @@ public sealed class DocumentSynchronizer(IRocketLanguageClient client)
 
             if (IsOversized(text))
             {
-                _documents[key] = new DocumentEntry(ToUri(key), text, version, LspDocumentSyncState.LargeFileUnsupportedByLsp);
+                _documents[key] = new DocumentEntry(ToUri(key), string.Empty, version, LspDocumentSyncState.LargeFileUnsupportedByLsp);
                 return LspDocumentSyncState.LargeFileUnsupportedByLsp;
             }
 
@@ -81,7 +82,7 @@ public sealed class DocumentSynchronizer(IRocketLanguageClient client)
                         new DidCloseTextDocumentParams(new TextDocumentIdentifier(current.Uri)),
                         cancellationToken).ConfigureAwait(false);
                 }
-                _documents[key] = current with { Text = text, Version = version, State = LspDocumentSyncState.LargeFileUnsupportedByLsp };
+                _documents[key] = current with { Text = string.Empty, Version = version, State = LspDocumentSyncState.LargeFileUnsupportedByLsp };
                 return LspDocumentSyncState.LargeFileUnsupportedByLsp;
             }
 
@@ -219,7 +220,7 @@ public sealed class DocumentSynchronizer(IRocketLanguageClient client)
         return new LspPosition(line, offset - lineStart);
     }
 
-    private static bool IsOversized(string text) => Encoding.UTF8.GetByteCount(text) > MaxDocumentBytes;
+    private static bool IsOversized(string text) => !LargeFilePolicy.Decide(Encoding.UTF8.GetByteCount(text)).AllowLsp;
     private static string NormalizePath(string path) => Path.GetFullPath(path);
     private static string ToUri(string path) => new Uri(Path.GetFullPath(path)).AbsoluteUri;
 

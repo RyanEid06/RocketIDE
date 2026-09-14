@@ -42,6 +42,22 @@ public sealed class RocketTargetDiscoveryTests
     }
 
     [TestMethod]
+    public void Discover_PreservesBuildKindAndNameFromManifest()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(Path.Combine(temp.Path, "src"));
+        var manifest = Path.Combine(temp.Path, "rocket.toml");
+        File.WriteAllText(manifest, "[package]\nname = \"mathlib\"\nentry = \"src/main.rocket\"\n\n[build]\nkind = \"static-library\"\nname = \"rocket_math\"\n");
+
+        var target = new RocketTargetDiscovery().Discover(manifest);
+
+        Assert.IsNotNull(target);
+        Assert.AreEqual("static-library", target.OutputKind);
+        Assert.AreEqual("rocket_math", target.OutputName);
+        Assert.IsFalse(target.IsExecutable);
+    }
+
+    [TestMethod]
     public void Discover_RocketFileWithoutManifestIsStandalone()
     {
         using var temp = new TempDirectory();
