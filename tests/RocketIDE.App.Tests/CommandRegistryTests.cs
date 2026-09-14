@@ -54,4 +54,25 @@ public sealed class CommandRegistryTests
         Assert.IsTrue(registry.Evaluate(RocketCommandRegistry.DebugStepOut, stopped).IsEnabled);
     }
 
+    [TestMethod]
+    public void ToggleBreakpointRequiresActiveRocketDocument()
+    {
+        var registry = new RocketCommandRegistry();
+        var nonRocket = new RocketCommandContext(
+            HasDocument: true,
+            HasTarget: true,
+            CanRun: true,
+            IsBusy: false,
+            HasWorkspace: true,
+            HasRocketDocument: false);
+
+        Assert.IsFalse(registry.Evaluate(RocketCommandRegistry.DebugToggleBreakpoint, nonRocket).IsEnabled);
+        Assert.IsTrue(registry.Evaluate(
+            RocketCommandRegistry.DebugToggleBreakpoint,
+            nonRocket with { HasRocketDocument = true }).IsEnabled);
+        Assert.IsFalse(registry.Evaluate(
+            RocketCommandRegistry.DebugToggleBreakpoint,
+            nonRocket with { HasRocketDocument = true, IsDebuggerRunning = true, IsDebugging = true }).IsEnabled);
+    }
+
 }

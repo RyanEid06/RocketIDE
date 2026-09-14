@@ -53,6 +53,27 @@ public sealed class HardeningSourceWiringTests
             "Window shutdown must not remove every tab before SaveSessionAsync captures the session.");
     }
 
+    [TestMethod]
+    public void DebuggerCommandAndFrameNavigationUseActiveRocketDocumentAndAuthoritativeStoppedLocation()
+    {
+        var viewModel = ReadSource("src", "RocketIDE.App", "ViewModels", "MainWindowViewModel.cs");
+        var debuggerSource = ReadSource("src", "RocketIDE.App", "MainWindow.Debugger.cs");
+
+        StringAssert.Contains(viewModel, "ActiveDocument is not null && IsRocketPath(ActiveDocument.Path)");
+        var activeDocumentSetter = viewModel[viewModel.IndexOf("public DocumentTabViewModel? ActiveDocument", StringComparison.Ordinal)..viewModel.IndexOf("public string WindowTitle", StringComparison.Ordinal)];
+        StringAssert.Contains(activeDocumentSetter, "RaiseRocketCommandProperties();");
+
+        var handlerStart = debuggerSource.IndexOf("private async void DebugFrames_MouseDoubleClick", StringComparison.Ordinal);
+        var handlerEnd = debuggerSource.IndexOf("private async Task StartDebugSessionAsync", handlerStart, StringComparison.Ordinal);
+        Assert.IsTrue(handlerStart >= 0);
+        Assert.IsTrue(handlerEnd > handlerStart);
+        var handler = debuggerSource[handlerStart..handlerEnd];
+        StringAssert.Contains(handler, "await _nativeDebugger.SelectFrameAsync(frame.Index, CancellationToken.None);");
+        Assert.IsFalse(
+            handler.Contains("NavigateToDebugLocationAsync", StringComparison.Ordinal),
+            "Frame selection navigation must come from the debugger's refreshed Stopped event, not stale pre-selection frame data.");
+    }
+
     private static string ReadSource(params string[] segments)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

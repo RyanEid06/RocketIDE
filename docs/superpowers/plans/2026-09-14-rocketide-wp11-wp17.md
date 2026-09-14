@@ -1,5 +1,8 @@
 # RocketIDE WP11-WP17 Implementation Plan
 
+> **HISTORICAL / SUPERSEDED:** This was the pre-implementation WP11-WP17 plan. Its WP17 feasibility/defer assumptions were superseded by `2026-09-14-wp17-native-debugger.md`: a redistributable Microsoft DbgX/DbgEng backend was implemented and automated-verified. Use `ROADMAP.md` and `docs/WP11-WP17-CODE-ONLY-FOLLOWUPS.md` for current status/evidence.
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Implement the code-owned portions of IDE-WP11 through IDE-WP17 in dependency order while leaving interactive smoke evidence explicitly deferred.

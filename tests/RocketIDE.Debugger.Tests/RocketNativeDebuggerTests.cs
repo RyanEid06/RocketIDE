@@ -67,6 +67,29 @@ public sealed class RocketNativeDebuggerTests
             debugger.SetBreakpointsAsync([], CancellationToken.None));
     }
 
+    [TestMethod]
+    public async Task ExplicitStopSurvivesInterruptedRunningEngineRequest()
+    {
+        var pendingRun = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var transport = new FakeTransport
+        {
+            PendingRunCommand = pendingRun,
+            FaultPendingRunOnBreak = true,
+        };
+        await using var debugger = new RocketNativeDebugger(transport);
+        debugger.SetTestState(RocketDebugSessionState.Stopped, processId: 321);
+
+        var continueTask = debugger.ContinueAsync(CancellationToken.None);
+        Assert.AreEqual(RocketDebugSessionState.Running, debugger.State);
+
+        await debugger.StopAsync(CancellationToken.None);
+        await continueTask;
+
+        Assert.AreEqual(321, transport.BrokenProcessId);
+        Assert.IsTrue(transport.Stopped);
+        Assert.AreEqual(RocketDebugSessionState.Terminated, debugger.State);
+    }
+
     private sealed class FakeTransport : IDebuggerCommandTransport
     {
         public event EventHandler<RocketDebugOutputEventArgs>? OutputReceived;
@@ -74,6 +97,8 @@ public sealed class RocketNativeDebuggerTests
         public List<string> Commands { get; } = [];
         public int? BrokenProcessId { get; private set; }
         public bool Stopped { get; private set; }
+        public TaskCompletionSource<string>? PendingRunCommand { get; init; }
+        public bool FaultPendingRunOnBreak { get; init; }
 
         public Task CreateProcessAsync(string executablePath, IReadOnlyList<string> arguments, string workingDirectory, CancellationToken cancellationToken)
         {
@@ -83,11 +108,16 @@ public sealed class RocketNativeDebuggerTests
         public Task<string> ExecuteAsync(string command, CancellationToken cancellationToken)
         {
             Commands.Add(command);
+            if (command == "g" && PendingRunCommand is not null) return PendingRunCommand.Task;
             return Task.FromResult(Responses.TryGetValue(command, out var result) ? result : string.Empty);
         }
         public Task BreakAsync(int processId, CancellationToken cancellationToken)
         {
             BrokenProcessId = processId;
+            if (FaultPendingRunOnBreak)
+            {
+                PendingRunCommand?.TrySetException(new InvalidOperationException("DbgEng execution was interrupted by Break."));
+            }
             return Task.CompletedTask;
         }
         public Task StopAsync(CancellationToken cancellationToken)

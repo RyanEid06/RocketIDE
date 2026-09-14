@@ -128,10 +128,6 @@ public partial class MainWindow
         try
         {
             await _nativeDebugger.SelectFrameAsync(frame.Index, CancellationToken.None);
-            if (!string.IsNullOrWhiteSpace(frame.SourcePath) && frame.Line is > 0)
-            {
-                await NavigateToDebugLocationAsync(new RocketDebugStopLocation(frame.SourcePath, frame.Line.Value, "frame selection"));
-            }
         }
         catch (Exception exception) when (IsExpectedDebuggerException(exception))
         {

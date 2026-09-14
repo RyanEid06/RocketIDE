@@ -16,10 +16,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
 
@@ -32,14 +32,14 @@ jobs:
         run: .\scripts\package.ps1 -Version ${{ github.sha }} -OutputRoot artifacts/package-win-x64
 
       - name: Upload portable verification artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: RocketIDE-win-x64
           path: artifacts/verify-win-x64/
           if-no-files-found: error
 
       - name: Upload portable package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: RocketIDE-portable-win-x64
           path: artifacts/package-win-x64/*

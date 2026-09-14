@@ -8,7 +8,8 @@ public sealed record RocketCommandContext(
     bool HasWorkspace = false,
     bool IsDebugging = false,
     bool IsDebuggerRunning = false,
-    bool IsDebuggerStopped = false);
+    bool IsDebuggerStopped = false,
+    bool HasRocketDocument = false);
 
 public sealed record RocketCommandDefinition(
     string Id,
@@ -72,7 +73,7 @@ public sealed class RocketCommandRegistry
             !context.IsBusy && context.HasTarget && context.CanRun && (!context.IsDebugging || context.IsDebuggerStopped)),
         new(DebugPause, "Pause Debugging", "Pause", context => context.IsDebuggerRunning),
         new(DebugStop, "Stop Debugging", "Shift+F5", context => context.IsDebugging),
-        new(DebugToggleBreakpoint, "Toggle Breakpoint", "F9", context => context.HasDocument && !context.IsDebuggerRunning),
+        new(DebugToggleBreakpoint, "Toggle Breakpoint", "F9", context => context.HasRocketDocument && !context.IsDebuggerRunning),
         new(DebugStepOver, "Step Over", "F10", context => context.IsDebuggerStopped),
         new(DebugStepInto, "Step Into", "F11", context => context.IsDebuggerStopped),
         new(DebugStepOut, "Step Out", "Shift+F11", context => context.IsDebuggerStopped),

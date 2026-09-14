@@ -22,7 +22,7 @@ Alternatives were rejected for the current Windows-only IDE:
 The implementation adds:
 
 - `RocketIDE.Debugger` and `RocketIDE.Debugger.Tests` projects.
-- `DbgXCommandTransport`, which owns the DbgX engine, dedicated synchronization context, bundled-engine path customization, `EngHost.exe` process launch, `.noshell` hardening, command execution, debugger output, native pause, and shutdown.
+- `DbgXCommandTransport`, which owns the public DbgX `DebugEngine` on a dedicated synchronization context, `.noshell` hardening, command execution, debugger output, native pause, and shutdown. DbgX itself owns the out-of-process `EngHost.exe` lifecycle; RocketIDE verifies the required engine assets at publish/package time.
 - `RocketNativeDebugger`, which owns session state and exposes launch/stop, continue/pause, step over/in/out, live breakpoints, threads, call stack, locals, current source location, and output through RocketIDE-owned models.
 - `RocketDebugSourceMap`, which reads only the frozen `rocket-source-map-1` identity contract and rejects missing/ambiguous source basenames instead of guessing.
 - `DbgEngProtocol`, which is the only place that builds/parses the small set of native debugger commands RocketIDE requires. No raw debugger console is exposed.
@@ -39,8 +39,10 @@ The debugger never changes the Rocket compiler or invents source locations. Buil
 
 DbgX uses `EngHost.exe` as a real child process. WP17 therefore changes the portable release from single-file self-extraction to a self-contained **multi-file** `win-x64` folder/ZIP. No .NET runtime, Visual Studio, or separately installed WinDbg is required, but the application directory must remain intact. Verification/package scripts fail if `RocketIDE.Debugger.dll` or the x64 `EngHost.exe` is missing.
 
-## Remaining acceptance evidence
+## Verification and remaining acceptance evidence
 
-The implementation and automated tests are present, but WP17 must not be called verified until a Windows checkout runs `scripts\verify.ps1` successfully with the new DbgX dependencies and publish guards. The final interactive acceptance is intentionally deferred to the later Codex/manual GUI pass requested by the user and must include a tiny real Rocket debug target proving breakpoint binding, continue/pause, step over/in/out, source navigation, threads, call stack, locals, output, stop, and packaged-launch behavior.
+The merged `main` state at `bf30f98` passed Windows `scripts\verify.ps1` with 348/348 tests, self-contained win-x64 publish, `RocketIDE.Debugger.dll` verification, and `amd64\EngHost.exe` verification. The current GitHub `windows-ci` run also passed and produced both verification and portable-package artifacts.
+
+The only WP17 acceptance still intentionally deferred is the interactive tiny-Rocket smoke requested for the later Codex/manual GUI pass: prove real breakpoint binding, continue/pause, step over/in/out, source navigation, threads, call stack, locals, output, stop, and packaged-launch behavior. Do not mark that live evidence passed until it is actually exercised.
 
 Known contract limitation: duplicate Rocket source basenames cannot be debugged safely under the frozen current source-map identity model and are rejected before launch.

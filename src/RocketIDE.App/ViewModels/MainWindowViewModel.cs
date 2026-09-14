@@ -83,7 +83,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             HasWorkspace,
             Debug.IsActive,
             Debug.IsRunning,
-            Debug.IsStopped));
+            Debug.IsStopped,
+            ActiveDocument is not null && IsRocketPath(ActiveDocument.Path)));
 
     public ObservableCollection<string> RecentWorkspaces { get; } = new();
 
@@ -117,6 +118,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             UpdateCaretStatus();
             OnPropertyChanged();
             OnPropertyChanged(nameof(WindowTitle));
+            RaiseRocketCommandProperties();
         }
     }
 

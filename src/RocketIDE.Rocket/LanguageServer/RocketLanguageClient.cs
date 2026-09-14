@@ -176,7 +176,7 @@ public sealed class RocketLanguageClient : IRocketLanguageClient
                 workspaceEdit = new
                 {
                     documentChanges = true,
-                    // WP09 supports text-document edits only and rejects create/rename/delete
+                    // RocketIDE supports text-document edits only and rejects create/rename/delete
                     // operations. Advertise the strongest failure mode that matches that scope.
                     failureHandling = "textOnlyTransactional",
                 },

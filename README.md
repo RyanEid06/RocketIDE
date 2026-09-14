@@ -6,12 +6,12 @@ The goal is not to clone Visual Studio or VS Code. RocketIDE aims to provide a f
 
 ## Project status
 
-RocketIDE is under active development through the work packages tracked in [`ROADMAP.md`](ROADMAP.md).
+RocketIDE's current implementation roadmap is code-complete through IDE-WP17. Final release acceptance is still gated by the explicitly deferred manual/Codex smoke matrix in [`ROADMAP.md`](ROADMAP.md).
 
 - IDE-WP00 through IDE-WP08: **DONE** with their recorded Windows verification evidence.
-- IDE-WP09: automated verification passed; final interactive smoke remains intentionally deferred.
-- IDE-WP10 through IDE-WP16: implementation/hardening is automated-green on Windows at commit `99b7351` with **324/324 tests** and publish smoke; the user intentionally deferred the remaining GUI acceptance pass to Codex.
-- IDE-WP17: standalone native debugger implementation is present using Microsoft's DbgX/DbgEng backend and Rocket's existing `--debug` PDB/source-map contract. Fresh Windows build/publish verification and the later live Rocket debug smoke are still required before it is marked verified.
+- IDE-WP09 through IDE-WP16: implementation and automated Windows verification are complete; the remaining interactive GUI/stress acceptance is intentionally deferred to the final Codex/manual pass.
+- IDE-WP17: the standalone native debugger is implemented with Microsoft's DbgX/DbgEng backend and Rocket's existing `--debug` PDB/source-map contract. The merged `main` state at `bf30f98` passed `scripts/verify.ps1` with **348/348 tests**, win-x64 publish, debugger DLL/`EngHost.exe` guards, and the current `windows-ci` package run.
+- The current implementation roadmap is code-complete through IDE-WP17. The only planned acceptance work left is the explicitly deferred GUI/live-Rocket smoke matrix recorded in [`ROADMAP.md`](ROADMAP.md) and [`docs/WP11-WP17-CODE-ONLY-FOLLOWUPS.md`](docs/WP11-WP17-CODE-ONLY-FOLLOWUPS.md).
 
 A work package is not considered complete because its UI looks finished. Focused tests, `scripts/verify.ps1`, and the Windows CI gate must pass before its status is changed to `DONE`.
 

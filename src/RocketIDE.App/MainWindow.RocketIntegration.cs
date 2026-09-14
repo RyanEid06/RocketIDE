@@ -435,7 +435,7 @@ public partial class MainWindow
                 Header = disabled
                     ? $"{action.Title} — rocket-lsp ({action.DisabledReason})"
                     : unsupported
-                        ? $"{action.Title} — rocket-lsp (unsupported in WP09)"
+                        ? $"{action.Title} — rocket-lsp (unsupported by RocketIDE)"
                         : $"{action.Title} — rocket-lsp",
                 IsEnabled = !unsupported && !disabled,
             };

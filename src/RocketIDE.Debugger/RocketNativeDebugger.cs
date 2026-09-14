@@ -13,6 +13,7 @@ public sealed class RocketNativeDebugger : IRocketNativeDebugger
     private RocketDebugStopLocation? _currentLocation;
     private int? _processId;
     private Task? _activeExecution;
+    private volatile bool _stopRequested;
     private bool _disposed;
 
     public RocketNativeDebugger(IDebuggerCommandTransport transport)
@@ -42,6 +43,7 @@ public sealed class RocketNativeDebugger : IRocketNativeDebugger
         }
 
         ValidateLaunchArtifacts(request);
+        _stopRequested = false;
         var sourceMap = RocketDebugSourceMap.Read(request.SourceMapPath, request.SourceRoot);
         ValidateBreakpointSources(request.Breakpoints, sourceMap);
         SetState(RocketDebugSessionState.Launching, "Launching Rocket debug target…");
@@ -168,32 +170,45 @@ public sealed class RocketNativeDebugger : IRocketNativeDebugger
         ThrowIfDisposed();
         var state = State;
         if (state is RocketDebugSessionState.Idle or RocketDebugSessionState.Terminated) return;
-        if (state == RocketDebugSessionState.Running)
+
+        _stopRequested = true;
+        try
         {
-            int? pid;
-            lock (_stateLock) pid = _processId;
-            if (pid is not null)
+            if (state == RocketDebugSessionState.Running)
             {
-                try { await _transport.BreakAsync(pid.Value, cancellationToken).ConfigureAwait(false); }
-                catch (Exception) when (!cancellationToken.IsCancellationRequested) { }
+                int? pid;
+                lock (_stateLock) pid = _processId;
+                if (pid is not null)
+                {
+                    try { await _transport.BreakAsync(pid.Value, cancellationToken).ConfigureAwait(false); }
+                    catch (Exception) when (!cancellationToken.IsCancellationRequested) { }
+                }
+
+                var active = _activeExecution;
+                if (active is not null)
+                {
+                    try { await active.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false); }
+                    catch (TimeoutException) { }
+                    catch (Exception) when (!cancellationToken.IsCancellationRequested) { }
+                }
             }
-            var active = _activeExecution;
-            if (active is not null)
+
+            await _transport.StopAsync(cancellationToken).ConfigureAwait(false);
+            lock (_stateLock)
             {
-                try { await active.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false); }
-                catch (TimeoutException) { }
+                _processId = null;
+                _threads = [];
+                _frames = [];
+                _locals = [];
+                _currentLocation = null;
             }
+            SetState(RocketDebugSessionState.Terminated, "Rocket debug session stopped.");
         }
-        await _transport.StopAsync(cancellationToken).ConfigureAwait(false);
-        lock (_stateLock)
+        catch
         {
-            _processId = null;
-            _threads = [];
-            _frames = [];
-            _locals = [];
-            _currentLocation = null;
+            _stopRequested = false;
+            throw;
         }
-        SetState(RocketDebugSessionState.Terminated, "Rocket debug session stopped.");
     }
 
     public async ValueTask DisposeAsync()
@@ -280,7 +295,10 @@ public sealed class RocketNativeDebugger : IRocketNativeDebugger
             // Once target execution has been handed to DbgEng, cancellation must be expressed as
             // Pause/Stop. Abandoning the request would leave the native engine running out-of-band.
             await _transport.ExecuteAsync(command, CancellationToken.None).ConfigureAwait(false);
+            if (_stopRequested) return;
+
             var processText = await _transport.ExecuteAsync("|", CancellationToken.None).ConfigureAwait(false);
+            if (_stopRequested) return;
             var pid = DbgEngProtocol.ParseCurrentProcessId(processText);
             if (pid is null)
             {
@@ -301,6 +319,7 @@ public sealed class RocketNativeDebugger : IRocketNativeDebugger
         }
         catch (Exception exception)
         {
+            if (_stopRequested) return;
             SetState(RocketDebugSessionState.Faulted, exception.Message);
             throw;
         }

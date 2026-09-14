@@ -242,7 +242,7 @@ public sealed class NavigationClient(IRocketLanguageClient client)
 
                 if (change.TryGetProperty("kind", out var kind) && kind.ValueKind == JsonValueKind.String)
                 {
-                    throw new LspProtocolException($"WorkspaceEdit resource operation '{kind.GetString()}' is unsupported in IDE-WP09.");
+                    throw new LspProtocolException($"WorkspaceEdit resource operation '{kind.GetString()}' is unsupported by RocketIDE.");
                 }
 
                 if (!change.TryGetProperty("textDocument", out var textDocument) || textDocument.ValueKind != JsonValueKind.Object ||
