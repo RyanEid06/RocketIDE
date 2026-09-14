@@ -125,4 +125,63 @@ public sealed class WorkspaceSearchServiceTests
         Assert.AreEqual(2, result.MatchesReplaced);
         Assert.AreEqual("new new\nkeep\n", await File.ReadAllTextAsync(path));
     }
+    [TestMethod]
+    public async Task ReplacePreview_PrefersInMemoryBufferAndMarksItForCoordinatedApply()
+    {
+        var path = Path.Combine(_root, "main.rocket");
+        await File.WriteAllTextAsync(path, "disk old\n", new UTF8Encoding(false));
+        var service = new WorkspaceSearchService();
+        var buffers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            [path] = "buffer old old\n",
+        };
+
+        var preview = await service.CreateReplacePreviewAsync(
+            new SearchQuery(_root, "old", inMemoryBuffers: buffers),
+            "new",
+            CancellationToken.None);
+
+        Assert.AreEqual(1, preview.Files.Count);
+        Assert.IsTrue(preview.Files[0].IsInMemory);
+        Assert.AreEqual(2, preview.Files[0].Matches.Count);
+        Assert.AreEqual("buffer old old", preview.Files[0].Matches[0].Preview);
+    }
+
+    [TestMethod]
+    public async Task SearchAsync_CapsPreviewLengthWithoutChangingNavigationOffsets()
+    {
+        var path = Path.Combine(_root, "long.txt");
+        var line = new string('a', 120) + "needle" + new string('z', 120);
+        await File.WriteAllTextAsync(path, line + "\n", new UTF8Encoding(false));
+        var service = new WorkspaceSearchService();
+        var matches = new List<SearchMatch>();
+
+        await service.SearchAsync(
+            new SearchQuery(_root, "needle", previewLineLength: 40),
+            new ImmediateProgress<SearchResultBatch>(batch => matches.AddRange(batch.Matches)),
+            CancellationToken.None);
+
+        Assert.AreEqual(1, matches.Count);
+        Assert.IsTrue(matches[0].Preview.Length <= 40);
+        Assert.AreEqual(121, matches[0].Column);
+        Assert.AreEqual(120, matches[0].StartOffset);
+        StringAssert.Contains(matches[0].Preview, "needle");
+    }
+
+    [TestMethod]
+    public async Task ApplyReplaceAsync_RejectsInMemoryPreviewInsteadOfWritingBehindEditor()
+    {
+        var path = Path.Combine(_root, "main.rocket");
+        await File.WriteAllTextAsync(path, "old\n", new UTF8Encoding(false));
+        var service = new WorkspaceSearchService();
+        var preview = await service.CreateReplacePreviewAsync(
+            new SearchQuery(_root, "old", inMemoryBuffers: new Dictionary<string, string> { [path] = "old unsaved\n" }),
+            "new",
+            CancellationToken.None);
+
+        await Assert.ThrowsExactlyAsync<InvalidOperationException>(
+            () => service.ApplyReplaceAsync(preview, CancellationToken.None));
+        Assert.AreEqual("old\n", await File.ReadAllTextAsync(path));
+    }
+
 }

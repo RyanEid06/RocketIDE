@@ -12,6 +12,8 @@ public partial class App : Application
     private readonly IApplicationLogger _logger = RotatingFileLogger.CreateDefault();
     private bool _handlingFatalDispatcherException;
 
+    internal IApplicationLogger Logger => _logger;
+
     public App()
     {
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;

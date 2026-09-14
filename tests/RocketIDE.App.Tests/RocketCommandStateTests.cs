@@ -17,6 +17,7 @@ public sealed class RocketCommandStateTests
         Assert.IsTrue(viewModel.CanRocketTest);
         Assert.IsFalse(viewModel.CanRocketRun);
         Assert.IsFalse(viewModel.CanRocketStop);
+        Assert.IsTrue(viewModel.CanRocketAdvanced);
 
         viewModel.SetRocketCommandRunning(true);
 
@@ -25,5 +26,6 @@ public sealed class RocketCommandStateTests
         Assert.IsFalse(viewModel.CanRocketTest);
         Assert.IsFalse(viewModel.CanRocketRun);
         Assert.IsTrue(viewModel.CanRocketStop);
+        Assert.IsFalse(viewModel.CanRocketAdvanced);
     }
 }

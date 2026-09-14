@@ -13,6 +13,7 @@ public partial class SearchPanel : UserControl
 
     public void FocusPattern(bool includeReplace)
     {
+        ResultsTabs.SelectedIndex = includeReplace ? 1 : 0;
         if (includeReplace)
         {
             ReplacementBox.Focus();
@@ -26,6 +27,7 @@ public partial class SearchPanel : UserControl
     {
         if (DataContext is SearchViewModel viewModel)
         {
+            ResultsTabs.SelectedIndex = 0;
             await viewModel.SearchAsync(CancellationToken.None);
         }
     }
@@ -34,6 +36,7 @@ public partial class SearchPanel : UserControl
     {
         if (DataContext is SearchViewModel viewModel)
         {
+            ResultsTabs.SelectedIndex = 1;
             await viewModel.PreviewReplaceAsync(CancellationToken.None);
         }
     }
@@ -42,7 +45,16 @@ public partial class SearchPanel : UserControl
     {
         if (DataContext is SearchViewModel viewModel)
         {
+            ResultsTabs.SelectedIndex = 1;
             await viewModel.ApplyReplaceAsync(CancellationToken.None);
+        }
+    }
+
+    private void Cancel_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is SearchViewModel viewModel)
+        {
+            viewModel.CancelCurrentOperation();
         }
     }
 

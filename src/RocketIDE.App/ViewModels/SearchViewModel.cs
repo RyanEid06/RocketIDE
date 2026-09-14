@@ -17,6 +17,21 @@ public sealed class SearchResultViewModel(SearchMatch match)
     public string Preview => Match.Preview;
 }
 
+public sealed class ReplacePreviewMatchViewModel(SearchMatch match, string replacementText)
+{
+    public SearchMatch Match { get; } = match ?? throw new ArgumentNullException(nameof(match));
+
+    public string FilePath => Match.FilePath;
+
+    public string Location => $"{Match.Line}:{Match.Column}";
+
+    public string Preview => Match.Preview;
+
+    public string MatchedText => Match.MatchedText;
+
+    public string ReplacementText { get; } = replacementText ?? throw new ArgumentNullException(nameof(replacementText));
+}
+
 public sealed class SearchViewModel : INotifyPropertyChanged
 {
     private readonly IWorkspaceSearchService _searchService;
@@ -29,6 +44,7 @@ public sealed class SearchViewModel : INotifyPropertyChanged
     private bool _isSearching;
     private string _statusText = "Enter a pattern to search the workspace.";
     private ReplacePreview? _replacePreview;
+    private CancellationTokenSource? _operationCancellation;
 
     public SearchViewModel(IWorkspaceSearchService searchService)
     {
@@ -41,12 +57,23 @@ public sealed class SearchViewModel : INotifyPropertyChanged
 
     public Func<IReadOnlyDictionary<string, string>>? OpenBufferProvider { get; set; }
 
+    public Func<ReplacePreview, CancellationToken, Task<ReplaceApplyResult>>? ReplaceApplier { get; set; }
+
     public ObservableCollection<SearchResultViewModel> Results { get; } = new();
+
+    public ObservableCollection<ReplacePreviewMatchViewModel> ReplacePreviewRows { get; } = new();
 
     public string RootPath
     {
         get => _rootPath;
-        set => SetField(ref _rootPath, value);
+        set
+        {
+            if (SetField(ref _rootPath, value))
+            {
+                ClearPreview();
+                OnPropertyChanged(nameof(CanSearch));
+            }
+        }
     }
 
     public string Pattern
@@ -57,6 +84,7 @@ public sealed class SearchViewModel : INotifyPropertyChanged
             if (SetField(ref _pattern, value))
             {
                 ClearPreview();
+                OnPropertyChanged(nameof(CanSearch));
             }
         }
     }
@@ -76,19 +104,37 @@ public sealed class SearchViewModel : INotifyPropertyChanged
     public bool CaseSensitive
     {
         get => _caseSensitive;
-        set => SetField(ref _caseSensitive, value);
+        set
+        {
+            if (SetField(ref _caseSensitive, value))
+            {
+                ClearPreview();
+            }
+        }
     }
 
     public bool WholeWord
     {
         get => _wholeWord;
-        set => SetField(ref _wholeWord, value);
+        set
+        {
+            if (SetField(ref _wholeWord, value))
+            {
+                ClearPreview();
+            }
+        }
     }
 
     public bool UseRegex
     {
         get => _useRegex;
-        set => SetField(ref _useRegex, value);
+        set
+        {
+            if (SetField(ref _useRegex, value))
+            {
+                ClearPreview();
+            }
+        }
     }
 
     public bool IsSearching
@@ -100,6 +146,7 @@ public sealed class SearchViewModel : INotifyPropertyChanged
             {
                 OnPropertyChanged(nameof(CanSearch));
                 OnPropertyChanged(nameof(CanApplyReplace));
+                OnPropertyChanged(nameof(CanCancel));
             }
         }
     }
@@ -107,6 +154,8 @@ public sealed class SearchViewModel : INotifyPropertyChanged
     public bool CanSearch => !IsSearching && !string.IsNullOrWhiteSpace(RootPath) && !string.IsNullOrWhiteSpace(Pattern);
 
     public bool CanApplyReplace => !IsSearching && _replacePreview is not null;
+
+    public bool CanCancel => IsSearching && _operationCancellation is { IsCancellationRequested: false };
 
     public string StatusText
     {
@@ -124,6 +173,7 @@ public sealed class SearchViewModel : INotifyPropertyChanged
             return;
         }
 
+        using var operation = BeginOperation(cancellationToken);
         Results.Clear();
         ClearPreview();
         IsSearching = true;
@@ -133,20 +183,21 @@ public sealed class SearchViewModel : INotifyPropertyChanged
             IProgress<SearchResultBatch> progress = SynchronizationContext.Current is null
                 ? new ImmediateProgress<SearchResultBatch>(AppendBatch)
                 : new Progress<SearchResultBatch>(AppendBatch);
-            var summary = await _searchService.SearchAsync(BuildQuery(), progress, cancellationToken).ConfigureAwait(true);
+            var summary = await _searchService.SearchAsync(BuildQuery(), progress, operation.Token).ConfigureAwait(true);
             StatusText = FormatSummary(summary);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (operation.IsCancellationRequested)
         {
             StatusText = $"Search cancelled · {Results.Count} matches shown";
         }
-        catch (Exception exception) when (exception is IOException or ArgumentException or RegexParseException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or RegexParseException)
         {
             StatusText = $"Search failed: {exception.Message}";
         }
         finally
         {
             IsSearching = false;
+            EndOperation(operation);
         }
     }
 
@@ -158,26 +209,30 @@ public sealed class SearchViewModel : INotifyPropertyChanged
             return;
         }
 
+        using var operation = BeginOperation(cancellationToken);
+        ClearPreview();
         IsSearching = true;
         StatusText = "Creating replace preview…";
         try
         {
-            _replacePreview = await _searchService.CreateReplacePreviewAsync(BuildQuery(), Replacement, cancellationToken).ConfigureAwait(true);
+            _replacePreview = await _searchService.CreateReplacePreviewAsync(BuildQuery(), Replacement, operation.Token).ConfigureAwait(true);
+            PopulatePreviewRows(_replacePreview);
             OnPropertyChanged(nameof(ReplacePreview));
             OnPropertyChanged(nameof(CanApplyReplace));
             StatusText = $"Preview: {_replacePreview.TotalMatches} matches in {_replacePreview.Files.Count} files";
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (operation.IsCancellationRequested)
         {
             StatusText = "Replace preview cancelled.";
         }
-        catch (Exception exception) when (exception is IOException or ArgumentException or RegexParseException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or RegexParseException)
         {
             StatusText = $"Replace preview failed: {exception.Message}";
         }
         finally
         {
             IsSearching = false;
+            EndOperation(operation);
         }
     }
 
@@ -189,22 +244,24 @@ public sealed class SearchViewModel : INotifyPropertyChanged
             return null;
         }
 
+        var preview = _replacePreview;
+        using var operation = BeginOperation(cancellationToken);
         IsSearching = true;
+        StatusText = "Applying replacement…";
         try
         {
-            var result = await _searchService.ApplyReplaceAsync(_replacePreview, cancellationToken).ConfigureAwait(true);
-            _replacePreview = null;
-            OnPropertyChanged(nameof(ReplacePreview));
-            OnPropertyChanged(nameof(CanApplyReplace));
+            var applier = ReplaceApplier ?? _searchService.ApplyReplaceAsync;
+            var result = await applier(preview, operation.Token).ConfigureAwait(true);
+            ClearPreview();
             StatusText = $"{result.MatchesReplaced} match{(result.MatchesReplaced == 1 ? string.Empty : "es")} replaced in {result.FilesChanged} file{(result.FilesChanged == 1 ? string.Empty : "s")}.";
             return result;
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (operation.IsCancellationRequested)
         {
             StatusText = "Replace cancelled.";
             return null;
         }
-        catch (Exception exception) when (exception is IOException or InvalidOperationException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
         {
             StatusText = $"Replace not applied: {exception.Message}";
             return null;
@@ -212,7 +269,23 @@ public sealed class SearchViewModel : INotifyPropertyChanged
         finally
         {
             IsSearching = false;
+            EndOperation(operation);
         }
+    }
+
+    internal Task<ReplaceApplyResult> ApplyServiceReplaceAsync(ReplacePreview preview, CancellationToken cancellationToken) =>
+        _searchService.ApplyReplaceAsync(preview, cancellationToken);
+
+    public void CancelCurrentOperation()
+    {
+        var cancellation = _operationCancellation;
+        if (cancellation is null || cancellation.IsCancellationRequested)
+        {
+            return;
+        }
+
+        cancellation.Cancel();
+        OnPropertyChanged(nameof(CanCancel));
     }
 
     public void Activate(SearchResultViewModel result)
@@ -229,6 +302,25 @@ public sealed class SearchViewModel : INotifyPropertyChanged
         UseRegex,
         inMemoryBuffers: OpenBufferProvider?.Invoke());
 
+    private CancellationTokenSource BeginOperation(CancellationToken cancellationToken)
+    {
+        var operation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var previous = _operationCancellation;
+        _operationCancellation = operation;
+        previous?.Cancel();
+        OnPropertyChanged(nameof(CanCancel));
+        return operation;
+    }
+
+    private void EndOperation(CancellationTokenSource operation)
+    {
+        if (ReferenceEquals(_operationCancellation, operation))
+        {
+            _operationCancellation = null;
+            OnPropertyChanged(nameof(CanCancel));
+        }
+    }
+
     private void AppendBatch(SearchResultBatch batch)
     {
         foreach (var match in batch.Matches)
@@ -238,12 +330,25 @@ public sealed class SearchViewModel : INotifyPropertyChanged
         StatusText = $"{Results.Count} match{(Results.Count == 1 ? string.Empty : "es")} · {batch.FilesScanned} file{(batch.FilesScanned == 1 ? string.Empty : "s")} scanned";
     }
 
+    private void PopulatePreviewRows(ReplacePreview preview)
+    {
+        ReplacePreviewRows.Clear();
+        foreach (var file in preview.Files)
+        {
+            foreach (var match in file.Matches)
+            {
+                ReplacePreviewRows.Add(new ReplacePreviewMatchViewModel(match, preview.Replacement));
+            }
+        }
+    }
+
     private static string FormatSummary(SearchSummary summary) =>
         $"{summary.TotalMatches} match{(summary.TotalMatches == 1 ? string.Empty : "es")} in {summary.FilesScanned} file{(summary.FilesScanned == 1 ? string.Empty : "s")}" +
         (summary.ReachedResultLimit ? " · result limit reached" : string.Empty);
 
     private void ClearPreview()
     {
+        ReplacePreviewRows.Clear();
         if (_replacePreview is null)
         {
             return;
@@ -263,10 +368,6 @@ public sealed class SearchViewModel : INotifyPropertyChanged
 
         field = value;
         OnPropertyChanged(propertyName);
-        if (propertyName is nameof(RootPath) or nameof(Pattern))
-        {
-            OnPropertyChanged(nameof(CanSearch));
-        }
         return true;
     }
 

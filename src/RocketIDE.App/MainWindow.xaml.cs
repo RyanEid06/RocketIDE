@@ -8,8 +8,10 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Win32;
+using RocketIDE.App.Commands;
 using RocketIDE.App.Editor;
 using RocketIDE.App.Interop;
+using RocketIDE.App.Integration;
 using RocketIDE.App.ViewModels;
 using RocketIDE.App.ViewModels.Explorer;
 using RocketIDE.Core.Documents;
@@ -41,6 +43,7 @@ public partial class MainWindow : Window
         _viewModel = new MainWindowViewModel(_workspaceFileSystem);
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         _viewModel.Search.MatchActivated += Search_MatchActivated;
+        _viewModel.Search.ReplaceApplier = ApplyWorkspaceReplaceAsync;
         DataContext = _viewModel;
         InitializeRocketIntegration();
         InitializeReliability();
@@ -82,6 +85,30 @@ public partial class MainWindow : Window
         foreach (var path in dialog.FileNames)
         {
             await OpenDocumentAsync(path);
+        }
+    }
+
+    private async void QuickOpenFile_Click(object sender, RoutedEventArgs e)
+    {
+        var workspace = _viewModel.Explorer.Workspace;
+        if (workspace is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var finder = new QuickOpenFileFinder(_workspaceFileSystem);
+            var files = await finder.FindAsync(workspace.Path, maxFiles: 10000, CancellationToken.None);
+            var dialog = new QuickOpenDialog(workspace.Path, files) { Owner = this };
+            if (dialog.ShowDialog() == true && dialog.SelectedPath is not null)
+            {
+                await OpenDocumentAsync(dialog.SelectedPath);
+            }
+        }
+        catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
+        {
+            ShowFileError("Quick Open failed", workspace.Path, exception);
         }
     }
 
@@ -144,6 +171,18 @@ public partial class MainWindow : Window
     }
 
 
+    private async Task OpenRecentWorkspaceAsync(string path)
+    {
+        if (!Directory.Exists(path))
+        {
+            _viewModel.RecentWorkspaces.Remove(path);
+            await PersistRecentWorkspacesAsync();
+            return;
+        }
+
+        await OpenWorkspaceAsync(path);
+    }
+
     private async Task PersistRecentWorkspacesAsync()
     {
         try
@@ -168,7 +207,7 @@ public partial class MainWindow : Window
         foreach (var path in _viewModel.RecentWorkspaces)
         {
             var item = new MenuItem { Header = path, ToolTip = path };
-            item.Click += async (_, _) => await OpenWorkspaceAsync(path);
+            item.Click += async (_, _) => await OpenRecentWorkspaceAsync(path);
             RecentProjectsMenu.Items.Add(item);
         }
     }
@@ -685,6 +724,9 @@ public partial class MainWindow : Window
         }
     }
 
+    private static string FormatControlGesture(Key key, bool shift) =>
+        shift ? $"Ctrl+Shift+{key}" : $"Ctrl+{key}";
+
     private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         var control = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
@@ -694,24 +736,46 @@ public partial class MainWindow : Window
             return;
         }
 
+        var registered = _viewModel.CommandRegistry.FindByGesture(FormatControlGesture(e.Key, shift));
+        if (registered is not null)
+        {
+            e.Handled = true;
+            if (!_viewModel.GetCommandState(registered.Id).IsEnabled)
+            {
+                return;
+            }
+
+            switch (registered.Id)
+            {
+                case RocketCommandRegistry.Stop:
+                    StopRocket_Click(sender, e);
+                    return;
+                case RocketCommandRegistry.Problems:
+                    ShowProblems_Click(sender, e);
+                    return;
+                case RocketCommandRegistry.Output:
+                    ShowOutput_Click(sender, e);
+                    return;
+                case RocketCommandRegistry.QuickOpen:
+                    QuickOpenFile_Click(sender, e);
+                    return;
+                case RocketCommandRegistry.Search:
+                    SearchWorkspace_Click(sender, e);
+                    return;
+                case RocketCommandRegistry.Replace:
+                    ReplaceWorkspace_Click(sender, e);
+                    return;
+                case RocketCommandRegistry.Build:
+                    BuildRocket_Click(sender, e);
+                    return;
+                case RocketCommandRegistry.Run:
+                    RunRocket_Click(sender, e);
+                    return;
+            }
+        }
+
         switch (e.Key)
         {
-            case Key.F when shift:
-                e.Handled = true;
-                SearchWorkspace_Click(sender, e);
-                break;
-            case Key.H when shift:
-                e.Handled = true;
-                ReplaceWorkspace_Click(sender, e);
-                break;
-            case Key.B:
-                e.Handled = true;
-                BuildRocket_Click(sender, e);
-                break;
-            case Key.R:
-                e.Handled = true;
-                RunRocket_Click(sender, e);
-                break;
             case Key.N:
                 e.Handled = true;
                 NewFile_Click(sender, e);
@@ -767,15 +831,42 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ShowProblems_Click(object sender, RoutedEventArgs e) => ToggleBottomPanelTab(0);
+
+    private void ShowOutput_Click(object sender, RoutedEventArgs e) => ToggleBottomPanelTab(2);
+
+    private void ToggleBottomPanelTab(int index)
+    {
+        if (BottomTabs.Visibility == Visibility.Visible && BottomTabs.SelectedIndex == index)
+        {
+            BottomPanelViewMenu.IsChecked = false;
+            BottomTabs.Visibility = Visibility.Collapsed;
+            BottomPanelSplitter.Visibility = Visibility.Collapsed;
+            BottomPanelRowDefinition.Height = new GridLength(0);
+            return;
+        }
+
+        ShowBottomPanelTab(index);
+    }
+
+    private void ShowBottomPanelTab(int index)
+    {
+        BottomPanelViewMenu.IsChecked = true;
+        BottomTabs.Visibility = Visibility.Visible;
+        BottomPanelSplitter.Visibility = Visibility.Visible;
+        BottomPanelRowDefinition.Height = new GridLength(Math.Max(100, BottomPanelRowDefinition.Height.Value));
+        BottomTabs.SelectedIndex = index;
+    }
+
     private void SearchWorkspace_Click(object sender, RoutedEventArgs e)
     {
-        BottomTabs.SelectedIndex = 4;
+        ShowBottomPanelTab(4);
         SearchPanelControl.FocusPattern(includeReplace: false);
     }
 
     private void ReplaceWorkspace_Click(object sender, RoutedEventArgs e)
     {
-        BottomTabs.SelectedIndex = 4;
+        ShowBottomPanelTab(4);
         SearchPanelControl.FocusPattern(includeReplace: true);
     }
 

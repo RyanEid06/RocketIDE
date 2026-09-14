@@ -57,6 +57,10 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
 
     public bool AllowLsp => _largeFileDecision.AllowLsp;
 
+    public bool AllowLocalEditing => _largeFileDecision.AllowLocalEditing;
+
+    public bool AllowFindAndGoto => _largeFileDecision.AllowFindAndGoto;
+
     public bool AllowSyntaxColoring => _largeFileDecision.AllowSyntaxColoring;
 
     public string LargeFileReason => !AllowSyntaxColoring
@@ -109,6 +113,24 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
         RaiseSnapshotPropertiesChanged();
     }
 
+    public void ApplyWorkspaceReplacement(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (!AllowLocalEditing)
+        {
+            throw new InvalidOperationException("Local editing is disabled because this document exceeds the editor safety limit.");
+        }
+        if (string.Equals(EditorDocument.Text, text, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        using (EditorDocument.RunUpdate())
+        {
+            EditorDocument.Replace(0, EditorDocument.TextLength, text);
+        }
+    }
+
     public void UpdateCaret(int line, int column)
     {
         line = Math.Max(1, line);
@@ -158,6 +180,7 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
         }
 
         _snapshot = _documentStore.UpdateText(Id, EditorDocument.Text);
+        _largeFileDecision = LargeFilePolicy.Decide(_snapshot.ByteLength);
         RaiseSnapshotPropertiesChanged();
     }
 
@@ -169,6 +192,8 @@ public sealed class DocumentTabViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(IsDirty));
         OnPropertyChanged(nameof(IsLargeFileMode));
         OnPropertyChanged(nameof(AllowLsp));
+        OnPropertyChanged(nameof(AllowLocalEditing));
+        OnPropertyChanged(nameof(AllowFindAndGoto));
         OnPropertyChanged(nameof(AllowSyntaxColoring));
         OnPropertyChanged(nameof(LargeFileReason));
         OnPropertyChanged(nameof(DisplayName));

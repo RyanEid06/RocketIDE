@@ -74,6 +74,18 @@ public sealed class RocketTargetDiscoveryTests
     }
 
     [TestMethod]
+    public void Discover_PathHostileManifestEntryReturnsNullInsteadOfEscaping()
+    {
+        using var temp = new TempDirectory();
+        var manifest = Path.Combine(temp.Path, "rocket.toml");
+        File.WriteAllText(manifest, "[package]\nname = \"demo\"\nentry = \"src\0main.rocket\"\n");
+
+        var target = new RocketTargetDiscovery().Discover(manifest);
+
+        Assert.IsNull(target);
+    }
+
+    [TestMethod]
     public void Discover_NonRocketAndMissingPathsReturnNull()
     {
         using var temp = new TempDirectory();

@@ -36,7 +36,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         Tests = new TestsViewModel();
         Search = new SearchViewModel(searchService ?? new WorkspaceSearchService())
         {
-            OpenBufferProvider = GetDirtyBufferTexts,
+            OpenBufferProvider = GetOpenBufferTexts,
         };
         CommandRegistry = new RocketCommandRegistry();
         Explorer.PropertyChanged += (_, args) =>
@@ -44,6 +44,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             if (args.PropertyName == nameof(WorkspaceExplorerViewModel.HasWorkspace))
             {
                 OnPropertyChanged(nameof(HasWorkspace));
+                RaiseRocketCommandProperties();
             }
         };
         Problems.Changed += Problems_Changed;
@@ -73,7 +74,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             HasDocuments,
             _hasRocketCommandTarget,
             _rocketRunAvailable,
-            _rocketCommandRunning));
+            _rocketCommandRunning,
+            HasWorkspace));
 
     public ObservableCollection<string> RecentWorkspaces { get; } = new();
 
@@ -113,11 +115,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public string WindowTitle => ActiveDocument is null ? "RocketIDE" : $"{ActiveDocument.DisplayName} — RocketIDE";
 
 
-    public bool CanRocketCheck => _hasRocketCommandTarget && !_rocketCommandRunning;
-    public bool CanRocketBuild => _hasRocketCommandTarget && !_rocketCommandRunning;
-    public bool CanRocketTest => _hasRocketCommandTarget && !_rocketCommandRunning;
-    public bool CanRocketRun => _hasRocketCommandTarget && _rocketRunAvailable && !_rocketCommandRunning;
-    public bool CanRocketStop => _rocketCommandRunning;
+    public bool CanRocketCheck => GetCommandState(RocketCommandRegistry.Check).IsEnabled;
+    public bool CanRocketBuild => GetCommandState(RocketCommandRegistry.Build).IsEnabled;
+    public bool CanRocketTest => GetCommandState(RocketCommandRegistry.Test).IsEnabled;
+    public bool CanRocketRun => GetCommandState(RocketCommandRegistry.Run).IsEnabled;
+    public bool CanRocketStop => GetCommandState(RocketCommandRegistry.Stop).IsEnabled;
+    public bool CanRocketNewProject => GetCommandState(RocketCommandRegistry.NewProject).IsEnabled;
+    public bool CanRocketAdvanced => GetCommandState(RocketCommandRegistry.Resolve).IsEnabled;
+    public bool CanQuickOpen => GetCommandState(RocketCommandRegistry.QuickOpen).IsEnabled;
 
     public void SetRocketCommandAvailability(bool hasTarget, bool canRun)
     {
@@ -302,9 +307,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    private IReadOnlyDictionary<string, string> GetDirtyBufferTexts() =>
+    private IReadOnlyDictionary<string, string> GetOpenBufferTexts() =>
         Documents
-            .Where(document => document.IsDirty)
             .GroupBy(document => document.Path, PathComparer)
             .ToDictionary(group => group.Key, group => group.Last().Text, PathComparer);
 
@@ -344,6 +348,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(CanRocketRun));
         OnPropertyChanged(nameof(CanRocketTest));
         OnPropertyChanged(nameof(CanRocketStop));
+        OnPropertyChanged(nameof(CanRocketNewProject));
+        OnPropertyChanged(nameof(CanRocketAdvanced));
+        OnPropertyChanged(nameof(CanQuickOpen));
     }
 
     private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

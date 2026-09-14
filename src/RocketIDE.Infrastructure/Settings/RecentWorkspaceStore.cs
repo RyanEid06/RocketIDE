@@ -37,16 +37,34 @@ public sealed class RecentWorkspaceStore
 
         try
         {
-            await using var stream = new FileStream(
+            string[]? paths;
+            await using (var stream = new FileStream(
                 _settingsPath,
                 FileMode.Open,
                 FileAccess.Read,
                 FileShare.ReadWrite | FileShare.Delete,
                 bufferSize: 4096,
-                options: FileOptions.Asynchronous | FileOptions.SequentialScan);
+                options: FileOptions.Asynchronous | FileOptions.SequentialScan))
+            {
+                paths = await JsonSerializer.DeserializeAsync<string[]>(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
+            }
 
-            var paths = await JsonSerializer.DeserializeAsync<string[]>(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
-            return Normalize(paths ?? Array.Empty<string>());
+            var normalized = Normalize(paths ?? Array.Empty<string>());
+            var existing = normalized.Where(Directory.Exists).ToArray();
+            if (existing.Length != normalized.Count)
+            {
+                try
+                {
+                    await SaveAsync(existing, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+                {
+                    // Pruning should improve the list, but a settings write failure must not hide
+                    // otherwise valid recent workspaces during startup.
+                }
+            }
+
+            return existing;
         }
         catch (Exception exception) when (exception is JsonException or IOException or UnauthorizedAccessException)
         {

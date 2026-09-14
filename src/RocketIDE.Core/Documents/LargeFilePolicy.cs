@@ -18,8 +18,10 @@ public static class LargeFilePolicy
             AllowLocalEditing: byteLength <= MaxEditorBufferBytes,
             AllowFindAndGoto: byteLength <= MaxEditorBufferBytes,
             AllowSyntaxColoring: byteLength <= MaxSyntaxColoringBytes,
-            Reason: isLargeFileMode
-                ? "Large File Mode: Rocket LSP is disabled above the 4 MiB UTF-8 document limit; local editing, find, goto, and save remain available."
-                : "Rocket LSP semantics are enabled for this document.");
+            Reason: byteLength > MaxEditorBufferBytes
+                ? "Large File Mode: local editing, find, and goto are disabled above the 64 MiB UTF-8 editor safety limit; saving the current buffer remains available."
+                : isLargeFileMode
+                    ? "Large File Mode: Rocket LSP is disabled above the 4 MiB UTF-8 document limit; local editing, find, goto, and save remain available."
+                    : "Rocket LSP semantics are enabled for this document.");
     }
 }

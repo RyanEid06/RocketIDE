@@ -5,7 +5,8 @@ public sealed record ReplacePreviewFile
     public ReplacePreviewFile(
         string filePath,
         string fingerprint,
-        IReadOnlyList<SearchMatch> matches)
+        IReadOnlyList<SearchMatch> matches,
+        bool isInMemory = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         ArgumentException.ThrowIfNullOrWhiteSpace(fingerprint);
@@ -13,6 +14,7 @@ public sealed record ReplacePreviewFile
         FilePath = filePath;
         Fingerprint = fingerprint;
         Matches = matches;
+        IsInMemory = isInMemory;
     }
 
     public string FilePath { get; }
@@ -20,6 +22,8 @@ public sealed record ReplacePreviewFile
     public string Fingerprint { get; }
 
     public IReadOnlyList<SearchMatch> Matches { get; }
+
+    public bool IsInMemory { get; }
 }
 
 public sealed record ReplacePreview

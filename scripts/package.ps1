@@ -24,7 +24,7 @@ try {
     $folderName = "RocketIDE-win-x64-$safeVersion"
     $stageRoot = Join-Path $OutputRoot 'stage'
     $packageRoot = Join-Path $stageRoot $folderName
-    $publishRoot = Join-Path $packageRoot 'app'
+    $publishRoot = $packageRoot
     $zipPath = Join-Path $OutputRoot "$folderName.zip"
     $hashPath = "$zipPath.sha256"
 
@@ -47,7 +47,7 @@ try {
     & dotnet @publishArguments
     if ($LASTEXITCODE -ne 0) { throw 'RocketIDE publish failed.' }
 
-    $exe = Join-Path $publishRoot 'RocketIDE.exe'
+    $exe = Join-Path $packageRoot 'RocketIDE.exe'
     if (-not (Test-Path -LiteralPath $exe)) { throw "Published executable not found: $exe" }
     if (-not $KeepSymbols) {
         Get-ChildItem -LiteralPath $packageRoot -Filter '*.pdb' -File -Recurse | Remove-Item -Force

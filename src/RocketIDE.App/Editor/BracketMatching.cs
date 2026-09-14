@@ -58,23 +58,34 @@ public static class BracketMatcher
             return false;
         }
 
-        if (state == LexicalState.String)
+        if (state is LexicalState.SingleQuotedString or LexicalState.DoubleQuotedString)
         {
-            if (character == '\\') { index++; return false; }
-            if (character == '"') state = LexicalState.Normal;
+            if (character == '\\')
+            {
+                if (index + 1 < text.Length) index++;
+                return false;
+            }
+
+            var quote = state == LexicalState.SingleQuotedString ? '\'' : '"';
+            if (character == quote) state = LexicalState.Normal;
             return false;
         }
 
-        if (character == '/' && index + 1 < text.Length && text[index + 1] == '/')
+        if (character == '#')
         {
             state = LexicalState.LineComment;
-            index++;
+            return false;
+        }
+
+        if (character == '\'')
+        {
+            state = LexicalState.SingleQuotedString;
             return false;
         }
 
         if (character == '"')
         {
-            state = LexicalState.String;
+            state = LexicalState.DoubleQuotedString;
             return false;
         }
 
@@ -84,7 +95,7 @@ public static class BracketMatcher
     private static bool IsOpening(char character) => character is '(' or '[' or '{';
     private static bool IsClosing(char character) => character is ')' or ']' or '}';
     private static char ClosingFor(char character) => character switch { '(' => ')', '[' => ']', '{' => '}', _ => '\0' };
-    private enum LexicalState { Normal, String, LineComment }
+    private enum LexicalState { Normal, SingleQuotedString, DoubleQuotedString, LineComment }
 }
 
 public sealed class BracketMatchRenderer : IBackgroundRenderer, IDisposable

@@ -58,6 +58,12 @@ public partial class MainWindow
     private async void ResolveDependencies_Click(object sender, RoutedEventArgs e) =>
         await ExecuteAdvancedRocketCommandAsync(RocketAdvancedCommandKind.Resolve, new RocketAdvancedCommandOptions());
 
+    private async void ResolveDependenciesLocked_Click(object sender, RoutedEventArgs e) =>
+        await ExecuteAdvancedRocketCommandAsync(RocketAdvancedCommandKind.Resolve, new RocketAdvancedCommandOptions(Locked: true));
+
+    private async void ResolveDependenciesOffline_Click(object sender, RoutedEventArgs e) =>
+        await ExecuteAdvancedRocketCommandAsync(RocketAdvancedCommandKind.Resolve, new RocketAdvancedCommandOptions(Offline: true));
+
     private async void DependencyTree_Click(object sender, RoutedEventArgs e) =>
         await ExecuteAdvancedRocketCommandAsync(RocketAdvancedCommandKind.Tree, new RocketAdvancedCommandOptions());
 
@@ -92,6 +98,31 @@ public partial class MainWindow
     }
 
     private void ClearOutput_Click(object sender, RoutedEventArgs e) => _viewModel.Output.Clear();
+
+    private void CopyOutputSelected_Click(object sender, RoutedEventArgs e) => CopyOutputLines(selectedOnly: true);
+
+    private void CopyOutputAll_Click(object sender, RoutedEventArgs e) => CopyOutputLines(selectedOnly: false);
+
+    private void OutputList_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == System.Windows.Input.Key.C &&
+            System.Windows.Input.Keyboard.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Control))
+        {
+            CopyOutputLines(selectedOnly: OutputList.SelectedItems.Count > 0);
+            e.Handled = true;
+        }
+    }
+
+    private void CopyOutputLines(bool selectedOnly)
+    {
+        var lines = selectedOnly
+            ? OutputList.SelectedItems.Cast<string>().ToArray()
+            : _viewModel.Output.Lines.ToArray();
+        if (lines.Length > 0)
+        {
+            Clipboard.SetText(string.Join(Environment.NewLine, lines));
+        }
+    }
 
     private async Task ExecuteAdvancedRocketCommandAsync(
         RocketAdvancedCommandKind kind,

@@ -726,7 +726,7 @@ public partial class MainWindow
 
     private void AppendRocketOutput(string line) => DispatchUi(() => _viewModel.AppendOutput(line));
 
-    private void ShowOutputPanel() => DispatchUi(() => BottomTabs.SelectedIndex = 2);
+    private void ShowOutputPanel() => DispatchUi(() => ShowBottomPanelTab(2));
 
     private void DispatchUi(Action action)
     {

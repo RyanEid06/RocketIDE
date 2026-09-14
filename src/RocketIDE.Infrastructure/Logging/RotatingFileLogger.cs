@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;
 using RocketIDE.Core.Logging;
@@ -6,11 +7,13 @@ namespace RocketIDE.Infrastructure.Logging;
 
 public sealed class RotatingFileLogger : IApplicationLogger, IDisposable
 {
+    private static readonly ConcurrentDictionary<string, object> SynchronizationGates = new(StringComparer.OrdinalIgnoreCase);
+
     private static readonly Regex SecretPattern = new(
         @"(?<key>password|passwd|token|secret|api[-_]?key|authorization)(?<separator>\s*[:=]\s*)(?<value>[^\s,;]+)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-    private readonly object _gate = new();
+    private readonly object _gate;
     private readonly string _path;
     private readonly long _maxBytes;
     private readonly int _maxFiles;
@@ -22,6 +25,7 @@ public sealed class RotatingFileLogger : IApplicationLogger, IDisposable
         if (maxBytes <= 0) throw new ArgumentOutOfRangeException(nameof(maxBytes));
         if (maxFiles < 1) throw new ArgumentOutOfRangeException(nameof(maxFiles));
         _path = Path.GetFullPath(path);
+        _gate = GetSynchronizationGate(_path);
         _maxBytes = maxBytes;
         _maxFiles = maxFiles;
     }
@@ -68,6 +72,12 @@ public sealed class RotatingFileLogger : IApplicationLogger, IDisposable
     }
 
     public static string Redact(string value) => SecretPattern.Replace(value, "${key}${separator}<redacted>");
+
+    internal static object GetSynchronizationGateForTests(string path) =>
+        GetSynchronizationGate(Path.GetFullPath(path));
+
+    private static object GetSynchronizationGate(string fullPath) =>
+        SynchronizationGates.GetOrAdd(fullPath, static _ => new object());
 
     private void Rotate()
     {

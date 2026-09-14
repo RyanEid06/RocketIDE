@@ -20,6 +20,7 @@
                 <Separator />
                 <MenuItem Header="_Open File..." InputGestureText="Ctrl+O" Click="OpenFile_Click" />
                 <MenuItem Header="Open _Folder..." InputGestureText="Ctrl+Shift+O" Click="OpenFolder_Click" />
+                <MenuItem Header="_Quick Open File..." InputGestureText="Ctrl+P" IsEnabled="{Binding CanQuickOpen}" Click="QuickOpenFile_Click" />
                 <MenuItem x:Name="RecentProjectsMenu" Header="Recent _Projects" SubmenuOpened="RecentProjects_SubmenuOpened" />
                 <Separator />
                 <MenuItem Header="_Save" InputGestureText="Ctrl+S" IsEnabled="{Binding HasDocuments}" Click="Save_Click" />
@@ -48,6 +49,9 @@
             <MenuItem Header="_View">
                 <MenuItem x:Name="ExplorerViewMenu" Header="Explorer" IsCheckable="True" IsChecked="True" Click="ExplorerViewMenu_Click" />
                 <MenuItem x:Name="BottomPanelViewMenu" Header="Bottom Panel" IsCheckable="True" IsChecked="True" Click="BottomPanelViewMenu_Click" />
+                <Separator />
+                <MenuItem Header="_Problems" InputGestureText="Ctrl+Shift+M" Click="ShowProblems_Click" />
+                <MenuItem Header="_Output" InputGestureText="Ctrl+Shift+U" Click="ShowOutput_Click" />
             </MenuItem>
             <MenuItem Header="_Navigate">
                 <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Go to Definition" InputGestureText="F12" IsEnabled="{Binding HasDocuments}" Click="GotoDefinition_Click" />
@@ -57,11 +61,11 @@
             </MenuItem>
             <MenuItem Header="_Build">
                 <MenuItem Header="_Check Rocket Target" IsEnabled="{Binding CanRocketCheck}" Click="CheckRocket_Click" />
-                <MenuItem Header="_Build Rocket Target" IsEnabled="{Binding CanRocketBuild}" Click="BuildRocket_Click" />
+                <MenuItem Header="_Build Rocket Target" InputGestureText="Ctrl+B" IsEnabled="{Binding CanRocketBuild}" Click="BuildRocket_Click" />
             </MenuItem>
             <MenuItem Header="_Run">
-                <MenuItem Header="_Run Rocket Target" IsEnabled="{Binding CanRocketRun}" Click="RunRocket_Click" />
-                <MenuItem Header="_Stop Rocket" IsEnabled="{Binding CanRocketStop}" Click="StopRocket_Click" />
+                <MenuItem Header="_Run Rocket Target" InputGestureText="Ctrl+R" IsEnabled="{Binding CanRocketRun}" Click="RunRocket_Click" />
+                <MenuItem Header="_Stop Rocket" InputGestureText="Ctrl+Shift+F5" IsEnabled="{Binding CanRocketStop}" Click="StopRocket_Click" />
                 <Separator />
                 <MenuItem Header="_Test Rocket Target" IsEnabled="{Binding CanRocketTest}" Click="TestRocket_Click" />
             </MenuItem>
@@ -69,15 +73,19 @@
                 <MenuItem Header="Validate Rocket _Environment" Click="ValidateRocketEnvironment_Click" />
                 <MenuItem Header="Rocket SDK _Settings..." Click="RocketSdkSettings_Click" />
                 <Separator />
-                <MenuItem Header="_New Rocket Project..." Click="NewRocketProject_Click" />
-                <MenuItem Header="_Resolve Dependencies" Click="ResolveDependencies_Click" />
-                <MenuItem Header="Dependency _Tree" Click="DependencyTree_Click" />
-                <MenuItem Header="_Audit Dependencies" Click="AuditDependencies_Click" />
-                <MenuItem Header="_Target Information" Click="TargetInformation_Click" />
-                <MenuItem Header="Format _Target/Workspace" Click="FormatTarget_Click" />
-                <MenuItem Header="_Coverage" Click="Coverage_Click" />
-                <MenuItem Header="_Profile" Click="Profile_Click" />
-                <MenuItem Header="_Benchmark" Click="Benchmark_Click" />
+                <MenuItem Header="_New Rocket Project..." IsEnabled="{Binding CanRocketNewProject}" Click="NewRocketProject_Click" />
+                <MenuItem Header="_Resolve Dependencies" IsEnabled="{Binding CanRocketAdvanced}">
+                    <MenuItem Header="_Normal" Click="ResolveDependencies_Click" />
+                    <MenuItem Header="_Locked (--locked)" Click="ResolveDependenciesLocked_Click" />
+                    <MenuItem Header="_Offline (--offline)" Click="ResolveDependenciesOffline_Click" />
+                </MenuItem>
+                <MenuItem Header="Dependency _Tree" IsEnabled="{Binding CanRocketAdvanced}" Click="DependencyTree_Click" />
+                <MenuItem Header="_Audit Dependencies" IsEnabled="{Binding CanRocketAdvanced}" Click="AuditDependencies_Click" />
+                <MenuItem Header="_Target Information" IsEnabled="{Binding CanRocketAdvanced}" Click="TargetInformation_Click" />
+                <MenuItem Header="Format _Target/Workspace" IsEnabled="{Binding CanRocketAdvanced}" Click="FormatTarget_Click" />
+                <MenuItem Header="_Coverage" IsEnabled="{Binding CanRocketAdvanced}" Click="Coverage_Click" />
+                <MenuItem Header="_Profile" IsEnabled="{Binding CanRocketAdvanced}" Click="Profile_Click" />
+                <MenuItem Header="_Benchmark" IsEnabled="{Binding CanRocketAdvanced}" Click="Benchmark_Click" />
             </MenuItem>
             <MenuItem Header="_Help"><MenuItem Header="About RocketIDE" Click="About_Click" /></MenuItem>
         </Menu>
@@ -115,7 +123,7 @@
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Padding="12,9" BorderBrush="{DynamicResource IDE.BorderBrush}" BorderThickness="0,0,0,1">
                         <DockPanel>
-                            <Button DockPanel.Dock="Right" Style="{StaticResource IDE.SmallButtonStyle}" Content="↻" ToolTip="Refresh workspace" IsEnabled="{Binding HasWorkspace}" Click="RefreshWorkspace_Click" />
+                            <Button DockPanel.Dock="Right" Style="{StaticResource IDE.SmallButtonStyle}" Content="↻" ToolTip="Refresh workspace" AutomationProperties.Name="Refresh workspace" IsEnabled="{Binding HasWorkspace}" Click="RefreshWorkspace_Click" />
                             <TextBlock Text="EXPLORER" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource IDE.TextMutedBrush}" VerticalAlignment="Center" />
                         </DockPanel>
                     </Border>
@@ -298,7 +306,14 @@
                                 <TextBlock VerticalAlignment="Center" Text="Rocket compiler, program, environment, and language-server output" Foreground="{DynamicResource IDE.TextMutedBrush}" />
                                 <Button DockPanel.Dock="Right" Style="{StaticResource IDE.SmallButtonStyle}" Content="Clear" Click="ClearOutput_Click" />
                             </DockPanel>
-                            <ListBox Grid.Row="1" ItemsSource="{Binding Output.Lines}" BorderThickness="0" Background="Transparent" FontFamily="Consolas" FontSize="12" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                            <ListBox x:Name="OutputList" Grid.Row="1" ItemsSource="{Binding Output.Lines}" SelectionMode="Extended" BorderThickness="0" Background="Transparent" FontFamily="Consolas" FontSize="12" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" PreviewKeyDown="OutputList_PreviewKeyDown">
+                                <ListBox.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Copy Selected" Click="CopyOutputSelected_Click" />
+                                        <MenuItem Header="Copy All" Click="CopyOutputAll_Click" />
+                                    </ContextMenu>
+                                </ListBox.ContextMenu>
+                            </ListBox>
                         </Grid>
                     </TabItem>
                     <TabItem Header="{Binding Tests.HeaderText}">

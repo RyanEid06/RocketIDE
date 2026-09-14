@@ -17,5 +17,9 @@ public sealed class PackageScriptTests
         StringAssert.Contains(script, "--self-contained");
         StringAssert.Contains(script, "Get-FileHash");
         StringAssert.Contains(script, "Compress-Archive");
+        StringAssert.Contains(script, "$publishRoot = $packageRoot");
+        Assert.IsFalse(script.Contains("Join-Path $packageRoot 'app'", StringComparison.Ordinal),
+            "The portable entry point must not be nested under an app subdirectory.");
+        StringAssert.Contains(script, "Join-Path $packageRoot 'RocketIDE.exe'");
     }
 }

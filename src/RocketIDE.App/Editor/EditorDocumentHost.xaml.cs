@@ -66,6 +66,11 @@ public partial class EditorDocumentHost : UserControl
 
     public void ShowFind(bool includeReplace)
     {
+        if (_document is { AllowFindAndGoto: false })
+        {
+            return;
+        }
+
         if (string.IsNullOrEmpty(FindTextBox.Text) && !string.IsNullOrEmpty(Editor.SelectedText))
         {
             FindTextBox.Text = Editor.SelectedText;
@@ -79,6 +84,11 @@ public partial class EditorDocumentHost : UserControl
 
     public void GoToLine(int line)
     {
+        if (_document is { AllowFindAndGoto: false })
+        {
+            return;
+        }
+
         var clampedLine = Math.Clamp(line, 1, Math.Max(1, Editor.Document.LineCount));
         var documentLine = Editor.Document.GetLineByNumber(clampedLine);
         Editor.TextArea.Caret.Offset = documentLine.Offset;
@@ -270,6 +280,11 @@ public partial class EditorDocumentHost : UserControl
 
         if (DataContext is DocumentTabViewModel document && IsRocketDocument(document))
         {
+            if (!document.AllowLocalEditing)
+            {
+                return;
+            }
+
             if (RocketEditorCommandBinding.TryGetCommand(e.Key, Keyboard.Modifiers, out var command))
             {
                 RequestRocketCommand(command);
@@ -287,6 +302,7 @@ public partial class EditorDocumentHost : UserControl
     private void Editor_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
         if (DataContext is DocumentTabViewModel document &&
+            document.AllowLocalEditing &&
             IsRocketDocument(document) &&
             EditorKeyBehavior.HandleTextInput(Editor, e.Text, _signatureHelpController.NotifyHandledTextInput))
         {

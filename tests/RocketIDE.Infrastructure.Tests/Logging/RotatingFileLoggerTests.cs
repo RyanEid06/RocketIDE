@@ -30,6 +30,19 @@ public sealed class RotatingFileLoggerTests
         Assert.IsTrue(File.Exists(path + ".1"));
     }
 
+
+    [TestMethod]
+    public void LoggersForSamePathShareProcessWideSynchronizationGate()
+    {
+        using var temp = new TempDirectory();
+        var path = Path.Combine(temp.Path, "rocketide.log");
+
+        var first = RotatingFileLogger.GetSynchronizationGateForTests(path);
+        var second = RotatingFileLogger.GetSynchronizationGateForTests(path);
+
+        Assert.AreSame(first, second);
+    }
+
     private sealed class TempDirectory : IDisposable
     {
         public TempDirectory()

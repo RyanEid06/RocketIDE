@@ -162,34 +162,79 @@ public sealed class WorkspaceSearchService : IWorkspaceSearchService
     {
         var files = new List<ReplacePreviewFile>();
         var totalMatches = 0;
+        var inMemoryPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var candidate in EnumerateCandidates(query.RootPath, query.ExcludedDirectoryNames, cancellationToken))
+        foreach (var buffer in query.InMemoryBuffers)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (candidate.IsSkipped)
+            var bufferPath = Path.GetFullPath(buffer.Key);
+            if (!IsUnderRoot(query.RootPath, bufferPath) || !IsSupportedTextFile(bufferPath))
             {
                 continue;
             }
 
-            var scanned = await ScanFileAsync(candidate.Path!, query, cancellationToken).ConfigureAwait(false);
-            if (!scanned.IsReadable || scanned.Matches.Count == 0)
+            inMemoryPaths.Add(bufferPath);
+            var matches = FindMatches(bufferPath, buffer.Value, query);
+            if (matches.Count == 0)
             {
                 continue;
             }
 
             var remaining = query.MaxResults - totalMatches;
-            var selected = scanned.Matches.Take(Math.Max(0, remaining)).ToArray();
+            var selected = matches.Take(Math.Max(0, remaining)).ToArray();
             if (selected.Length == 0)
             {
                 break;
             }
 
-            var fingerprint = await ComputeFingerprintAsync(candidate.Path!, cancellationToken).ConfigureAwait(false);
-            files.Add(new ReplacePreviewFile(candidate.Path!, fingerprint, selected));
+            files.Add(new ReplacePreviewFile(
+                bufferPath,
+                ComputeTextFingerprint(buffer.Value),
+                selected,
+                isInMemory: true));
             totalMatches += selected.Length;
             if (totalMatches >= query.MaxResults)
             {
                 break;
+            }
+        }
+
+        if (totalMatches < query.MaxResults)
+        {
+            foreach (var candidate in EnumerateCandidates(query.RootPath, query.ExcludedDirectoryNames, cancellationToken))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (candidate.IsSkipped)
+                {
+                    continue;
+                }
+
+                var fullPath = Path.GetFullPath(candidate.Path!);
+                if (inMemoryPaths.Contains(fullPath))
+                {
+                    continue;
+                }
+
+                var scanned = await ScanFileAsync(fullPath, query, cancellationToken).ConfigureAwait(false);
+                if (!scanned.IsReadable || scanned.Matches.Count == 0)
+                {
+                    continue;
+                }
+
+                var remaining = query.MaxResults - totalMatches;
+                var selected = scanned.Matches.Take(Math.Max(0, remaining)).ToArray();
+                if (selected.Length == 0)
+                {
+                    break;
+                }
+
+                var fingerprint = await ComputeFingerprintAsync(fullPath, cancellationToken).ConfigureAwait(false);
+                files.Add(new ReplacePreviewFile(fullPath, fingerprint, selected));
+                totalMatches += selected.Length;
+                if (totalMatches >= query.MaxResults)
+                {
+                    break;
+                }
             }
         }
 
@@ -200,41 +245,9 @@ public sealed class WorkspaceSearchService : IWorkspaceSearchService
         ReplacePreview preview,
         CancellationToken cancellationToken)
     {
-        var prepared = new List<PreparedReplacement>(preview.Files.Count);
-        foreach (var file in preview.Files)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var bytes = await File.ReadAllBytesAsync(file.FilePath, cancellationToken).ConfigureAwait(false);
-            var fingerprint = Convert.ToHexString(SHA256.HashData(bytes));
-            if (!string.Equals(fingerprint, file.Fingerprint, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new WorkspaceReplaceConflictException(file.FilePath);
-            }
-
-            var (text, hasBom) = Decode(bytes, file.FilePath);
-            var builder = new StringBuilder(text);
-            foreach (var match in file.Matches.OrderByDescending(match => match.StartOffset))
-            {
-                if (match.StartOffset < 0 || match.StartOffset + match.Length > builder.Length ||
-                    !string.Equals(builder.ToString(match.StartOffset, match.Length), match.MatchedText, StringComparison.Ordinal))
-                {
-                    throw new WorkspaceReplaceConflictException(file.FilePath);
-                }
-
-                builder.Remove(match.StartOffset, match.Length);
-                builder.Insert(match.StartOffset, preview.Replacement);
-            }
-
-            prepared.Add(new PreparedReplacement(file.FilePath, Encode(builder.ToString(), hasBom), file.Matches.Count));
-        }
-
-        foreach (var item in prepared)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            await WriteAtomicallyAsync(item.Path, item.Bytes, cancellationToken).ConfigureAwait(false);
-        }
-
-        return new ReplaceApplyResult(prepared.Count, prepared.Sum(item => item.MatchCount));
+        var transaction = await WorkspaceReplaceFileTransaction.PrepareAsync(preview, cancellationToken).ConfigureAwait(false);
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+        return new ReplaceApplyResult(transaction.FilesChanged, transaction.MatchesReplaced);
     }
 
     private static async Task<ScannedFile> ScanFileAsync(
@@ -314,7 +327,7 @@ public sealed class WorkspaceSearchService : IWorkspaceSearchService
                             break;
                         }
 
-                        matches.Add(CreateMatch(path, line, lineStart, lineNumber, match.Index, match.Length));
+                        matches.Add(CreateMatch(path, line, lineStart, lineNumber, match.Index, match.Length, query.PreviewLineLength));
                     }
                 }
             }
@@ -355,7 +368,7 @@ public sealed class WorkspaceSearchService : IWorkspaceSearchService
 
             if (!query.WholeWord || IsWholeWord(line, index, query.Pattern.Length))
             {
-                matches.Add(CreateMatch(path, line, lineStart, lineNumber, index, query.Pattern.Length));
+                matches.Add(CreateMatch(path, line, lineStart, lineNumber, index, query.Pattern.Length, query.PreviewLineLength));
             }
 
             start = index + Math.Max(1, query.Pattern.Length);
@@ -368,11 +381,27 @@ public sealed class WorkspaceSearchService : IWorkspaceSearchService
         int lineStart,
         int lineNumber,
         int index,
-        int length)
+        int length,
+        int previewLineLength)
     {
-        var preview = line.Trim();
+        var preview = CreateBoundedPreview(line, index, length, previewLineLength);
         return new SearchMatch(path, lineNumber, index + 1, length, lineStart + index, line.Substring(index, length), preview);
     }
+
+    private static string CreateBoundedPreview(string line, int index, int length, int maxLength)
+    {
+        if (line.Length <= maxLength)
+        {
+            return line.Trim();
+        }
+
+        var matchCenter = index + (length / 2);
+        var start = Math.Clamp(matchCenter - (maxLength / 2), 0, line.Length - maxLength);
+        return line.Substring(start, maxLength).Trim();
+    }
+
+    private static string ComputeTextFingerprint(string text) =>
+        Convert.ToHexString(SHA256.HashData(StrictUtf8.GetBytes(text)));
 
     private static bool IsWholeWord(string line, int index, int length) =>
         (index == 0 || !IsWordCharacter(line[index - 1])) &&
@@ -463,61 +492,6 @@ public sealed class WorkspaceSearchService : IWorkspaceSearchService
         return Convert.ToHexString(hash);
     }
 
-    private static (string Text, bool HasBom) Decode(byte[] bytes, string path)
-    {
-        var preamble = new UTF8Encoding(true).GetPreamble();
-        var hasBom = bytes.AsSpan().StartsWith(preamble);
-        var offset = hasBom ? preamble.Length : 0;
-        try
-        {
-            return (StrictUtf8.GetString(bytes, offset, bytes.Length - offset), hasBom);
-        }
-        catch (DecoderFallbackException exception)
-        {
-            throw new IOException($"Cannot replace '{path}' because it is not valid UTF-8.", exception);
-        }
-    }
-
-    private static byte[] Encode(string text, bool hasBom)
-    {
-        var encoding = new UTF8Encoding(hasBom, true);
-        var content = encoding.GetBytes(text);
-        if (!hasBom)
-        {
-            return content;
-        }
-
-        var preamble = encoding.GetPreamble();
-        var bytes = new byte[preamble.Length + content.Length];
-        preamble.CopyTo(bytes, 0);
-        content.CopyTo(bytes, preamble.Length);
-        return bytes;
-    }
-
-    private static async Task WriteAtomicallyAsync(string path, byte[] bytes, CancellationToken cancellationToken)
-    {
-        var directory = Path.GetDirectoryName(path)
-            ?? throw new IOException($"Cannot determine the parent directory for '{path}'.");
-        var tempPath = Path.Combine(directory, $".{Path.GetFileName(path)}.rocketide-replace-{Guid.NewGuid():N}.tmp");
-        try
-        {
-            await using (var stream = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 64 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan))
-            {
-                await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
-                await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
-            }
-
-            File.Move(tempPath, path, overwrite: true);
-        }
-        finally
-        {
-            if (File.Exists(tempPath))
-            {
-                File.Delete(tempPath);
-            }
-        }
-    }
-
     private sealed record FileCandidate(string? Path, bool IsSkipped)
     {
         public static FileCandidate Skipped { get; } = new(null, true);
@@ -528,5 +502,4 @@ public sealed class WorkspaceSearchService : IWorkspaceSearchService
         public static ScannedFile Unreadable { get; } = new(false, []);
     }
 
-    private sealed record PreparedReplacement(string Path, byte[] Bytes, int MatchCount);
 }

@@ -59,6 +59,127 @@ public sealed class SearchViewModelTests
         StringAssert.Contains(viewModel.StatusText, "1 match replaced");
     }
 
+
+    [TestMethod]
+    public async Task CancelCurrentOperation_CancelsRunningSearchAndRestoresIdleState()
+    {
+        var started = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var service = new FakeSearchService
+        {
+            SearchImplementation = async (_, _, token) =>
+            {
+                started.TrySetResult(true);
+                await Task.Delay(Timeout.InfiniteTimeSpan, token);
+                return new SearchSummary(0, 0, 0, false);
+            },
+        };
+        var viewModel = new SearchViewModel(service)
+        {
+            RootPath = @"C:\work",
+            Pattern = "needle",
+        };
+
+        var running = viewModel.SearchAsync(CancellationToken.None);
+        await started.Task;
+        Assert.IsTrue(viewModel.CanCancel);
+
+        viewModel.CancelCurrentOperation();
+        await running;
+
+        Assert.IsFalse(viewModel.IsSearching);
+        Assert.IsFalse(viewModel.CanCancel);
+        StringAssert.Contains(viewModel.StatusText, "cancelled");
+    }
+
+    [TestMethod]
+    public async Task PreviewReplaceAsync_ExposesExactRowsAndOptionChangesInvalidatePreview()
+    {
+        var match = new SearchMatch(@"C:\work\main.rocket", 4, 7, 3, 22, "old", "value old here");
+        var service = new FakeSearchService
+        {
+            PreviewImplementation = (_, _, _) => Task.FromResult(new ReplacePreview(
+                "new",
+                [new ReplacePreviewFile(@"C:\work\main.rocket", "hash", [match])])),
+        };
+        var viewModel = new SearchViewModel(service)
+        {
+            RootPath = @"C:\work",
+            Pattern = "old",
+            Replacement = "new",
+        };
+
+        await viewModel.PreviewReplaceAsync(CancellationToken.None);
+
+        Assert.AreEqual(1, viewModel.ReplacePreviewRows.Count);
+        Assert.AreEqual(@"C:\work\main.rocket", viewModel.ReplacePreviewRows[0].FilePath);
+        Assert.AreEqual("4:7", viewModel.ReplacePreviewRows[0].Location);
+        Assert.AreEqual("old", viewModel.ReplacePreviewRows[0].MatchedText);
+        Assert.AreEqual("new", viewModel.ReplacePreviewRows[0].ReplacementText);
+        Assert.IsTrue(viewModel.CanApplyReplace);
+
+        viewModel.CaseSensitive = true;
+
+        Assert.AreEqual(0, viewModel.ReplacePreviewRows.Count);
+        Assert.IsFalse(viewModel.CanApplyReplace);
+    }
+
+    [TestMethod]
+    public async Task ApplyReplaceAsync_ReportsUnauthorizedAccessInsteadOfThrowing()
+    {
+        var service = new FakeSearchService
+        {
+            PreviewImplementation = (_, _, _) => Task.FromResult(new ReplacePreview(
+                "new",
+                [new ReplacePreviewFile(@"C:\work\main.rocket", "hash", [new SearchMatch(@"C:\work\main.rocket", 1, 1, 3, 0, "old", "old")])])),
+            ApplyImplementation = (_, _) => throw new UnauthorizedAccessException("Access denied"),
+        };
+        var viewModel = new SearchViewModel(service)
+        {
+            RootPath = @"C:\work",
+            Pattern = "old",
+            Replacement = "new",
+        };
+
+        await viewModel.PreviewReplaceAsync(CancellationToken.None);
+        var result = await viewModel.ApplyReplaceAsync(CancellationToken.None);
+
+        Assert.IsNull(result);
+        StringAssert.Contains(viewModel.StatusText, "Replace not applied");
+        StringAssert.Contains(viewModel.StatusText, "Access denied");
+    }
+
+    [TestMethod]
+    public async Task ApplyReplaceAsync_UsesCoordinatorWhenProvided()
+    {
+        var preview = new ReplacePreview(
+            "new",
+            [new ReplacePreviewFile(@"C:\work\main.rocket", "hash", [new SearchMatch(@"C:\work\main.rocket", 1, 1, 3, 0, "old", "old")], true)]);
+        var service = new FakeSearchService
+        {
+            PreviewImplementation = (_, _, _) => Task.FromResult(preview),
+            ApplyImplementation = (_, _) => throw new AssertFailedException("Direct service apply must not be used when a coordinator is configured."),
+        };
+        var applied = false;
+        var viewModel = new SearchViewModel(service)
+        {
+            RootPath = @"C:\work",
+            Pattern = "old",
+            Replacement = "new",
+            ReplaceApplier = (received, _) =>
+            {
+                Assert.AreSame(preview, received);
+                applied = true;
+                return Task.FromResult(new ReplaceApplyResult(1, 1));
+            },
+        };
+
+        await viewModel.PreviewReplaceAsync(CancellationToken.None);
+        var result = await viewModel.ApplyReplaceAsync(CancellationToken.None);
+
+        Assert.IsTrue(applied);
+        Assert.AreEqual(1, result!.MatchesReplaced);
+    }
+
     private sealed class FakeSearchService : IWorkspaceSearchService
     {
         public Func<SearchQuery, IProgress<SearchResultBatch>, CancellationToken, Task<SearchSummary>>? SearchImplementation { get; init; }

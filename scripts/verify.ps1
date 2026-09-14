@@ -16,6 +16,23 @@ try {
     }
     Write-Host "Using .NET SDK $dotnetVersion"
 
+    Write-Host '== RocketIDE source ignore guard =='
+    $requiredSourcePaths = @(
+        'src/RocketIDE.Core/Recovery/RecoverySnapshot.cs',
+        'src/RocketIDE.Infrastructure/Recovery/JsonRecoveryStore.cs',
+        'tests/RocketIDE.Core.Tests/Recovery/RecoveryModelTests.cs',
+        'tests/RocketIDE.Infrastructure.Tests/Recovery/JsonRecoveryStoreTests.cs'
+    )
+    foreach ($requiredSourcePath in $requiredSourcePaths) {
+        & git check-ignore --no-index --quiet -- $requiredSourcePath
+        if ($LASTEXITCODE -eq 0) {
+            throw "Required source/test path is ignored by .gitignore: $requiredSourcePath"
+        }
+        if ($LASTEXITCODE -ne 1) {
+            throw "git check-ignore failed for '$requiredSourcePath' with exit code $LASTEXITCODE."
+        }
+    }
+
     Write-Host '== RocketIDE clean generated build state =='
     # Patch ZIP extraction can preserve source timestamps older than an existing incremental build.
     # Clean only each MSBuild project's own bin/obj directories so verification cannot reuse stale

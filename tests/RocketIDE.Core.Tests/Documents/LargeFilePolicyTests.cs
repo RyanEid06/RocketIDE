@@ -33,6 +33,18 @@ public sealed class LargeFilePolicyTests
     }
 
     [TestMethod]
+    public void Decide_DisablesLocalEditingAboveEditorSafetyLimit()
+    {
+        var decision = LargeFilePolicy.Decide(LargeFilePolicy.MaxEditorBufferBytes + 1);
+
+        Assert.IsTrue(decision.IsLargeFileMode);
+        Assert.IsFalse(decision.AllowLsp);
+        Assert.IsFalse(decision.AllowLocalEditing);
+        Assert.IsFalse(decision.AllowFindAndGoto);
+        StringAssert.Contains(decision.Reason, "64 MiB");
+    }
+
+    [TestMethod]
     public void Decide_RejectsNegativeByteLength()
     {
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => LargeFilePolicy.Decide(-1));

@@ -5,7 +5,6 @@ using System.Windows;
 using System.Windows.Threading;
 using RocketIDE.Core.Logging;
 using RocketIDE.Core.Recovery;
-using RocketIDE.Infrastructure.Logging;
 using RocketIDE.Infrastructure.Recovery;
 
 namespace RocketIDE.App;
@@ -14,7 +13,9 @@ public partial class MainWindow
 {
     private readonly ISessionStore _sessionStore = JsonSessionStore.CreateDefault();
     private readonly IRecoveryStore _recoveryStore = JsonRecoveryStore.CreateDefault();
-    private readonly IApplicationLogger _logger = RotatingFileLogger.CreateDefault();
+    private IApplicationLogger Logger => Application.Current is App app
+        ? app.Logger
+        : throw new InvalidOperationException("RocketIDE application logger is unavailable.");
     private DispatcherTimer? _recoveryTimer;
     private bool _reliabilityLoaded;
     private bool _recoveryNeedsDecision;
@@ -26,7 +27,7 @@ public partial class MainWindow
             Interval = TimeSpan.FromSeconds(30),
         };
         _recoveryTimer.Tick += async (_, _) => await SaveRecoverySnapshotAsync();
-        _logger.Information("RocketIDE window initialized.");
+        Logger.Information("RocketIDE window initialized.");
     }
 
     private async Task LoadReliabilityAsync()
@@ -76,7 +77,7 @@ public partial class MainWindow
         }
         catch (Exception exception) when (IsExpectedReliabilityException(exception))
         {
-            _logger.Warning("Session or recovery state could not be loaded.", exception);
+            Logger.Warning("Session or recovery state could not be loaded.", exception);
             _viewModel.AppendOutput($"Reliability state unavailable: {exception.Message}");
         }
     }
@@ -128,7 +129,7 @@ public partial class MainWindow
             catch (Exception exception) when (IsExpectedReliabilityException(exception))
             {
                 restored.Add(snapshot);
-                _logger.Warning($"Could not restore '{snapshot.OriginalPath}'.", exception);
+                Logger.Warning($"Could not restore '{snapshot.OriginalPath}'.", exception);
             }
         }
 
@@ -173,7 +174,7 @@ public partial class MainWindow
         }
         catch (Exception exception) when (IsExpectedReliabilityException(exception))
         {
-            _logger.Warning("Periodic recovery snapshot failed.", exception);
+            Logger.Warning("Periodic recovery snapshot failed.", exception);
         }
     }
 
@@ -193,7 +194,7 @@ public partial class MainWindow
         }
         catch (Exception exception) when (IsExpectedReliabilityException(exception))
         {
-            _logger.Warning("Session state could not be saved.", exception);
+            Logger.Warning("Session state could not be saved.", exception);
         }
     }
 
@@ -210,11 +211,7 @@ public partial class MainWindow
         }
         catch (Exception exception) when (IsExpectedReliabilityException(exception))
         {
-            _logger.Warning("Clean-shutdown reliability cleanup failed.", exception);
-        }
-        if (_logger is IDisposable disposable)
-        {
-            disposable.Dispose();
+            Logger.Warning("Clean-shutdown reliability cleanup failed.", exception);
         }
     }
 
