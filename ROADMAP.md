@@ -1,5 +1,11 @@
 # RocketIDE Roadmap
 
+> **Historical baseline:** IDE-WP00 through IDE-WP17 below record the completed
+> foundation cycle. New final-cycle work is governed by
+> [`docs/ROCKETIDE_FINAL_ROADMAP_IMPLEMENTATION.md`](docs/ROCKETIDE_FINAL_ROADMAP_IMPLEMENTATION.md).
+> Do not reuse the historical WP numbers for new work, and do not change a
+> historical status without new evidence.
+
 > Execute work packages in dependency order. Checklist items use (`- [ ]`) tracking. Do not skip acceptance gates, and update the progress ledger only after verification evidence exists.
 
 **Goal:** Build a fast, reliable, Windows-only desktop IDE dedicated to Rocket, with multi-file editing, compiler-accurate live errors and fixes, project navigation, build/run/test/output workflows, and large-file-safe behavior.
