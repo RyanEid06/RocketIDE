@@ -1,0 +1,39 @@
+<UserControl x:Class="RocketIDE.App.Editor.EditorGroupHost"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:editor="clr-namespace:RocketIDE.App.Editor"
+             xmlns:viewModels="clr-namespace:RocketIDE.App.ViewModels"
+             Background="{DynamicResource IDE.EditorBrush}">
+    <TabControl x:Name="Tabs"
+                ItemsSource="{Binding Views}"
+                SelectedItem="{Binding SelectedView, Mode=TwoWay}"
+                SelectionChanged="Tabs_SelectionChanged">
+        <TabControl.ItemTemplate>
+            <DataTemplate DataType="{x:Type viewModels:EditorViewViewModel}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock VerticalAlignment="Center" Text="{Binding HeaderText}" />
+                    <Button Margin="7,0,0,0"
+                            Padding="2,0"
+                            MinWidth="18"
+                            Height="18"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            Foreground="{DynamicResource IDE.TextMutedBrush}"
+                            Content="×"
+                            ToolTip="Close view"
+                            AutomationProperties.Name="Close editor view button"
+                            Tag="{Binding}"
+                            Click="CloseView_Click" />
+                </StackPanel>
+            </DataTemplate>
+        </TabControl.ItemTemplate>
+        <TabControl.ContentTemplate>
+            <DataTemplate DataType="{x:Type viewModels:EditorViewViewModel}">
+                <editor:EditorDocumentHost
+                    FeatureService="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=RocketEditorFeatures}"
+                    ViewActivated="EditorHost_ViewActivated"
+                    RocketCommandRequested="EditorHost_RocketCommandRequested" />
+            </DataTemplate>
+        </TabControl.ContentTemplate>
+    </TabControl>
+</UserControl>

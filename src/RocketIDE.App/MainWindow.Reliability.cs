@@ -18,7 +18,9 @@ public partial class MainWindow
         ? app.Logger
         : throw new InvalidOperationException("RocketIDE application logger is unavailable.");
     private DispatcherTimer? _recoveryTimer;
+    private DispatcherTimer? _sessionCheckpointTimer;
     private bool _reliabilityLoaded;
+    private bool _sessionRestoreInProgress;
     private bool _recoveryNeedsDecision;
 
     private void InitializeReliability()
@@ -28,6 +30,17 @@ public partial class MainWindow
             Interval = TimeSpan.FromSeconds(30),
         };
         _recoveryTimer.Tick += async (_, _) => await SaveRecoverySnapshotAsync();
+        _sessionCheckpointTimer = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromMilliseconds(750),
+        };
+        _sessionCheckpointTimer.Tick += async (_, _) =>
+        {
+            _sessionCheckpointTimer?.Stop();
+            if (_reliabilityLoaded && !_lifetime.IsStopping)
+                await SaveSessionAsync(cleanShutdown: false);
+        };
+        _viewModel.EditorLayout.SessionStateChanged += EditorLayout_SessionStateChanged;
         Logger.Information("RocketIDE window initialized.");
     }
 
@@ -39,6 +52,7 @@ public partial class MainWindow
         }
 
         _reliabilityLoaded = true;
+        _sessionRestoreInProgress = true;
         try
         {
             var session = await _sessionStore.LoadAsync(CancellationToken.None);
@@ -73,11 +87,18 @@ public partial class MainWindow
                 }
             }
 
+            if (session.EditorLayout is not null)
+            {
+                _viewModel.EditorLayout.Restore(session.EditorLayout, FindOpenDocument);
+            }
+
+            _sessionRestoreInProgress = false;
             await SaveSessionAsync(cleanShutdown: false);
             _recoveryTimer?.Start();
         }
         catch (Exception exception) when (IsExpectedReliabilityException(exception))
         {
+            _sessionRestoreInProgress = false;
             Logger.Warning("Session or recovery state could not be loaded.", exception);
             _viewModel.AppendOutput($"Reliability state unavailable: {exception.Message}");
         }
@@ -99,7 +120,7 @@ public partial class MainWindow
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(session.ActiveDocumentPath))
+        if (session.EditorLayout is null && !string.IsNullOrWhiteSpace(session.ActiveDocumentPath))
         {
             var active = FindOpenDocument(session.ActiveDocumentPath);
             if (active is not null)
@@ -236,7 +257,10 @@ public partial class MainWindow
                 CapturePanelLayout(),
                 CaptureWindowBounds(),
                 cleanShutdown,
-                DateTimeOffset.UtcNow);
+                DateTimeOffset.UtcNow)
+            {
+                EditorLayout = _viewModel.EditorLayout.CaptureState(),
+            };
             await _sessionStore.SaveAsync(session, cancellationToken);
         }
         catch (Exception exception) when (IsExpectedReliabilityException(exception))
@@ -248,6 +272,7 @@ public partial class MainWindow
     private async Task CompleteReliabilityShutdownAsync(CancellationToken cancellationToken)
     {
         _recoveryTimer?.Stop();
+        _sessionCheckpointTimer?.Stop();
         try
         {
             await SaveSessionAsync(cleanShutdown: true, cancellationToken);
@@ -260,6 +285,13 @@ public partial class MainWindow
         {
             Logger.Warning("Clean-shutdown reliability cleanup failed.", exception);
         }
+    }
+
+    private void EditorLayout_SessionStateChanged(object? sender, EventArgs e)
+    {
+        if (!_reliabilityLoaded || _sessionRestoreInProgress || _lifetime.IsStopping) return;
+        _sessionCheckpointTimer?.Stop();
+        _sessionCheckpointTimer?.Start();
     }
 
     private void ApplySessionState(SessionState state)

@@ -44,11 +44,25 @@
                 <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="Rename _Symbol..." InputGestureText="F2" IsEnabled="{Binding HasDocuments}" Click="RenameSymbol_Click" />
                 <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Quick Fixes (server-provided)" InputGestureText="Ctrl+." IsEnabled="{Binding HasDocuments}" Click="CodeActions_Click" />
                 <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Format Document" InputGestureText="Shift+Alt+F" IsEnabled="{Binding HasDocuments}" Click="FormatDocument_Click" />
+                <Separator />
+                <MenuItem Header="Insert Rocket _Snippet" IsEnabled="{Binding HasDocuments}">
+                    <MenuItem Header="Main function" Tag="main" Click="InsertSnippet_Click" />
+                    <MenuItem Header="Function" Tag="fn" Click="InsertSnippet_Click" />
+                    <MenuItem Header="Implementation block" Tag="impl" Click="InsertSnippet_Click" />
+                    <MenuItem Header="Match" Tag="match" Click="InsertSnippet_Click" />
+                    <MenuItem Header="Test entry" Tag="testmain" Click="InsertSnippet_Click" />
+                </MenuItem>
             </MenuItem>
             <MenuItem Header="_Selection"><MenuItem Header="Select _All" InputGestureText="Ctrl+A" IsEnabled="{Binding HasDocuments}" Click="SelectAll_Click" /></MenuItem>
             <MenuItem Header="_View">
                 <MenuItem x:Name="ExplorerViewMenu" Header="Explorer" IsCheckable="True" IsChecked="True" Click="ExplorerViewMenu_Click" />
                 <MenuItem x:Name="BottomPanelViewMenu" Header="Bottom Panel" IsCheckable="True" IsChecked="True" Click="BottomPanelViewMenu_Click" />
+                <Separator />
+                <MenuItem Header="Split _Right" IsEnabled="{Binding HasDocuments}" Click="SplitRight_Click" />
+                <MenuItem Header="Split _Down" IsEnabled="{Binding HasDocuments}" Click="SplitDown_Click" />
+                <MenuItem Header="_Close Group" IsEnabled="{Binding HasDocuments}" Click="CloseGroup_Click" />
+                <MenuItem Header="_Focus Next Group" IsEnabled="{Binding HasDocuments}" Click="FocusNextGroup_Click" />
+                <MenuItem Header="_Move Active Editor to Other Group" IsEnabled="{Binding HasDocuments}" Click="MoveActiveEditorToOtherGroup_Click" />
                 <Separator />
                 <MenuItem Header="_Problems" InputGestureText="Ctrl+Shift+M" Click="ShowProblems_Click" />
                 <MenuItem Header="_Output" InputGestureText="Ctrl+Shift+U" Click="ShowOutput_Click" />
@@ -199,17 +213,30 @@
             <Grid Grid.Column="2">
                 <Grid.RowDefinitions><RowDefinition Height="*" MinHeight="260" /><RowDefinition Height="5" /><RowDefinition x:Name="BottomPanelRowDefinition" Height="190" MinHeight="100" /></Grid.RowDefinitions>
                 <Grid Grid.Row="0" Background="{DynamicResource IDE.EditorBrush}">
-                    <TabControl x:Name="EditorTabs" ItemsSource="{Binding Documents}" SelectedItem="{Binding ActiveDocument, Mode=TwoWay}">
-                        <TabControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type viewModels:DocumentTabViewModel}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock VerticalAlignment="Center" Text="{Binding HeaderText}" />
-                                    <Button Margin="7,0,0,0" Padding="2,0" MinWidth="18" Height="18" Background="Transparent" BorderBrush="Transparent" Foreground="{DynamicResource IDE.TextMutedBrush}" Content="×" ToolTip="Close" AutomationProperties.Name="Close document button" Tag="{Binding}" Click="CloseTabButton_Click" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </TabControl.ItemTemplate>
-                        <TabControl.ContentTemplate><DataTemplate DataType="{x:Type viewModels:DocumentTabViewModel}"><editor:EditorDocumentHost FeatureService="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=RocketEditorFeatures}" RocketCommandRequested="EditorHost_RocketCommandRequested" /></DataTemplate></TabControl.ContentTemplate>
-                    </TabControl>
+                    <Grid x:Name="EditorGroupsGrid">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="EditorGroupColumn0" Width="*" />
+                            <ColumnDefinition x:Name="EditorGroupColumn1" Width="0" />
+                            <ColumnDefinition x:Name="EditorGroupColumn2" Width="0" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition x:Name="EditorGroupRow0" Height="*" />
+                            <RowDefinition x:Name="EditorGroupRow1" Height="0" />
+                            <RowDefinition x:Name="EditorGroupRow2" Height="0" />
+                        </Grid.RowDefinitions>
+                        <editor:EditorGroupHost x:Name="PrimaryEditorGroupHost"
+                                                ViewCloseRequested="EditorGroup_ViewCloseRequested"
+                                                ViewActivated="EditorGroup_ViewActivated"
+                                                RocketCommandRequested="EditorHost_RocketCommandRequested" />
+                        <GridSplitter x:Name="EditorGroupSplitter"
+                                      Visibility="Collapsed"
+                                      Background="{DynamicResource IDE.BorderBrush}" />
+                        <editor:EditorGroupHost x:Name="SecondaryEditorGroupHost"
+                                                Visibility="Collapsed"
+                                                ViewCloseRequested="EditorGroup_ViewCloseRequested"
+                                                ViewActivated="EditorGroup_ViewActivated"
+                                                RocketCommandRequested="EditorHost_RocketCommandRequested" />
+                    </Grid>
                     <Border Background="{DynamicResource IDE.ChromeBrush}" BorderBrush="{DynamicResource IDE.WarningBrush}" BorderThickness="1"
                             Margin="14,10,14,0" Padding="9,6" VerticalAlignment="Top" HorizontalAlignment="Stretch">
                         <Border.Style>

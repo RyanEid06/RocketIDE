@@ -88,7 +88,8 @@ public partial class MainWindow
         }
 
         var before = _viewModel.Debug.Breakpoints.ToArray();
-        var updated = _viewModel.Debug.ToggleBreakpoint(document.Path, document.CaretLine);
+        var caretLine = _editorIntegration.ActiveView?.CommandTarget?.CaretLine ?? _viewModel.ActiveView?.CaretLine ?? 1;
+        var updated = _viewModel.Debug.ToggleBreakpoint(document.Path, caretLine);
         RefreshDebugEditorPresentation();
         if (_nativeDebugger?.State != RocketDebugSessionState.Stopped)
         {
@@ -303,11 +304,12 @@ public partial class MainWindow
     private async Task NavigateToDebugLocationAsync(RocketDebugStopLocation location)
     {
         if (!File.Exists(location.SourcePath)) return;
-        var tab = FindOpenDocument(location.SourcePath) ?? await OpenDocumentAsync(location.SourcePath);
-        if (tab is null) return;
         RefreshDebugEditorPresentation();
         var zeroBasedLine = Math.Max(0, location.Line - 1);
-        tab.RequestNavigation(new SourceRange(zeroBasedLine, 0, zeroBasedLine, 0));
+        await _editorIntegration.OpenOrRevealAsync(
+            location.SourcePath,
+            new SourceRange(zeroBasedLine, 0, zeroBasedLine, 0),
+            CancellationToken.None);
     }
 
     private void RefreshDebugEditorPresentation()

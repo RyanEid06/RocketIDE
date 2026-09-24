@@ -31,7 +31,7 @@ public partial class MainWindow : Window
     private readonly RocketTargetDiscovery _targetDiscovery = new();
     private readonly RecentWorkspaceStore _recentWorkspaceStore = RecentWorkspaceStore.CreateDefault();
     private readonly MainWindowViewModel _viewModel;
-    private readonly LegacySinglePaneEditorIntegration _editorIntegration;
+    private readonly MultiPaneEditorIntegration _editorIntegration;
     private readonly ApplicationLifetimeCoordinator _lifetime;
     private readonly UiOutputBuffer _outputBuffer;
     private readonly Dictionary<string, DateTime> _suppressedWorkspaceChanges = new(StringComparer.OrdinalIgnoreCase);
@@ -45,9 +45,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         _lifetime = new ApplicationLifetimeCoordinator(reportFailure: message => Logger.Warning(message));
         _viewModel = new MainWindowViewModel(_workspaceFileSystem);
-        _editorIntegration = new LegacySinglePaneEditorIntegration(
-            _viewModel,
-            ResolveLegacyEditorCommandTarget,
+        _editorIntegration = new MultiPaneEditorIntegration(
+            _viewModel.EditorLayout,
             (path, cancellationToken) =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -59,6 +58,7 @@ public partial class MainWindow : Window
         _viewModel.Search.MatchActivated += Search_MatchActivated;
         _viewModel.Search.ReplaceApplier = ApplyWorkspaceReplaceAsync;
         DataContext = _viewModel;
+        InitializeSplitEditing();
         InitializeRocketIntegration();
         InitializeReliability();
     }
@@ -121,7 +121,7 @@ public partial class MainWindow : Window
             var dialog = new QuickOpenDialog(workspace.Path, files) { Owner = this };
             if (dialog.ShowDialog() == true && dialog.SelectedPath is not null)
             {
-                await OpenDocumentAsync(dialog.SelectedPath);
+                await _editorIntegration.OpenOrRevealAsync(dialog.SelectedPath, cancellationToken: CancellationToken.None);
             }
         }
         catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
@@ -620,32 +620,22 @@ public partial class MainWindow : Window
 
     private async void Close_Click(object sender, RoutedEventArgs e)
     {
-        if (_viewModel.ActiveDocument is not null)
-        {
-            await TryCloseTabsAsync(new[] { _viewModel.ActiveDocument });
-        }
+        if (_viewModel.ActiveView is { } view)
+            await TryCloseViewsAsync([view]);
     }
 
     private async void CloseOthers_Click(object sender, RoutedEventArgs e)
     {
-        if (_viewModel.ActiveDocument is null)
-        {
-            return;
-        }
-
-        var active = _viewModel.ActiveDocument;
-        await TryCloseTabsAsync(_viewModel.Documents.Where(document => !ReferenceEquals(document, active)).ToArray());
+        var active = _viewModel.ActiveView;
+        if (active is null) return;
+        var others = _viewModel.EditorLayout.ActiveGroup.Views
+            .Where(view => !ReferenceEquals(view, active))
+            .ToArray();
+        await TryCloseViewsAsync(others);
     }
 
-    private async void CloseAll_Click(object sender, RoutedEventArgs e) => await TryCloseTabsAsync(_viewModel.Documents.ToArray());
-
-    private async void CloseTabButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button { Tag: DocumentTabViewModel tab })
-        {
-            await TryCloseTabsAsync(new[] { tab });
-        }
-    }
+    private async void CloseAll_Click(object sender, RoutedEventArgs e) =>
+        await TryCloseViewsAsync(_viewModel.EditorLayout.Groups.SelectMany(group => group.Views).ToArray());
 
     private async Task<bool> TryCloseTabsAsync(IReadOnlyList<DocumentTabViewModel> tabs)
     {
@@ -715,7 +705,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var dialog = new GotoLineDialog(_viewModel.ActiveDocument.CaretLine, editor.EditorLineCount) { Owner = this };
+        var dialog = new GotoLineDialog(editor.CaretLine, editor.EditorLineCount) { Owner = this };
         if (dialog.ShowDialog() == true)
         {
             editor.GoToLine(dialog.LineNumber);
@@ -744,14 +734,7 @@ public partial class MainWindow : Window
     private async Task NavigateToProblemAsync(ProblemItemViewModel problem)
     {
         ArgumentNullException.ThrowIfNull(problem);
-        var tab = FindOpenDocument(problem.FilePath) ?? await OpenDocumentAsync(problem.FilePath);
-        if (tab is null)
-        {
-            return;
-        }
-
-        _viewModel.ActiveDocument = tab;
-        tab.RequestNavigation(problem.Range);
+        await _editorIntegration.OpenOrRevealAsync(problem.FilePath, problem.Range, CancellationToken.None);
     }
 
     private void Exit_Click(object sender, RoutedEventArgs e) => Close();
@@ -850,6 +833,12 @@ public partial class MainWindow : Window
 
     private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (TryHandleSnippetNavigation(e))
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (TryHandleDebuggerGesture(e.Key, Keyboard.Modifiers))
         {
             e.Handled = true;
@@ -934,13 +923,13 @@ public partial class MainWindow : Window
                 break;
             case Key.W when shift:
                 e.Handled = true;
-                await TryCloseTabsAsync(_viewModel.Documents.ToArray());
+                await TryCloseViewsAsync(_viewModel.EditorLayout.Groups.SelectMany(group => group.Views).ToArray());
                 break;
             case Key.W:
                 e.Handled = true;
-                if (_viewModel.ActiveDocument is not null)
+                if (_viewModel.ActiveView is { } activeView)
                 {
-                    await TryCloseTabsAsync(new[] { _viewModel.ActiveDocument });
+                    await TryCloseViewsAsync([activeView]);
                 }
                 break;
             case Key.F:
@@ -1001,14 +990,10 @@ public partial class MainWindow : Window
     {
         try
         {
-            var tab = FindOpenDocument(match.FilePath) ?? await OpenDocumentAsync(match.FilePath);
-            if (tab is null)
-            {
-                return;
-            }
-
-            _viewModel.ActiveDocument = tab;
-            tab.RequestNavigation(new SourceRange(match.Line - 1, match.Column - 1, match.Line - 1, match.Column - 1 + match.Length));
+            await _editorIntegration.OpenOrRevealAsync(
+                match.FilePath,
+                new SourceRange(match.Line - 1, match.Column - 1, match.Line - 1, match.Column - 1 + match.Length),
+                CancellationToken.None);
         }
         catch (Exception exception) when (IsExpectedFileException(exception))
         {
@@ -1018,29 +1003,6 @@ public partial class MainWindow : Window
 
     private EditorDocumentHost? GetActiveEditor() =>
         _editorIntegration.ActiveView?.CommandTarget as EditorDocumentHost;
-
-    private IEditorCommandTarget? ResolveLegacyEditorCommandTarget(DocumentTabViewModel document) =>
-        FindEditorForDataContext(EditorTabs, document);
-
-    private static EditorDocumentHost? FindEditorForDataContext(DependencyObject parent, DocumentTabViewModel active)
-    {
-        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
-        {
-            var child = VisualTreeHelper.GetChild(parent, index);
-            if (child is EditorDocumentHost editor && ReferenceEquals(editor.DataContext, active))
-            {
-                return editor;
-            }
-
-            var nested = FindEditorForDataContext(child, active);
-            if (nested is not null)
-            {
-                return nested;
-            }
-        }
-
-        return null;
-    }
 
     private void WorkspaceWatcher_ChangesAvailable(object? sender, WorkspaceChangesEventArgs e)
     {

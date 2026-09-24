@@ -556,17 +556,14 @@ public partial class MainWindow
             return;
         }
 
-        var tab = open ?? await OpenDocumentAsync(location.Path);
-        if (tab is null)
-        {
-            return;
-        }
-        _viewModel.ActiveDocument = tab;
-        tab.RequestNavigation(new SourceRange(
-            location.Range.Start.Line,
-            location.Range.Start.Character,
-            location.Range.End.Line,
-            location.Range.End.Character));
+        await _editorIntegration.OpenOrRevealAsync(
+            location.Path,
+            new SourceRange(
+                location.Range.Start.Line,
+                location.Range.Start.Character,
+                location.Range.End.Line,
+                location.Range.End.Character),
+            CancellationToken.None);
     }
 
     private static async Task<string> ReadNavigationTextAsync(string path, CancellationToken cancellationToken)

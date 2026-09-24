@@ -521,7 +521,9 @@ public sealed class RocketSessionCoordinatorTests
         public bool IsInitialized { get; private set; }
         public RocketLanguageServerCapabilities Capabilities { get; set; } = RocketLanguageServerCapabilities.None;
         public int DisposeCount { get; private set; }
-        public int ForcedKillCount { get; private set; }
+        private int _forcedKillCount;
+        private int _forcedKillRecorded;
+        public int ForcedKillCount => Volatile.Read(ref _forcedKillCount);
         public bool HangOnStop { get; init; }
         public Task? StartGate { get; init; }
         private readonly TaskCompletionSource _stopped = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -564,7 +566,12 @@ public sealed class RocketSessionCoordinatorTests
 
         public void KillOwnedProcessTree()
         {
-            ForcedKillCount++;
+            if (Interlocked.Exchange(ref _forcedKillRecorded, 1) != 0)
+            {
+                return;
+            }
+
+            Interlocked.Increment(ref _forcedKillCount);
             _stopped.TrySetResult();
         }
 
