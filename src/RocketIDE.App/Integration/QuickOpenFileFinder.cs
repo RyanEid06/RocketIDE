@@ -19,14 +19,21 @@ public sealed class QuickOpenFileFinder(IWorkspaceFileSystem fileSystem)
         }
 
         var root = Path.GetFullPath(rootPath);
+        var maximumDirectories = maxFiles >= int.MaxValue / 2 ? int.MaxValue : Math.Max(256, maxFiles * 2);
         var pending = new Stack<string>();
+        var visited = new HashSet<string>(PathComparer);
         var files = new List<string>(Math.Min(maxFiles, 512));
         pending.Push(root);
 
-        while (pending.Count > 0 && files.Count < maxFiles)
+        while (pending.Count > 0 && files.Count < maxFiles && visited.Count < maximumDirectories)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var directory = pending.Pop();
+            var directory = Path.GetFullPath(pending.Pop());
+            if (!visited.Add(directory))
+            {
+                continue;
+            }
+
             IReadOnlyList<WorkspaceEntry> children;
             try
             {
@@ -42,7 +49,10 @@ public sealed class QuickOpenFileFinder(IWorkspaceFileSystem fileSystem)
                 cancellationToken.ThrowIfCancellationRequested();
                 if (child.IsDirectory)
                 {
-                    pending.Push(child.Path);
+                    if (visited.Count + pending.Count < maximumDirectories)
+                    {
+                        pending.Push(child.Path);
+                    }
                 }
                 else
                 {
@@ -57,4 +67,8 @@ public sealed class QuickOpenFileFinder(IWorkspaceFileSystem fileSystem)
 
         return files;
     }
+
+    private static StringComparer PathComparer => OperatingSystem.IsWindows()
+        ? StringComparer.OrdinalIgnoreCase
+        : StringComparer.Ordinal;
 }

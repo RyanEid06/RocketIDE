@@ -22,6 +22,7 @@
                 <MenuItem Header="Open _Folder..." InputGestureText="Ctrl+Shift+O" Click="OpenFolder_Click" />
                 <MenuItem Header="_Quick Open File..." InputGestureText="Ctrl+P" IsEnabled="{Binding CanQuickOpen}" Click="QuickOpenFile_Click" />
                 <MenuItem x:Name="RecentProjectsMenu" Header="Recent _Projects" SubmenuOpened="RecentProjects_SubmenuOpened" />
+                <MenuItem Header="_Reopen Closed Editor" Click="ReopenClosedEditor_Click" />
                 <Separator />
                 <MenuItem Header="_Save" InputGestureText="Ctrl+S" IsEnabled="{Binding HasDocuments}" Click="Save_Click" />
                 <MenuItem Header="Save _All" InputGestureText="Ctrl+Shift+S" IsEnabled="{Binding HasDocuments}" Click="SaveAll_Click" />
@@ -38,6 +39,13 @@
                 <Separator />
                 <MenuItem Header="_Find..." InputGestureText="Ctrl+F" IsEnabled="{Binding HasDocuments}" Click="Find_Click" />
                 <MenuItem Header="_Replace..." InputGestureText="Ctrl+H" IsEnabled="{Binding HasDocuments}" Click="Replace_Click" />
+                <Separator />
+                <MenuItem Header="Toggle Line _Comment" IsEnabled="{Binding ActiveDocument.AllowLocalEditing}" Click="ToggleLineComment_Click" />
+                <MenuItem Header="_Duplicate Line / Selection" IsEnabled="{Binding ActiveDocument.AllowLocalEditing}" Click="DuplicateLineOrSelection_Click" />
+                <MenuItem Header="Move Line / Selection _Up" IsEnabled="{Binding ActiveDocument.AllowLocalEditing}" Click="MoveLineOrSelectionUp_Click" />
+                <MenuItem Header="Move Line / Selection _Down" IsEnabled="{Binding ActiveDocument.AllowLocalEditing}" Click="MoveLineOrSelectionDown_Click" />
+                <MenuItem Header="Delete Line / _Selection" IsEnabled="{Binding ActiveDocument.AllowLocalEditing}" Click="DeleteLineOrSelection_Click" />
+                <Separator />
                 <MenuItem Header="Search in _Workspace..." InputGestureText="Ctrl+Shift+F" Click="SearchWorkspace_Click" />
                 <MenuItem Header="Replace in _Files..." InputGestureText="Ctrl+Shift+H" Click="ReplaceWorkspace_Click" />
                 <Separator />
@@ -49,6 +57,15 @@
             <MenuItem Header="_View">
                 <MenuItem x:Name="ExplorerViewMenu" Header="Explorer" IsCheckable="True" IsChecked="True" Click="ExplorerViewMenu_Click" />
                 <MenuItem x:Name="BottomPanelViewMenu" Header="Bottom Panel" IsCheckable="True" IsChecked="True" Click="BottomPanelViewMenu_Click" />
+                <Separator />
+                <MenuItem Header="Zoom _In" Click="ZoomIn_Click" />
+                <MenuItem Header="Zoom _Out" Click="ZoomOut_Click" />
+                <MenuItem Header="_Reset Zoom" Click="ZoomReset_Click" />
+                <MenuItem x:Name="WordWrapViewMenu" Header="_Word Wrap" IsCheckable="True" Click="WordWrap_Click" />
+                <MenuItem x:Name="FormatOnSaveViewMenu" Header="_Format on Save" IsCheckable="True" Click="FormatOnSave_Click" />
+                <Separator />
+                <MenuItem Header="Collapse Explorer _All" IsEnabled="{Binding HasWorkspace}" Click="CollapseAllExplorer_Click" />
+                <MenuItem Header="Reveal _Active File" IsEnabled="{Binding HasDocuments}" Click="RevealActiveFile_Click" />
                 <Separator />
                 <MenuItem Header="_Problems" InputGestureText="Ctrl+Shift+M" Click="ShowProblems_Click" />
                 <MenuItem Header="_Output" InputGestureText="Ctrl+Shift+U" Click="ShowOutput_Click" />
@@ -177,6 +194,7 @@
                             <TreeView.ItemContainerStyle>
                                 <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource {x:Type TreeViewItem}}">
                                     <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                    <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
                                     <EventSetter Event="Expanded" Handler="ExplorerNode_Expanded" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsPlaceholder}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>

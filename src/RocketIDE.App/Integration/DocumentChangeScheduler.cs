@@ -47,8 +47,16 @@ public sealed class DocumentChangeScheduler : IAsyncDisposable
         }
     }
 
+    public Task<RocketSessionDocument?> SaveAsync(
+        RocketSessionDocument currentDocument,
+        Func<RocketSessionDocument, CancellationToken, Task<RocketSessionDocument?>> persistAsync,
+        Func<RocketSessionDocument, CancellationToken, Task> notifySavedAsync,
+        CancellationToken cancellationToken) =>
+        SaveAsync(currentDocument, null, persistAsync, notifySavedAsync, cancellationToken);
+
     public async Task<RocketSessionDocument?> SaveAsync(
         RocketSessionDocument currentDocument,
+        Func<RocketSessionDocument, CancellationToken, Task<RocketSessionDocument>>? prepareForPersistAsync,
         Func<RocketSessionDocument, CancellationToken, Task<RocketSessionDocument?>> persistAsync,
         Func<RocketSessionDocument, CancellationToken, Task> notifySavedAsync,
         CancellationToken cancellationToken)
@@ -71,26 +79,43 @@ public sealed class DocumentChangeScheduler : IAsyncDisposable
         await pathGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var synchronized = await TrySynchronizeAsync(currentDocument, cancellationToken).ConfigureAwait(false);
-            var savedDocument = await persistAsync(currentDocument, cancellationToken).ConfigureAwait(false);
+            var documentToPersist = currentDocument;
+            var synchronized = await TrySynchronizeAsync(documentToPersist, cancellationToken).ConfigureAwait(false);
+            if (synchronized && prepareForPersistAsync is not null)
+            {
+                documentToPersist = await prepareForPersistAsync(documentToPersist, cancellationToken).ConfigureAwait(false)
+                    ?? throw new InvalidOperationException("The pre-persist document preparation returned null.");
+                EnsureSamePath(path, documentToPersist);
+                if (!Matches(currentDocument, documentToPersist))
+                {
+                    synchronized = await TrySynchronizeAsync(documentToPersist, cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            var savedDocument = await persistAsync(documentToPersist, cancellationToken).ConfigureAwait(false);
             if (savedDocument is null)
             {
                 return null;
             }
-            if (!string.Equals(path, NormalizePath(savedDocument.Path), StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException("The saved document path changed during synchronization.");
-            }
-            if (!synchronized || currentDocument.Version != savedDocument.Version ||
-                !string.Equals(currentDocument.Text, savedDocument.Text, StringComparison.Ordinal))
+            EnsureSamePath(path, savedDocument);
+            if (!synchronized || !Matches(documentToPersist, savedDocument))
             {
                 synchronized = await TrySynchronizeAsync(savedDocument, cancellationToken).ConfigureAwait(false);
             }
             if (synchronized)
             {
-                try { await notifySavedAsync(savedDocument, cancellationToken).ConfigureAwait(false); }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
-                catch (Exception exception) { _onError?.Invoke(exception); }
+                try
+                {
+                    await notifySavedAsync(savedDocument, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception exception)
+                {
+                    _onError?.Invoke(exception);
+                }
             }
             return savedDocument;
         }
@@ -199,7 +224,22 @@ public sealed class DocumentChangeScheduler : IAsyncDisposable
         }
     }
 
+    private static void EnsureSamePath(string normalizedPath, RocketSessionDocument document)
+    {
+        if (!string.Equals(normalizedPath, NormalizePath(document.Path), PathComparison))
+        {
+            throw new InvalidOperationException("The document path changed during synchronized save processing.");
+        }
+    }
+
+    private static bool Matches(RocketSessionDocument left, RocketSessionDocument right) =>
+        left.Version == right.Version && string.Equals(left.Text, right.Text, StringComparison.Ordinal);
+
     private static string NormalizePath(string path) => Path.GetFullPath(path);
+
+    private static StringComparison PathComparison => OperatingSystem.IsWindows()
+        ? StringComparison.OrdinalIgnoreCase
+        : StringComparison.Ordinal;
 
     private SemaphoreSlim GetPathGate(string path)
     {
@@ -216,6 +256,5 @@ public sealed class DocumentChangeScheduler : IAsyncDisposable
         public RocketSessionDocument Document { get; } = document;
 
         public CancellationTokenSource Cancellation { get; } = cancellation;
-
     }
 }

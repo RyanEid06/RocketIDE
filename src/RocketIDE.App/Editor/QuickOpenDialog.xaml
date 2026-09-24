@@ -24,7 +24,7 @@
             </ListBox.ItemTemplate>
         </ListBox>
         <DockPanel Grid.Row="2" Margin="0,8,0,0">
-            <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource IDE.TextMutedBrush}" Text="Enter opens selected file · Esc cancels" />
+            <TextBlock x:Name="StatusTextBlock" VerticalAlignment="Center" Foreground="{DynamicResource IDE.TextMutedBrush}" Text="Scanning workspace…" />
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                 <Button MinWidth="80" Margin="8,0,0,0" Content="Cancel" IsCancel="True" />
                 <Button MinWidth="80" Margin="8,0,0,0" Content="Open" IsDefault="True" Click="Open_Click" />

@@ -61,6 +61,7 @@ public partial class MainWindow : Window
         DataContext = _viewModel;
         InitializeRocketIntegration();
         InitializeReliability();
+        InitializeWp04();
     }
 
     public IEditorContext EditorContext => _editorIntegration;
@@ -116,13 +117,16 @@ public partial class MainWindow : Window
 
         try
         {
-            var finder = new QuickOpenFileFinder(_workspaceFileSystem);
-            var files = await finder.FindAsync(workspace.Path, maxFiles: 10000, CancellationToken.None);
-            var dialog = new QuickOpenDialog(workspace.Path, files) { Owner = this };
+            var dialog = CreateWp04QuickOpenDialog(workspace.Path);
             if (dialog.ShowDialog() == true && dialog.SelectedPath is not null)
             {
-                await OpenDocumentAsync(dialog.SelectedPath);
+                _ = await EditorNavigation.OpenOrRevealAsync(
+                    dialog.SelectedPath,
+                    cancellationToken: _lifetime.WorkToken);
             }
+        }
+        catch (OperationCanceledException) when (_lifetime.IsStopping)
+        {
         }
         catch (Exception exception) when (IsExpectedFileException(exception) || exception is ArgumentException)
         {
@@ -534,6 +538,7 @@ public partial class MainWindow : Window
             {
                 return await _documentChangeScheduler.SaveAsync(
                     ToSessionDocument(tab),
+                    (document, token) => PrepareDocumentForSaveAsync(tab, document, token),
                     (_, token) => PersistTabAsync(tab, token),
                     (document, token) => _rocketSession.SaveDocumentAsync(document, token),
                     token) is not null;
@@ -655,6 +660,7 @@ public partial class MainWindow : Window
             return false;
         }
 
+        RecordClosedEditors(tabs);
         CloseTabsWithoutPrompt(tabs);
         await SaveRecoverySnapshotAsync();
         return true;
