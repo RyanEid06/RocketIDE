@@ -31,6 +31,7 @@ public partial class MainWindow : Window
     private readonly RocketTargetDiscovery _targetDiscovery = new();
     private readonly RecentWorkspaceStore _recentWorkspaceStore = RecentWorkspaceStore.CreateDefault();
     private readonly MainWindowViewModel _viewModel;
+    private readonly LegacySinglePaneEditorIntegration _editorIntegration;
     private readonly ApplicationLifetimeCoordinator _lifetime;
     private readonly UiOutputBuffer _outputBuffer;
     private readonly Dictionary<string, DateTime> _suppressedWorkspaceChanges = new(StringComparer.OrdinalIgnoreCase);
@@ -44,6 +45,14 @@ public partial class MainWindow : Window
         InitializeComponent();
         _lifetime = new ApplicationLifetimeCoordinator(reportFailure: message => Logger.Warning(message));
         _viewModel = new MainWindowViewModel(_workspaceFileSystem);
+        _editorIntegration = new LegacySinglePaneEditorIntegration(
+            _viewModel,
+            ResolveLegacyEditorCommandTarget,
+            (path, cancellationToken) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return OpenDocumentAsync(path);
+            });
         _outputBuffer = new UiOutputBuffer(_viewModel.Output, action =>
             Dispatcher.BeginInvoke(action, DispatcherPriority.Background));
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -53,6 +62,10 @@ public partial class MainWindow : Window
         InitializeRocketIntegration();
         InitializeReliability();
     }
+
+    public IEditorContext EditorContext => _editorIntegration;
+
+    public IEditorNavigation EditorNavigation => _editorIntegration;
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
@@ -1003,11 +1016,11 @@ public partial class MainWindow : Window
         }
     }
 
-    private EditorDocumentHost? GetActiveEditor()
-    {
-        var active = _viewModel.ActiveDocument;
-        return active is null ? null : FindEditorForDataContext(EditorTabs, active);
-    }
+    private EditorDocumentHost? GetActiveEditor() =>
+        _editorIntegration.ActiveView?.CommandTarget as EditorDocumentHost;
+
+    private IEditorCommandTarget? ResolveLegacyEditorCommandTarget(DocumentTabViewModel document) =>
+        FindEditorForDataContext(EditorTabs, document);
 
     private static EditorDocumentHost? FindEditorForDataContext(DependencyObject parent, DocumentTabViewModel active)
     {
