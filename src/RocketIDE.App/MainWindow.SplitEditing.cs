@@ -176,12 +176,21 @@ public partial class MainWindow
             return true;
         }
 
-        if (e.Key != Key.Tab) return false;
-        var handled = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)
+        var modifiers = Keyboard.Modifiers;
+        if (e.Key != Key.Tab || !RocketSnippetNavigation.ShouldHandleTab(modifiers))
+        {
+            return false;
+        }
+
+        var handled = modifiers == ModifierKeys.Shift
             ? session.MovePrevious()
             : session.MoveNext();
+
         if (!session.IsActive && view is not null)
+        {
             view.SnippetSession = null;
+        }
+
         return handled;
     }
 }

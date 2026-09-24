@@ -18,4 +18,16 @@ public static class EditorClosePlanner
             .Distinct()
             .ToArray();
     }
+
+    public static IReadOnlyList<EditorViewViewModel> AllViewsExcept(
+        EditorLayoutViewModel layout,
+        EditorViewViewModel active)
+    {
+        ArgumentNullException.ThrowIfNull(layout);
+        ArgumentNullException.ThrowIfNull(active);
+        return layout.Groups
+            .SelectMany(group => group.Views)
+            .Where(view => !ReferenceEquals(view, active))
+            .ToArray();
+    }
 }

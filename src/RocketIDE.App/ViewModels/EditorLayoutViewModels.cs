@@ -82,6 +82,8 @@ public sealed class EditorViewViewModel : INotifyPropertyChanged, IEditorViewCon
     public void DetachCommandTarget(IEditorCommandTarget target)
     {
         if (!ReferenceEquals(_commandTarget, target)) return;
+        SnippetSession?.Cancel();
+        SnippetSession = null;
         _commandTarget = null;
         OnPropertyChanged(nameof(CommandTarget));
     }

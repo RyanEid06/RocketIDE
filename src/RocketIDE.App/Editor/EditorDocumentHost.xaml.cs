@@ -51,7 +51,7 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
         _diagnosticRenderer = new DiagnosticRenderer(Editor);
         _bracketMatchRenderer = new BracketMatchRenderer(Editor);
         _debugMarkerRenderer = new DebugMarkerRenderer(Editor);
-        _completionController = new RocketCompletionController(Editor, () => FeatureService);
+        _completionController = new RocketCompletionController(Editor, () => FeatureService, () => _view);
         _hoverController = new RocketHoverController(Editor, () => FeatureService);
         _signatureHelpController = new RocketSignatureHelpController(Editor, () => FeatureService);
         _semanticTokenController = new RocketSemanticTokenController(Editor, () => FeatureService);

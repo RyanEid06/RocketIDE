@@ -628,9 +628,7 @@ public partial class MainWindow : Window
     {
         var active = _viewModel.ActiveView;
         if (active is null) return;
-        var others = _viewModel.EditorLayout.ActiveGroup.Views
-            .Where(view => !ReferenceEquals(view, active))
-            .ToArray();
+        var others = EditorClosePlanner.AllViewsExcept(_viewModel.EditorLayout, active);
         await TryCloseViewsAsync(others);
     }
 

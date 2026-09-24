@@ -38,6 +38,24 @@ public sealed class EditorClosePlannerTests
         Assert.AreSame(document, closing[0]);
     }
 
+    [TestMethod]
+    public void AllViewsExcept_ReturnsViewsFromOtherGroups()
+    {
+        var document = CreateDocument();
+        var layout = new EditorLayoutViewModel();
+        layout.OpenOrActivate(document);
+        layout.SplitActive(EditorSplitOrientation.Vertical);
+
+        var active = layout.ActiveView;
+        Assert.IsNotNull(active);
+
+        var others = EditorClosePlanner.AllViewsExcept(layout, active);
+
+        Assert.AreEqual(1, others.Count);
+        Assert.AreNotSame(active, others[0]);
+        Assert.AreSame(document, others[0].Document);
+    }
+
     private static DocumentTabViewModel CreateDocument()
     {
         var path = Path.GetFullPath(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "close.rocket"));
