@@ -106,7 +106,7 @@ public sealed class ProblemsViewModelTests
             new Uri(path).AbsoluteUri,
             path,
             1,
-            [Diagnostic(path, "R2001", DiagnosticSeverity.Error, "live") ]));
+            [Diagnostic(path, "R2001", DiagnosticSeverity.Error, "live")]));
         viewModel.SetCompilerDiagnostics([
             new RocketDiagnostic("rocketc", "R4002", "compiler", DiagnosticSeverity.Error, path, new SourceRange(4, 2, 4, 3), Provenance: "Compiler"),
         ]);

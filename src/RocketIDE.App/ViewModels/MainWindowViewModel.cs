@@ -76,7 +76,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public RocketCommandState GetCommandState(string commandId) =>
         CommandRegistry.Evaluate(commandId, new RocketCommandContext(
-            HasDocuments,
+            ActiveDocument is not null,
             _hasRocketCommandTarget,
             _rocketRunAvailable,
             _rocketCommandRunning,
@@ -377,6 +377,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(CanDebugStepInto));
         OnPropertyChanged(nameof(CanDebugStepOut));
     }
+
+    public void RaiseCommandStateChanged() => RaiseRocketCommandProperties();
 
     private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
     {

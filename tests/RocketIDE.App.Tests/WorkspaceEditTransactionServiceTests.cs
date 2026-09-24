@@ -425,7 +425,7 @@ public sealed class WorkspaceEditTransactionServiceTests
     private static WorkspaceEditTransactionService Service(
         IReadOnlyList<WorkspaceEditOpenDocument> open,
         IDictionary<string, ClosedWorkspaceFile> disk,
-        Func<string,string,bool,CancellationToken,Task> writer) =>
+        Func<string, string, bool, CancellationToken, Task> writer) =>
         new(
             () => open,
             (path, _) => Task.FromResult(disk[path]),

@@ -81,14 +81,16 @@ public partial class MainWindow
 
     private async void DebugToggleBreakpoint_Click(object sender, RoutedEventArgs e)
     {
-        var document = _viewModel.ActiveDocument;
-        if (document is null || !string.Equals(Path.GetExtension(document.Path), ".rocket", StringComparison.OrdinalIgnoreCase))
+        var view = EditorContext.ActiveView;
+        var document = view?.Document;
+        var target = view?.CommandTarget;
+        if (document is null || target is null || !string.Equals(Path.GetExtension(document.Path), ".rocket", StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
         var before = _viewModel.Debug.Breakpoints.ToArray();
-        var updated = _viewModel.Debug.ToggleBreakpoint(document.Path, document.CaretLine);
+        var updated = _viewModel.Debug.ToggleBreakpoint(document.Path, target.CaretLine);
         RefreshDebugEditorPresentation();
         if (_nativeDebugger?.State != RocketDebugSessionState.Stopped)
         {
@@ -303,11 +305,10 @@ public partial class MainWindow
     private async Task NavigateToDebugLocationAsync(RocketDebugStopLocation location)
     {
         if (!File.Exists(location.SourcePath)) return;
-        var tab = FindOpenDocument(location.SourcePath) ?? await OpenDocumentAsync(location.SourcePath);
-        if (tab is null) return;
         RefreshDebugEditorPresentation();
         var zeroBasedLine = Math.Max(0, location.Line - 1);
-        tab.RequestNavigation(new SourceRange(zeroBasedLine, 0, zeroBasedLine, 0));
+        await EditorNavigation.OpenOrRevealAsync(
+            location.SourcePath, new SourceRange(zeroBasedLine, 0, zeroBasedLine, 0), CancellationToken.None);
     }
 
     private void RefreshDebugEditorPresentation()
