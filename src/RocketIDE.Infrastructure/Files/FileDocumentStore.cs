@@ -232,7 +232,7 @@ public sealed class FileDocumentStore : IDocumentStore
                 current.BaselineHash = newHash;
                 current.BaselineLastWriteUtc = newLastWriteUtc;
                 var persisted = current.State.MarkPersisted(snapshot.Text, StrictUtf8.GetByteCount(snapshot.Text));
-                return new DocumentSaveResult(DocumentSaveStatus.Saved, persisted);
+                return new DocumentSaveResult(DocumentSaveStatus.Saved, persisted, PersistedDocument: snapshot);
             }
         }
         finally

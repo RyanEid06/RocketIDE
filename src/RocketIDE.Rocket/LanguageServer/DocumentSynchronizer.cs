@@ -116,7 +116,16 @@ public sealed class DocumentSynchronizer(IRocketLanguageClient client)
         }
     }
 
-    public async Task SaveAsync(string path, CancellationToken cancellationToken)
+    public Task SaveAsync(string path, CancellationToken cancellationToken) =>
+        SaveCoreAsync(path, null, null, cancellationToken);
+
+    public Task SaveAsync(string path, string text, int version, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        return SaveCoreAsync(path, text, version, cancellationToken);
+    }
+
+    private async Task SaveCoreAsync(string path, string? expectedText, int? expectedVersion, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -125,6 +134,11 @@ public sealed class DocumentSynchronizer(IRocketLanguageClient client)
             var key = NormalizePath(path);
             if (_documents.TryGetValue(key, out var current) && current.State == LspDocumentSyncState.Synchronized)
             {
+                if (expectedVersion is not null &&
+                    (current.Version != expectedVersion || !string.Equals(current.Text, expectedText, StringComparison.Ordinal)))
+                {
+                    throw new InvalidOperationException($"Document '{key}' changed after the saved snapshot was captured.");
+                }
                 await client.NotifyAsync(
                     "textDocument/didSave",
                     new DidSaveTextDocumentParams(new TextDocumentIdentifier(current.Uri), current.Text),

@@ -79,6 +79,22 @@ public sealed class DocumentSynchronizerTests
         Assert.AreEqual("X", change.ContentChanges[0].Text);
     }
 
+    [TestMethod]
+    public async Task SaveAsync_RejectsTextOrVersionThatDoesNotMatchPersistedSnapshot()
+    {
+        var client = new RecordingClient();
+        var sync = new DocumentSynchronizer(client);
+        await sync.OpenAsync("save.rocket", "old", 1, CancellationToken.None);
+        await sync.ChangeAsync("save.rocket", "new", 2, CancellationToken.None);
+
+        await Assert.ThrowsExactlyAsync<InvalidOperationException>(() =>
+            sync.SaveAsync("save.rocket", "old", 1, CancellationToken.None));
+        Assert.IsFalse(client.Notifications.Any(notification => notification.Method == "textDocument/didSave"));
+
+        await sync.SaveAsync("save.rocket", "new", 2, CancellationToken.None);
+        Assert.AreEqual("new", ((DidSaveTextDocumentParams)client.Notifications.Last().Parameters!).Text);
+    }
+
     private sealed class RecordingClient : IRocketLanguageClient
     {
         public bool IsInitialized => true;

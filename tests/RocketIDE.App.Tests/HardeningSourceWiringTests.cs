@@ -47,7 +47,8 @@ public sealed class HardeningSourceWiringTests
     {
         var source = ReadSource("src", "RocketIDE.App", "MainWindow.xaml.cs");
 
-        StringAssert.Contains(source, "!await ConfirmDirtyTabsAsync(_viewModel.Documents.ToArray())");
+        StringAssert.Contains(source, "ConfirmDirtyTabsForShutdown(_viewModel.Documents.ToArray())");
+        StringAssert.Contains(source, "_lifetime.RunGracefulAsync(\"Unsaved document saves\"");
         Assert.IsFalse(
             source.Contains("!await TryCloseTabsAsync(_viewModel.Documents.ToArray())", StringComparison.Ordinal),
             "Window shutdown must not remove every tab before SaveSessionAsync captures the session.");

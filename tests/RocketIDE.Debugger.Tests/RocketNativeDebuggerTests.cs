@@ -90,6 +90,58 @@ public sealed class RocketNativeDebuggerTests
         Assert.AreEqual(RocketDebugSessionState.Terminated, debugger.State);
     }
 
+    [TestMethod]
+    public async Task StopAsync_HungTransportHonorsCallerShutdownToken()
+    {
+        var transport = new FakeTransport { HungStop = true };
+        await using var debugger = new RocketNativeDebugger(transport, TimeSpan.FromMilliseconds(50));
+        debugger.SetTestState(RocketDebugSessionState.Stopped, processId: null);
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            debugger.StopAsync(cancellation.Token).WaitAsync(TimeSpan.FromMilliseconds(500)));
+    }
+
+    [TestMethod]
+    public async Task DisposeAsync_DetachesFromHungDebuggerTransportWithinBudget()
+    {
+        var transport = new FakeTransport { HungStop = true, HungDispose = true };
+        var debugger = new RocketNativeDebugger(transport, TimeSpan.FromMilliseconds(50));
+        debugger.SetTestState(RocketDebugSessionState.Stopped, processId: null);
+        var elapsed = System.Diagnostics.Stopwatch.StartNew();
+
+        await debugger.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromMilliseconds(500));
+
+        Assert.IsTrue(elapsed.Elapsed < TimeSpan.FromMilliseconds(500));
+    }
+
+    [TestMethod]
+    public async Task ForceTerminateOwnedProcesses_KillsKnownDebuggeeTree()
+    {
+        var command = Environment.GetEnvironmentVariable("ComSpec") ?? @"C:\Windows\System32\cmd.exe";
+        using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = command,
+            Arguments = "/d /s /c ping 127.0.0.1 -n 30 >nul",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        })!;
+        try
+        {
+            await using var debugger = new RocketNativeDebugger(new FakeTransport());
+            debugger.SetTestState(RocketDebugSessionState.Stopped, process.Id);
+
+            debugger.ForceTerminateOwnedProcesses();
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(2));
+
+            Assert.IsTrue(process.HasExited);
+        }
+        finally
+        {
+            if (!process.HasExited) process.Kill(entireProcessTree: true);
+        }
+    }
+
     private sealed class FakeTransport : IDebuggerCommandTransport
     {
         public event EventHandler<RocketDebugOutputEventArgs>? OutputReceived;
@@ -99,6 +151,8 @@ public sealed class RocketNativeDebuggerTests
         public bool Stopped { get; private set; }
         public TaskCompletionSource<string>? PendingRunCommand { get; init; }
         public bool FaultPendingRunOnBreak { get; init; }
+        public bool HungStop { get; init; }
+        public bool HungDispose { get; init; }
 
         public Task CreateProcessAsync(string executablePath, IReadOnlyList<string> arguments, string workingDirectory, CancellationToken cancellationToken)
         {
@@ -122,10 +176,13 @@ public sealed class RocketNativeDebuggerTests
         }
         public Task StopAsync(CancellationToken cancellationToken)
         {
+            if (HungStop) return new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously).Task;
             Stopped = true;
             return Task.CompletedTask;
         }
-        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        public ValueTask DisposeAsync() => HungDispose
+            ? new ValueTask(new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously).Task)
+            : ValueTask.CompletedTask;
     }
 
     private sealed class TempDirectory : IDisposable

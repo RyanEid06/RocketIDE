@@ -225,7 +225,7 @@ public partial class MainWindow
         }
     }
 
-    private async Task SaveSessionAsync(bool cleanShutdown)
+    private async Task SaveSessionAsync(bool cleanShutdown, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -237,7 +237,7 @@ public partial class MainWindow
                 CaptureWindowBounds(),
                 cleanShutdown,
                 DateTimeOffset.UtcNow);
-            await _sessionStore.SaveAsync(session, CancellationToken.None);
+            await _sessionStore.SaveAsync(session, cancellationToken);
         }
         catch (Exception exception) when (IsExpectedReliabilityException(exception))
         {
@@ -245,15 +245,15 @@ public partial class MainWindow
         }
     }
 
-    private async Task CompleteReliabilityShutdownAsync()
+    private async Task CompleteReliabilityShutdownAsync(CancellationToken cancellationToken)
     {
         _recoveryTimer?.Stop();
         try
         {
-            await SaveSessionAsync(cleanShutdown: true);
+            await SaveSessionAsync(cleanShutdown: true, cancellationToken);
             if (!_recoveryNeedsDecision)
             {
-                await _recoveryStore.ClearAsync(CancellationToken.None);
+                await _recoveryStore.ClearAsync(cancellationToken);
             }
         }
         catch (Exception exception) when (IsExpectedReliabilityException(exception))

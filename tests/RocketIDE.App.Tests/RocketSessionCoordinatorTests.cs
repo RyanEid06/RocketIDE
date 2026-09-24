@@ -15,6 +15,75 @@ namespace RocketIDE.App.Tests;
 public sealed class RocketSessionCoordinatorTests
 {
     [TestMethod]
+    public async Task Shutdown_HungFakeLspCanBeForceStoppedWithinApplicationDeadline()
+    {
+        using var temp = new TempDirectory();
+        var fakeClient = new FakeLanguageClient { HangOnStop = true };
+        var discovery = new RocketToolDiscoveryResult(
+            Path.Combine(temp.Path, "rocketc.exe"), Path.Combine(temp.Path, "rocket-lsp.exe"),
+            "rocketc 2.1.0", "rocket-lsp 1.0.0", []);
+        await using var coordinator = CreateCoordinator(fakeClient, discovery);
+        await coordinator.EnsureAsync(temp.Path, temp.Path, CancellationToken.None);
+        using var lifetime = new ApplicationLifetimeCoordinator(
+            TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(200));
+        lifetime.BeginShutdown();
+
+        Assert.IsFalse(await lifetime.RunGracefulAsync("LSP", coordinator.ShutdownAsync));
+        coordinator.ForceStopOwnedProcessTree();
+        Assert.AreEqual(1, fakeClient.ForcedKillCount);
+    }
+
+    [TestMethod]
+    public async Task RestartAsync_HungFakeLspStopHonorsDeadlineAndKillsOwnedTree()
+    {
+        using var temp = new TempDirectory();
+        var fakeClient = new FakeLanguageClient { HangOnStop = true };
+        var discovery = new RocketToolDiscoveryResult(
+            Path.Combine(temp.Path, "rocketc.exe"), Path.Combine(temp.Path, "rocket-lsp.exe"),
+            "rocketc 2.1.0", "rocket-lsp 1.0.0", []);
+        await using var coordinator = CreateCoordinator(fakeClient, discovery);
+        await coordinator.EnsureAsync(temp.Path, temp.Path, CancellationToken.None);
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+
+        try
+        {
+            await Assert.ThrowsAsync<OperationCanceledException>(() =>
+                coordinator.RestartAsync(temp.Path, temp.Path, cancellation.Token).WaitAsync(TimeSpan.FromMilliseconds(500)));
+            Assert.AreEqual(1, fakeClient.ForcedKillCount);
+        }
+        finally
+        {
+            if (fakeClient.ForcedKillCount == 0) fakeClient.KillOwnedProcessTree();
+        }
+    }
+
+    [TestMethod]
+    public async Task EnsureAndOpenDocumentAsync_SerializesImmediateChangeAndSaveBehindStartup()
+    {
+        using var temp = new TempDirectory();
+        var source = Path.Combine(temp.Path, "main.rocket");
+        var startup = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var fakeClient = new FakeLanguageClient { StartGate = startup.Task };
+        var discovery = new RocketToolDiscoveryResult(
+            Path.Combine(temp.Path, "rocketc.exe"), Path.Combine(temp.Path, "rocket-lsp.exe"),
+            "rocketc 2.1.0", "rocket-lsp 1.0.0", []);
+        await using var coordinator = CreateCoordinator(fakeClient, discovery);
+
+        var opened = coordinator.EnsureAndOpenDocumentAsync(
+            new RocketSessionDocument(source, "old", 1, "main.rocket"), source, temp.Path, CancellationToken.None);
+        var changed = coordinator.ChangeDocumentAsync(
+            new RocketSessionDocument(source, "new", 2, "main.rocket"), CancellationToken.None);
+        var saved = coordinator.SaveDocumentAsync(
+            new RocketSessionDocument(source, "new", 2, "main.rocket"), CancellationToken.None);
+        startup.TrySetResult();
+        await Task.WhenAll(opened, changed, saved);
+
+        CollectionAssert.AreEqual(
+            new[] { "textDocument/didOpen", "textDocument/didChange", "textDocument/didSave" },
+            fakeClient.Notifications.Select(notification => notification.Method).ToArray());
+    }
+
+    [TestMethod]
     public async Task EnsureAsync_StartsClientAndSynchronizesAlreadyOpenDocuments()
     {
         using var temp = new TempDirectory();
@@ -447,11 +516,15 @@ public sealed class RocketSessionCoordinatorTests
             Task.FromResult(result);
     }
 
-    private sealed class FakeLanguageClient : IRocketLanguageClient
+    private sealed class FakeLanguageClient : IRocketLanguageClient, IOwnedProcessTree
     {
         public bool IsInitialized { get; private set; }
         public RocketLanguageServerCapabilities Capabilities { get; set; } = RocketLanguageServerCapabilities.None;
         public int DisposeCount { get; private set; }
+        public int ForcedKillCount { get; private set; }
+        public bool HangOnStop { get; init; }
+        public Task? StartGate { get; init; }
+        private readonly TaskCompletionSource _stopped = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public Func<string, object?, object?>? RequestHandler { get; init; }
         public List<(string Method, object? Parameters)> Notifications { get; } = new();
         public List<(string Method, object? Parameters)> Requests { get; } = new();
@@ -464,10 +537,10 @@ public sealed class RocketSessionCoordinatorTests
             remove { }
         }
 
-        public Task StartAsync(string serverPath, string workspacePath, CancellationToken cancellationToken)
+        public async Task StartAsync(string serverPath, string workspacePath, CancellationToken cancellationToken)
         {
+            if (StartGate is not null) await StartGate;
             IsInitialized = true;
-            return Task.CompletedTask;
         }
 
         public Task<TResponse?> RequestAsync<TResponse>(string method, object? parameters, CancellationToken cancellationToken)
@@ -486,7 +559,13 @@ public sealed class RocketSessionCoordinatorTests
         public Task StopAsync(CancellationToken cancellationToken)
         {
             IsInitialized = false;
-            return Task.CompletedTask;
+            return HangOnStop ? _stopped.Task : Task.CompletedTask;
+        }
+
+        public void KillOwnedProcessTree()
+        {
+            ForcedKillCount++;
+            _stopped.TrySetResult();
         }
 
         public ValueTask DisposeAsync()
