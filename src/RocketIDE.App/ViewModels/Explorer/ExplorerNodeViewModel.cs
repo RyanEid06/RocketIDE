@@ -9,6 +9,7 @@ public sealed class ExplorerNodeViewModel : INotifyPropertyChanged
 {
     private readonly IWorkspaceFileSystem _fileSystem;
     private bool _isExpanded;
+    private bool _isSelected;
     private bool _isLoaded;
     private bool _isLoading;
 
@@ -54,6 +55,21 @@ public sealed class ExplorerNodeViewModel : INotifyPropertyChanged
             }
 
             _isExpanded = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected == value)
+            {
+                return;
+            }
+
+            _isSelected = value;
             OnPropertyChanged();
         }
     }
@@ -109,6 +125,37 @@ public sealed class ExplorerNodeViewModel : INotifyPropertyChanged
         _isLoaded = false;
         await LoadChildrenAsync(cancellationToken);
         await RestoreExpandedPathsAsync(expandedPaths, cancellationToken);
+    }
+
+    public void CollapseRecursively()
+    {
+        if (IsPlaceholder)
+        {
+            return;
+        }
+
+        foreach (var child in Children.Where(child => !child.IsPlaceholder))
+        {
+            child.CollapseRecursively();
+        }
+        if (IsDirectory)
+        {
+            IsExpanded = false;
+        }
+    }
+
+    public void ClearSelectionRecursively()
+    {
+        if (IsPlaceholder)
+        {
+            return;
+        }
+
+        IsSelected = false;
+        foreach (var child in Children.Where(child => !child.IsPlaceholder))
+        {
+            child.ClearSelectionRecursively();
+        }
     }
 
     private HashSet<string> CaptureExpandedDirectoryPaths()

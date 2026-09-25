@@ -70,6 +70,79 @@ public sealed class WorkspaceExplorerViewModel : INotifyPropertyChanged
         await Roots[0].RefreshAsync(cancellationToken);
     }
 
+    public void CollapseAll()
+    {
+        foreach (var root in Roots)
+        {
+            root.CollapseRecursively();
+        }
+    }
+
+    public async Task<ExplorerNodeViewModel?> RevealAsync(string path, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        if (Workspace is null || Roots.Count == 0)
+        {
+            return null;
+        }
+
+        var targetPath = Path.GetFullPath(path);
+        if (!File.Exists(targetPath) && !Directory.Exists(targetPath))
+        {
+            return null;
+        }
+
+        var rootPath = Path.GetFullPath(Workspace.Path);
+        var relative = Path.GetRelativePath(rootPath, targetPath);
+        if (Path.IsPathRooted(relative) ||
+            relative.Equals("..", StringComparison.Ordinal) ||
+            relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) ||
+            relative.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var root = Roots[0];
+        root.ClearSelectionRecursively();
+        root.IsExpanded = true;
+        if (PathComparer.Equals(root.Path, targetPath))
+        {
+            root.IsSelected = true;
+            return root;
+        }
+
+        var current = root;
+        var parts = relative.Split(
+            [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
+            StringSplitOptions.RemoveEmptyEntries);
+        foreach (var part in parts)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!current.IsDirectory)
+            {
+                return null;
+            }
+
+            current.IsExpanded = true;
+            await current.LoadChildrenAsync(cancellationToken);
+            var expectedPath = Path.GetFullPath(Path.Combine(current.Path, part));
+            var next = current.Children.FirstOrDefault(child =>
+                !child.IsPlaceholder && PathComparer.Equals(child.Path, expectedPath));
+            if (next is null)
+            {
+                return null;
+            }
+            current = next;
+        }
+
+        current.IsSelected = true;
+        return current;
+    }
+
+    private static StringComparer PathComparer => OperatingSystem.IsWindows()
+        ? StringComparer.OrdinalIgnoreCase
+        : StringComparer.Ordinal;
+
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }

@@ -28,6 +28,19 @@ public sealed class QuickOpenFileFinderTests
         Assert.AreEqual(1, limited.Count);
     }
 
+    [TestMethod]
+    public async Task FindAsync_PreCancelledRequestDoesNotEnumerateWorkspace()
+    {
+        var root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "quick-open-cancelled"));
+        var fs = new CountingWorkspaceFileSystem();
+        var finder = new QuickOpenFileFinder(fs);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => finder.FindAsync(root, 10, cancellation.Token));
+        Assert.AreEqual(0, fs.CallCount);
+    }
+
     private sealed class FakeWorkspaceFileSystem(IReadOnlyDictionary<string, IReadOnlyList<WorkspaceEntry>> entries) : IWorkspaceFileSystem
     {
         public Task<IReadOnlyList<WorkspaceEntry>> GetChildrenAsync(string directoryPath, CancellationToken cancellationToken) =>
@@ -38,4 +51,19 @@ public sealed class QuickOpenFileFinderTests
         public void DeleteToRecycleBin(string path) => throw new NotSupportedException();
         public string ResolveChildPath(string directoryPath, string leafName) => throw new NotSupportedException();
     }
+    private sealed class CountingWorkspaceFileSystem : IWorkspaceFileSystem
+    {
+        public int CallCount { get; private set; }
+        public Task<IReadOnlyList<WorkspaceEntry>> GetChildrenAsync(string directoryPath, CancellationToken cancellationToken)
+        {
+            CallCount++;
+            return Task.FromResult<IReadOnlyList<WorkspaceEntry>>([]);
+        }
+        public Task CreateFileAsync(string path, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public void CreateDirectory(string path) => throw new NotSupportedException();
+        public string Rename(string path, string newName) => throw new NotSupportedException();
+        public void DeleteToRecycleBin(string path) => throw new NotSupportedException();
+        public string ResolveChildPath(string directoryPath, string leafName) => throw new NotSupportedException();
+    }
+
 }
