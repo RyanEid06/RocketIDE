@@ -17,7 +17,7 @@ namespace RocketIDE.App.ViewModels;
 
 public sealed class MainWindowViewModel : INotifyPropertyChanged
 {
-    private DocumentTabViewModel? _activeDocument;
+
     private string _rocketSdkStatus = "Rocket SDK: not configured";
     private string _lspStatus = "LSP: offline";
     private string _activeTargetStatus = "Target: none";
@@ -30,6 +30,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public MainWindowViewModel(IWorkspaceFileSystem workspaceFileSystem, IWorkspaceSearchService? searchService = null)
     {
         ArgumentNullException.ThrowIfNull(workspaceFileSystem);
+        EditorLayout = new EditorLayoutViewModel();
+        EditorLayout.ActiveContextChanged += EditorLayout_ActiveContextChanged;
+        EditorLayout.PropertyChanged += EditorLayout_PropertyChanged;
         Explorer = new WorkspaceExplorerViewModel(workspaceFileSystem);
         Problems = new ProblemsViewModel();
         References = new ReferencesViewModel();
@@ -57,6 +60,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public ObservableCollection<DocumentTabViewModel> Documents { get; } = new();
+
+    public EditorLayoutViewModel EditorLayout { get; }
+
+    public EditorViewViewModel? ActiveView => EditorLayout.ActiveView;
 
     public WorkspaceExplorerViewModel Explorer { get; }
 
@@ -95,29 +102,15 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public DocumentTabViewModel? ActiveDocument
     {
-        get => _activeDocument;
+        get => ActiveView?.Document;
         set
         {
-            if (ReferenceEquals(_activeDocument, value))
+            if (value is null)
             {
                 return;
             }
 
-            if (_activeDocument is not null)
-            {
-                _activeDocument.CaretChanged -= ActiveDocument_CaretChanged;
-            }
-
-            _activeDocument = value;
-
-            if (_activeDocument is not null)
-            {
-                _activeDocument.CaretChanged += ActiveDocument_CaretChanged;
-            }
-
-            UpdateCaretStatus();
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(WindowTitle));
+            EditorLayout.OpenOrActivate(value);
             RaiseRocketCommandProperties();
         }
     }
@@ -194,16 +187,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public DocumentTabViewModel AddOrActivate(IDocumentStore documentStore, DocumentSnapshot snapshot)
     {
-        var existing = Documents.FirstOrDefault(document => document.Id == snapshot.Id);
+        var existing = Documents.FirstOrDefault(document =>
+            document.Id == snapshot.Id ||
+            string.Equals(Path.GetFullPath(document.Path), Path.GetFullPath(snapshot.Path), PathComparison));
         if (existing is not null)
         {
-            ActiveDocument = existing;
+            EditorLayout.OpenOrActivate(existing);
             return existing;
         }
 
         var tab = new DocumentTabViewModel(documentStore, snapshot);
         Documents.Add(tab);
-        ActiveDocument = tab;
+        EditorLayout.OpenOrActivate(tab);
         return tab;
     }
 
@@ -258,20 +253,17 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public void Remove(DocumentTabViewModel tab)
     {
         var index = Documents.IndexOf(tab);
-        if (index < 0)
-        {
-            return;
-        }
+        if (index < 0) return;
 
-        var wasActive = ReferenceEquals(ActiveDocument, tab);
+        var fallback = Documents.Count > 1
+            ? Documents[index == Documents.Count - 1 ? index - 1 : index + 1]
+            : null;
+
+        EditorLayout.RemoveDocument(tab);
         Documents.RemoveAt(index);
 
-        if (wasActive)
-        {
-            ActiveDocument = Documents.Count == 0
-                ? null
-                : Documents[Math.Min(index, Documents.Count - 1)];
-        }
+        if (ActiveView is null && fallback is not null && Documents.Contains(fallback))
+            EditorLayout.OpenOrActivate(fallback);
     }
 
     private void Documents_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -350,13 +342,26 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             : fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }
 
-    private void ActiveDocument_CaretChanged(object? sender, EventArgs e) => UpdateCaretStatus();
+    private void EditorLayout_ActiveContextChanged(object? sender, EventArgs e)
+    {
+        OnPropertyChanged(nameof(ActiveView));
+        OnPropertyChanged(nameof(ActiveDocument));
+        OnPropertyChanged(nameof(WindowTitle));
+        UpdateCaretStatus();
+        RaiseRocketCommandProperties();
+    }
+
+    private void EditorLayout_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(EditorLayoutViewModel.ActiveView))
+            UpdateCaretStatus();
+    }
 
     private void UpdateCaretStatus()
     {
-        CaretStatus = ActiveDocument is null
+        CaretStatus = ActiveView is null
             ? "Ln 1, Col 1"
-            : $"Ln {ActiveDocument.CaretLine}, Col {ActiveDocument.CaretColumn}";
+            : $"Ln {ActiveView.CaretLine}, Col {ActiveView.CaretColumn}";
     }
 
     private void RaiseRocketCommandProperties()

@@ -42,7 +42,6 @@ internal sealed class RocketSemanticTokenController : IDisposable
         CancelPending();
         if (_document is not null)
         {
-            _serviceProvider()?.InvalidateSemanticTokens(_document.Path);
             _document.PropertyChanged -= Document_PropertyChanged;
             _document = null;
         }

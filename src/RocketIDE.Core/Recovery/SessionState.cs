@@ -30,6 +30,7 @@ public sealed class SessionState
     public string? ActiveDocumentPath { get; set; }
     public PanelLayout Panels { get; set; } = new();
     public WindowBounds Window { get; set; } = WindowBounds.Default;
+    public EditorLayoutState? EditorLayout { get; set; }
     public bool CleanShutdown { get; set; } = true;
     public DateTimeOffset SavedUtc { get; set; } = DateTimeOffset.UnixEpoch;
 

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using ICSharpCode.AvalonEdit.Document;
@@ -26,8 +27,10 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
     private readonly RocketSignatureHelpController _signatureHelpController;
     private readonly RocketSemanticTokenController _semanticTokenController;
     private DocumentTabViewModel? _document;
+    private EditorViewViewModel? _view;
     private bool _rocketFeaturesAttached;
 
+    public event EventHandler? ViewActivated;
     public event EventHandler<RocketEditorCommandRequestedEventArgs>? RocketCommandRequested;
 
     public static readonly DependencyProperty FeatureServiceProperty = DependencyProperty.Register(
@@ -48,7 +51,7 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
         _diagnosticRenderer = new DiagnosticRenderer(Editor);
         _bracketMatchRenderer = new BracketMatchRenderer(Editor);
         _debugMarkerRenderer = new DebugMarkerRenderer(Editor);
-        _completionController = new RocketCompletionController(Editor, () => FeatureService);
+        _completionController = new RocketCompletionController(Editor, () => FeatureService, () => _view);
         _hoverController = new RocketHoverController(Editor, () => FeatureService);
         _signatureHelpController = new RocketSignatureHelpController(Editor, () => FeatureService);
         _semanticTokenController = new RocketSemanticTokenController(Editor, () => FeatureService);
@@ -56,6 +59,9 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
         Loaded += EditorDocumentHost_Loaded;
         Unloaded += EditorDocumentHost_Unloaded;
         Editor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
+        Editor.TextArea.SelectionChanged += Editor_SelectionChanged;
+        Editor.TextArea.TextView.ScrollOffsetChanged += TextView_ScrollOffsetChanged;
+        Editor.GotKeyboardFocus += Editor_GotKeyboardFocus;
         Editor.Options.HighlightCurrentLine = true;
         Editor.TextArea.TextView.CurrentLineBackground = (Brush)FindResource("IDE.ChromeRaisedBrush");
     }
@@ -143,9 +149,9 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         DetachDocument();
-        if (e.NewValue is DocumentTabViewModel document)
+        if (e.NewValue is EditorViewViewModel view)
         {
-            AttachDocument(document);
+            AttachView(view);
         }
         else
         {
@@ -155,16 +161,21 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
             _diagnosticRenderer.UpdateDiagnostics([]);
         }
 
-        ReportCaret();
+        ReportViewState();
         _bracketMatchRenderer.Update();
     }
 
-    private void AttachDocument(DocumentTabViewModel document)
+    private void AttachView(EditorViewViewModel view)
     {
+        _view = view;
+        _view.AttachCommandTarget(this);
+        _view.FocusRequested += View_FocusRequested;
+        _view.NavigationRequested += View_NavigationRequested;
+
+        var document = view.Document;
         _document = document;
         _document.PropertyChanged += Document_PropertyChanged;
         _document.DiagnosticsChanged += Document_DiagnosticsChanged;
-        _document.NavigationRequested += Document_NavigationRequested;
         _document.DebugMarkersChanged += Document_DebugMarkersChanged;
         Editor.Document = document.EditorDocument;
         if (IsRocketDocument(document))
@@ -177,9 +188,6 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
                 }
                 catch (Exception exception)
                 {
-                    // Syntax coloring is optional editor presentation. A broken highlighting
-                    // definition must never make opening a source file fatal. CI directly tests
-                    // the definition so this fallback is defense in depth, not a hidden failure.
                     Trace.TraceError($"Rocket syntax highlighting failed to load: {exception}");
                     Editor.SyntaxHighlighting = null;
                 }
@@ -207,23 +215,21 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
             _diagnosticRenderer.UpdateDiagnostics([]);
         }
 
-        ApplyPendingNavigation(document);
-        ReportCaret();
+        RestoreViewState(view);
+        ApplyPendingNavigation(view);
+        ReportViewState();
     }
 
     private void EditorDocumentHost_Loaded(object sender, RoutedEventArgs e)
     {
-        if (_document is null && DataContext is DocumentTabViewModel document)
+        if (_document is null && DataContext is EditorViewViewModel view)
         {
-            AttachDocument(document);
+            AttachView(view);
         }
     }
 
     private void EditorDocumentHost_Unloaded(object sender, RoutedEventArgs e)
     {
-        // A tab content presenter can unload and later reload the same control. Only detach
-        // subscriptions to the external view-model here; the renderer belongs to this control's
-        // own visual tree and remains valid if WPF reloads it.
         DetachDocument();
         _diagnosticRenderer.UpdateDiagnostics([]);
     }
@@ -231,14 +237,17 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
     private void DetachDocument()
     {
         DetachRocketFeatures();
-        if (_document is null)
+        if (_view is not null)
         {
-            return;
+            _view.FocusRequested -= View_FocusRequested;
+            _view.NavigationRequested -= View_NavigationRequested;
+            _view.DetachCommandTarget(this);
+            _view = null;
         }
+        if (_document is null) return;
 
         _document.PropertyChanged -= Document_PropertyChanged;
         _document.DiagnosticsChanged -= Document_DiagnosticsChanged;
-        _document.NavigationRequested -= Document_NavigationRequested;
         _document.DebugMarkersChanged -= Document_DebugMarkersChanged;
         _document = null;
         _debugMarkerRenderer.UpdateMarkers([], null);
@@ -278,21 +287,32 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
         }
     }
 
-    private void Document_NavigationRequested(object? sender, DocumentNavigationRequestedEventArgs e)
+    private void View_NavigationRequested(object? sender, EditorViewNavigationRequestedEventArgs e)
     {
-        if (sender is DocumentTabViewModel document && ReferenceEquals(document, _document))
+        if (sender is EditorViewViewModel view && ReferenceEquals(view, _view))
         {
             NavigateTo(e.Range);
-            _ = document.TakePendingNavigation();
+            _ = view.TakePendingNavigation();
         }
     }
 
-    private void ApplyPendingNavigation(DocumentTabViewModel document)
+    private void ApplyPendingNavigation(EditorViewViewModel view)
     {
-        if (document.TakePendingNavigation() is { } pending)
+        if (view.TakePendingNavigation() is { } pending)
         {
             NavigateTo(pending);
         }
+    }
+
+    private void RestoreViewState(EditorViewViewModel view)
+    {
+        var length = Editor.Document.TextLength;
+        var caret = Math.Clamp(view.CaretOffset, 0, length);
+        Editor.CaretOffset = caret;
+        SetSelection(Math.Clamp(view.SelectionStart, 0, length), view.SelectionLength);
+        var scrollInfo = (IScrollInfo)Editor.TextArea.TextView;
+        scrollInfo.SetHorizontalOffset(view.HorizontalOffset);
+        scrollInfo.SetVerticalOffset(view.VerticalOffset);
     }
 
     private void NavigateTo(SourceRange range)
@@ -312,16 +332,28 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
 
     private void Caret_PositionChanged(object? sender, EventArgs e)
     {
-        ReportCaret();
+        ReportViewState();
         _bracketMatchRenderer.Update();
     }
 
-    private void ReportCaret()
+    private void Editor_SelectionChanged(object? sender, EventArgs e) => ReportViewState();
+
+    private void TextView_ScrollOffsetChanged(object? sender, EventArgs e) => ReportViewState();
+
+    private void Editor_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
     {
-        if (DataContext is DocumentTabViewModel document)
-        {
-            document.UpdateCaret(Editor.TextArea.Caret.Line, Editor.TextArea.Caret.Column);
-        }
+        ViewActivated?.Invoke(this, EventArgs.Empty);
+        ReportViewState();
+    }
+
+    private void View_FocusRequested(object? sender, EventArgs e) => Editor.Focus();
+
+    private void ReportViewState()
+    {
+        if (_view is null) return;
+        _view.UpdateCaret(Editor.TextArea.Caret.Line, Editor.TextArea.Caret.Column, Editor.CaretOffset);
+        _view.UpdateSelection(Editor.SelectionStart, Editor.SelectionLength);
+        _view.UpdateScroll(Editor.TextArea.TextView.HorizontalOffset, Editor.TextArea.TextView.VerticalOffset);
     }
 
     private void Editor_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -333,7 +365,7 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
             return;
         }
 
-        if (DataContext is DocumentTabViewModel document && IsRocketDocument(document))
+        if (_document is { } document && IsRocketDocument(document))
         {
             if (!document.AllowLocalEditing)
             {
@@ -356,7 +388,7 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
 
     private void Editor_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
-        if (DataContext is DocumentTabViewModel document &&
+        if (_document is { } document &&
             document.AllowLocalEditing &&
             IsRocketDocument(document) &&
             EditorKeyBehavior.HandleTextInput(Editor, e.Text, _signatureHelpController.NotifyHandledTextInput))

@@ -75,7 +75,7 @@
                 <Style TargetType="{x:Type Border}">
                     <Setter Property="Visibility" Value="Collapsed" />
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding DiagnosticState}" Value="{x:Static diagnostics:LiveDiagnosticDocumentState.Unsupported}">
+                        <DataTrigger Binding="{Binding Document.DiagnosticState}" Value="{x:Static diagnostics:LiveDiagnosticDocumentState.Unsupported}">
                             <Setter Property="Visibility" Value="Visible" />
                         </DataTrigger>
                     </Style.Triggers>
@@ -95,7 +95,7 @@
                 <Style TargetType="{x:Type Border}">
                     <Setter Property="Visibility" Value="Collapsed" />
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding AllowLocalEditing}" Value="False">
+                        <DataTrigger Binding="{Binding Document.AllowLocalEditing}" Value="False">
                             <Setter Property="Visibility" Value="Visible" />
                         </DataTrigger>
                     </Style.Triggers>
@@ -103,7 +103,7 @@
             </Border.Style>
             <TextBlock Foreground="{DynamicResource IDE.WarningBrush}"
                        TextWrapping="Wrap"
-                       Text="{Binding LargeFileReason}" />
+                       Text="{Binding Document.LargeFileReason}" />
         </Border>
 
         <avalonEdit:TextEditor x:Name="Editor"
@@ -122,7 +122,7 @@
                 <Style TargetType="{x:Type avalonEdit:TextEditor}">
                     <Setter Property="IsReadOnly" Value="False" />
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding AllowLocalEditing}" Value="False">
+                        <DataTrigger Binding="{Binding Document.AllowLocalEditing}" Value="False">
                             <Setter Property="IsReadOnly" Value="True" />
                         </DataTrigger>
                     </Style.Triggers>

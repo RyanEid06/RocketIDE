@@ -5,8 +5,10 @@ using System.Windows.Media;
 using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Document;
+using RocketIDE.App.Editor.Snippets;
 using RocketIDE.App.Integration;
 using RocketIDE.App.ViewModels;
+using RocketIDE.Rocket.LanguageServer.Features;
 using RocketIDE.Rocket.LanguageServer.LspDtos;
 
 namespace RocketIDE.App.Editor.Completion;
@@ -16,15 +18,21 @@ internal sealed class RocketCompletionController : IDisposable
     private static readonly TimeSpan TypingDebounce = TimeSpan.FromMilliseconds(140);
     private readonly TextEditor _editor;
     private readonly Func<IRocketEditorFeatureService?> _serviceProvider;
+    private readonly Func<EditorViewViewModel?> _viewProvider;
+    private readonly RocketSnippetService _snippetService = new();
     private CancellationTokenSource? _requestCancellation;
     private CompletionWindow? _window;
     private DocumentTabViewModel? _document;
     private bool _disposed;
 
-    public RocketCompletionController(TextEditor editor, Func<IRocketEditorFeatureService?> serviceProvider)
+    public RocketCompletionController(
+        TextEditor editor,
+        Func<IRocketEditorFeatureService?> serviceProvider,
+        Func<EditorViewViewModel?> viewProvider)
     {
         _editor = editor ?? throw new ArgumentNullException(nameof(editor));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        _viewProvider = viewProvider ?? throw new ArgumentNullException(nameof(viewProvider));
         _editor.TextArea.TextEntered += TextArea_TextEntered;
         _editor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
         _editor.TextArea.PreviewKeyDown += TextArea_PreviewKeyDown;
@@ -50,10 +58,7 @@ internal sealed class RocketCompletionController : IDisposable
 
     public void Dispose()
     {
-        if (_disposed)
-        {
-            return;
-        }
+        if (_disposed) return;
         _disposed = true;
         Detach();
         _editor.TextArea.TextEntered -= TextArea_TextEntered;
@@ -72,10 +77,7 @@ internal sealed class RocketCompletionController : IDisposable
 
     private void TextArea_TextEntered(object sender, TextCompositionEventArgs e)
     {
-        if (_document is null || string.IsNullOrEmpty(e.Text))
-        {
-            return;
-        }
+        if (_document is null || string.IsNullOrEmpty(e.Text)) return;
 
         var service = _serviceProvider();
         var trigger = service?.CompletionTriggerCharacters.Contains(e.Text, StringComparer.Ordinal) == true
@@ -83,9 +85,7 @@ internal sealed class RocketCompletionController : IDisposable
             : null;
         var first = e.Text[0];
         if (trigger is not null || char.IsLetterOrDigit(first) || first == '_')
-        {
             _ = ScheduleRequestAsync(trigger, TypingDebounce);
-        }
     }
 
     private void EditorDocument_Changed(object? sender, DocumentChangeEventArgs e)
@@ -103,11 +103,7 @@ internal sealed class RocketCompletionController : IDisposable
     private async Task ScheduleRequestAsync(string? triggerCharacter, TimeSpan delay)
     {
         var document = _document;
-        var service = _serviceProvider();
-        if (document is null || service is null)
-        {
-            return;
-        }
+        if (document is null) return;
 
         CancelPending();
         var cancellation = new CancellationTokenSource();
@@ -122,25 +118,44 @@ internal sealed class RocketCompletionController : IDisposable
         try
         {
             if (delay > TimeSpan.Zero)
-            {
                 await Task.Delay(delay, cancellation.Token);
-            }
 
-            var result = await service.RequestCompletionAsync(document.Path, position, triggerCharacter, cancellation.Token);
-            if (cancellation.IsCancellationRequested || !ReferenceEquals(document, _document) ||
-                requestVersion != document.Version || caretOffset != _editor.TextArea.Caret.Offset ||
-                result is null || result.Items.Count == 0)
-            {
+            RocketCompletionResult? result = null;
+            var service = _serviceProvider();
+            if (service is not null && document.AllowLsp)
+                result = await service.RequestCompletionAsync(document.Path, position, triggerCharacter, cancellation.Token);
+
+            if (cancellation.IsCancellationRequested ||
+                !ReferenceEquals(document, _document) ||
+                requestVersion != document.Version ||
+                caretOffset != _editor.TextArea.Caret.Offset)
                 return;
-            }
+
+            var snippets = GetMatchingSnippets(fallbackStart, caretOffset);
+            if ((result?.Items.Count ?? 0) == 0 && snippets.Count == 0)
+                return;
 
             CloseWindow();
             var window = new CompletionWindow(_editor.TextArea);
             ApplyDarkTheme(window);
-            foreach (var item in result.Items.OrderBy(item => item.SortText ?? item.Label, StringComparer.OrdinalIgnoreCase))
+
+            if (result is not null)
             {
-                window.CompletionList.CompletionData.Add(new RocketCompletionData(item, fallbackStart, requestVersion));
+                foreach (var item in result.Items.OrderBy(item => item.SortText ?? item.Label, StringComparer.OrdinalIgnoreCase))
+                    window.CompletionList.CompletionData.Add(new RocketCompletionData(item, fallbackStart, requestVersion));
             }
+
+            foreach (var snippet in snippets)
+            {
+                window.CompletionList.CompletionData.Add(
+                    new RocketSnippetCompletionData(
+                        snippet,
+                        _snippetService,
+                        _viewProvider,
+                        fallbackStart,
+                        caretOffset - fallbackStart));
+            }
+
             window.Closed += CompletionWindow_Closed;
             _window = window;
             window.Show();
@@ -151,11 +166,24 @@ internal sealed class RocketCompletionController : IDisposable
         finally
         {
             if (ReferenceEquals(_requestCancellation, cancellation))
-            {
                 _requestCancellation = null;
-            }
             cancellation.Dispose();
         }
+    }
+
+    private IReadOnlyList<RocketSnippetDefinition> GetMatchingSnippets(int startOffset, int caretOffset)
+    {
+        var view = _viewProvider();
+        if (view is null || !RocketSnippetService.CanInsert(view))
+            return [];
+
+        var length = Math.Max(0, caretOffset - startOffset);
+        var prefix = length == 0 ? string.Empty : _editor.Document.GetText(startOffset, length);
+        return RocketSnippetCatalog.Default
+            .Where(snippet => prefix.Length == 0 ||
+                              snippet.Trigger.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(snippet => snippet.Trigger, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     private void ApplyDarkTheme(CompletionWindow window)
@@ -175,9 +203,7 @@ internal sealed class RocketCompletionController : IDisposable
         window.Resources[SystemColors.HighlightTextBrushKey] = foreground;
         var itemStyle = _editor.TryFindResource(typeof(ListBoxItem)) as Style;
         if (itemStyle is not null)
-        {
             window.Resources[typeof(ListBoxItem)] = itemStyle;
-        }
 
         window.CompletionList.Background = background;
         window.CompletionList.Foreground = foreground;
@@ -188,9 +214,7 @@ internal sealed class RocketCompletionController : IDisposable
             listBox.Foreground = foreground;
             listBox.BorderBrush = border;
             if (itemStyle is not null)
-            {
                 listBox.ItemContainerStyle = itemStyle;
-            }
         }
     }
 
@@ -204,9 +228,7 @@ internal sealed class RocketCompletionController : IDisposable
         {
             var character = _editor.Document.GetCharAt(offset - 1);
             if (!char.IsLetterOrDigit(character) && character != '_')
-            {
                 break;
-            }
             offset--;
         }
         return offset;
@@ -215,32 +237,23 @@ internal sealed class RocketCompletionController : IDisposable
     private void CompletionWindow_Closed(object? sender, EventArgs e)
     {
         if (sender is CompletionWindow window)
-        {
             window.Closed -= CompletionWindow_Closed;
-        }
         if (ReferenceEquals(sender, _window))
-        {
             _window = null;
-        }
     }
 
     private void CancelPending()
     {
         var cancellation = Interlocked.Exchange(ref _requestCancellation, null);
-        if (cancellation is not null)
-        {
-            cancellation.Cancel();
-        }
+        cancellation?.Cancel();
     }
 
     private void CloseWindow()
     {
         var window = _window;
         _window = null;
-        if (window is not null)
-        {
-            window.Closed -= CompletionWindow_Closed;
-            window.Close();
-        }
+        if (window is null) return;
+        window.Closed -= CompletionWindow_Closed;
+        window.Close();
     }
 }
