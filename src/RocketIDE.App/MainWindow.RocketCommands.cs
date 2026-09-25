@@ -97,7 +97,7 @@ public partial class MainWindow
         _activeRocketCommandService?.StopActive();
     }
 
-    private void ClearOutput_Click(object sender, RoutedEventArgs e) => _viewModel.Output.Clear();
+    private void ClearOutput_Click(object sender, RoutedEventArgs e) => _outputBuffer.Clear();
 
     private void CopyOutputSelected_Click(object sender, RoutedEventArgs e) => CopyOutputLines(selectedOnly: true);
 
@@ -128,6 +128,7 @@ public partial class MainWindow
         RocketAdvancedCommandKind kind,
         RocketAdvancedCommandOptions options)
     {
+        if (_lifetime.IsStopping) return;
         if (Interlocked.CompareExchange(ref _rocketCommandRunning, 1, 0) != 0)
         {
             AppendRocketOutput("A Rocket command is already running. Stop it before starting another command.");
@@ -168,13 +169,13 @@ public partial class MainWindow
 
             var settings = await GetRocketToolSettingsAsync(cancellation.Token);
             ShowOutputPanel();
-            _viewModel.Output.BeginCommand(kind.ToString(), options.DestinationPath ?? activePath);
+            _outputBuffer.BeginCommand(kind.ToString(), options.DestinationPath ?? activePath);
             var service = new RocketCommandService(
                 _rocketProcessRunner,
                 CreateToolLocator(settings),
                 _targetDiscovery);
             _activeRocketCommandService = service;
-            var progress = new UiSynchronousProgress<RocketCommandOutput>(this, item => _viewModel.Output.Append(item.DisplayText));
+            var progress = new UiBufferedProgress<RocketCommandOutput>(item => AppendRocketOutput(item.DisplayText));
             var result = await service.ExecuteAdvancedAsync(kind, activePath, options, progress, cancellation.Token);
             AppendRocketOutput(result.ProcessResult.Cancelled
                 ? $"Rocket {kind} stopped."
@@ -219,6 +220,7 @@ public partial class MainWindow
 
     private async Task ExecuteRocketCommandAsync(RocketCommandKind kind)
     {
+        if (_lifetime.IsStopping) return;
         if (Interlocked.CompareExchange(ref _rocketCommandRunning, 1, 0) != 0)
         {
             AppendRocketOutput("A Rocket command is already running. Stop it before starting another command.");
@@ -267,7 +269,7 @@ public partial class MainWindow
             {
                 ShowOutputPanel();
             }
-            _viewModel.Output.BeginCommand(kind.ToString(), target.IsStandalone ? target.InputPath : target.WorkingDirectory);
+            _outputBuffer.BeginCommand(kind.ToString(), target.IsStandalone ? target.InputPath : target.WorkingDirectory);
 
             var diagnostics = new List<RocketDiagnostic>();
             var service = new RocketCommandService(
@@ -275,7 +277,7 @@ public partial class MainWindow
                 CreateToolLocator(settings),
                 _targetDiscovery);
             _activeRocketCommandService = service;
-            var progress = new UiSynchronousProgress<RocketCommandOutput>(this, item =>
+            var progress = new UiBufferedProgress<RocketCommandOutput>(item =>
                 HandleRocketCommandOutput(item, kind, target, diagnostics));
 
             var result = await service.ExecuteAsync(
@@ -318,24 +320,26 @@ public partial class MainWindow
         RocketIDE.Rocket.Projects.RocketTarget target,
         List<RocketDiagnostic> diagnostics)
     {
-        _viewModel.Output.Append(output.DisplayText);
+        AppendRocketOutput(output.DisplayText);
         if (output.Message is null)
         {
             return;
         }
-
-        if (string.Equals(output.Message.Reason, "diagnostic", StringComparison.Ordinal) &&
-            RocketMessageParser.TryMapDiagnostic(output.Message, target, out var diagnostic, kind.ToString()) &&
-            diagnostic is not null)
+        DispatchUi(() =>
         {
-            diagnostics.Add(diagnostic);
-            _viewModel.Problems.SetCompilerDiagnostics(diagnostics);
-        }
+            if (string.Equals(output.Message.Reason, "diagnostic", StringComparison.Ordinal) &&
+                RocketMessageParser.TryMapDiagnostic(output.Message, target, out var diagnostic, kind.ToString()) &&
+                diagnostic is not null)
+            {
+                diagnostics.Add(diagnostic);
+                _viewModel.Problems.SetCompilerDiagnostics(diagnostics);
+            }
 
-        if (output.Message.Reason is "test-started" or "test-finished" or "test-summary")
-        {
-            _viewModel.Tests.Apply(output.Message);
-        }
+            if (output.Message.Reason is "test-started" or "test-finished" or "test-summary")
+            {
+                _viewModel.Tests.Apply(output.Message);
+            }
+        });
     }
 
     private async Task<bool> SaveDirtyDocumentsBeforeRocketCommandAsync()
@@ -384,18 +388,9 @@ public partial class MainWindow
     }
 
 
-    private sealed class UiSynchronousProgress<T>(MainWindow owner, Action<T> report) : IProgress<T>
+    private sealed class UiBufferedProgress<T>(Action<T> report) : IProgress<T>
     {
-        public void Report(T value)
-        {
-            if (owner.Dispatcher.CheckAccess())
-            {
-                report(value);
-                return;
-            }
-
-            owner.Dispatcher.Invoke(() => report(value));
-        }
+        public void Report(T value) => report(value);
     }
 
     private static bool IsExpectedRocketCommandException(Exception exception) =>

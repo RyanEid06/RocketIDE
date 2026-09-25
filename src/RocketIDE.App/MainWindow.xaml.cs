@@ -31,6 +31,9 @@ public partial class MainWindow : Window
     private readonly RocketTargetDiscovery _targetDiscovery = new();
     private readonly RecentWorkspaceStore _recentWorkspaceStore = RecentWorkspaceStore.CreateDefault();
     private readonly MainWindowViewModel _viewModel;
+    private readonly LegacySinglePaneEditorIntegration _editorIntegration;
+    private readonly ApplicationLifetimeCoordinator _lifetime;
+    private readonly UiOutputBuffer _outputBuffer;
     private readonly Dictionary<string, DateTime> _suppressedWorkspaceChanges = new(StringComparer.OrdinalIgnoreCase);
     private WorkspaceFileWatcher? _workspaceWatcher;
     private ExplorerNodeViewModel? _selectedExplorerNode;
@@ -40,7 +43,18 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _lifetime = new ApplicationLifetimeCoordinator(reportFailure: message => Logger.Warning(message));
         _viewModel = new MainWindowViewModel(_workspaceFileSystem);
+        _editorIntegration = new LegacySinglePaneEditorIntegration(
+            _viewModel,
+            ResolveLegacyEditorCommandTarget,
+            (path, cancellationToken) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return OpenDocumentAsync(path);
+            });
+        _outputBuffer = new UiOutputBuffer(_viewModel.Output, action =>
+            Dispatcher.BeginInvoke(action, DispatcherPriority.Background));
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         _viewModel.Search.MatchActivated += Search_MatchActivated;
         _viewModel.Search.ReplaceApplier = ApplyWorkspaceReplaceAsync;
@@ -48,6 +62,10 @@ public partial class MainWindow : Window
         InitializeRocketIntegration();
         InitializeReliability();
     }
+
+    public IEditorContext EditorContext => _editorIntegration;
+
+    public IEditorNavigation EditorNavigation => _editorIntegration;
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
@@ -114,6 +132,7 @@ public partial class MainWindow : Window
 
     private async Task<DocumentTabViewModel?> OpenDocumentAsync(string path)
     {
+        if (_lifetime.IsStopping) return null;
         try
         {
             var snapshot = await _documentStore.OpenAsync(path, CancellationToken.None);
@@ -148,6 +167,7 @@ public partial class MainWindow : Window
 
     private async Task OpenWorkspaceAsync(string path)
     {
+        if (_lifetime.IsStopping) return;
         WorkspaceFileWatcher? candidateWatcher = null;
         try
         {
@@ -504,7 +524,36 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task<bool> SaveTabAsync(DocumentTabViewModel tab)
+    private async Task<bool> SaveTabAsync(DocumentTabViewModel tab, CancellationToken? shutdownSaveToken = null)
+    {
+        if (_lifetime.IsStopping && shutdownSaveToken is null) return false;
+        var token = shutdownSaveToken ?? _lifetime.WorkToken;
+        if (IsRocketPath(tab.Path) && _documentChangeScheduler is not null)
+        {
+            try
+            {
+                return await _documentChangeScheduler.SaveAsync(
+                    ToSessionDocument(tab),
+                    (_, token) => PersistTabAsync(tab, token),
+                    (document, token) => _rocketSession.SaveDocumentAsync(document, token),
+                    token) is not null;
+            }
+            catch (OperationCanceledException) when (_lifetime.IsStopping || token.IsCancellationRequested)
+            {
+                return false;
+            }
+            catch (Exception exception) when (IsExpectedRocketIntegrationException(exception))
+            {
+                AppendRocketOutput($"Rocket LSP save synchronization failed for '{tab.DisplayName}': {exception.Message}");
+                SetLspStatus("LSP: degraded");
+                return false;
+            }
+        }
+        try { return await PersistTabAsync(tab, token) is not null; }
+        catch (OperationCanceledException) when (_lifetime.IsStopping || token.IsCancellationRequested) { return false; }
+    }
+
+    private async Task<RocketSessionDocument?> PersistTabAsync(DocumentTabViewModel tab, CancellationToken cancellationToken)
     {
         try
         {
@@ -523,14 +572,14 @@ public partial class MainWindow : Window
 
                 if (recoveryChoice != MessageBoxResult.Yes)
                 {
-                    return false;
+                    return null;
                 }
 
                 overwriteExternalChanges = true;
             }
 
             SuppressWorkspaceChange(tab.Path);
-            var result = await _documentStore.SaveAsync(tab.Id, overwriteExternalChanges, CancellationToken.None);
+            var result = await _documentStore.SaveAsync(tab.Id, overwriteExternalChanges, cancellationToken);
             if (result.Status == DocumentSaveStatus.Conflict)
             {
                 var choice = MessageBox.Show(
@@ -543,26 +592,29 @@ public partial class MainWindow : Window
 
                 if (choice != MessageBoxResult.Yes)
                 {
-                    return false;
+                    return null;
                 }
 
                 SuppressWorkspaceChange(tab.Path);
-                result = await _documentStore.SaveAsync(tab.Id, overwriteExternalChanges: true, CancellationToken.None);
+                result = await _documentStore.SaveAsync(tab.Id, overwriteExternalChanges: true, cancellationToken);
             }
 
             tab.UpdateSnapshot(result.Document);
-            var succeeded = !result.Document.IsDirty && (result.Status is DocumentSaveStatus.Saved or DocumentSaveStatus.NoChanges);
+            var persisted = result.Status == DocumentSaveStatus.Saved ? result.PersistedDocument : result.Document;
+            var succeeded = persisted is not null && (result.Status is DocumentSaveStatus.Saved or DocumentSaveStatus.NoChanges);
             if (succeeded)
             {
                 tab.ClearRecoveryConflict();
                 await SaveRecoverySnapshotAsync();
             }
-            return succeeded;
+            return succeeded
+                ? new RocketSessionDocument(persisted!.Path, persisted.Text, persisted.Version, tab.DisplayName)
+                : null;
         }
         catch (Exception exception) when (IsExpectedFileException(exception))
         {
             ShowFileError("Save failed", tab.Path, exception);
-            return false;
+            return null;
         }
     }
 
@@ -597,6 +649,7 @@ public partial class MainWindow : Window
 
     private async Task<bool> TryCloseTabsAsync(IReadOnlyList<DocumentTabViewModel> tabs)
     {
+        if (_lifetime.IsStopping) return false;
         if (!await ConfirmDirtyTabsAsync(tabs))
         {
             return false;
@@ -731,31 +784,44 @@ public partial class MainWindow : Window
         _closePreparationInProgress = true;
         try
         {
-            if (_viewModel.Documents.Any(document => document.IsDirty) &&
-                !await ConfirmDirtyTabsAsync(_viewModel.Documents.ToArray()))
+            var dirtySaves = ConfirmDirtyTabsForShutdown(_viewModel.Documents.ToArray());
+            if (dirtySaves is null)
             {
                 return;
             }
 
-            await ShutdownDebuggerAsync();
-
-            try
+            _lifetime.BeginShutdown();
+            ShutdownRocketCommands();
+            if (dirtySaves.Count > 0)
             {
-                await ShutdownRocketIntegrationAsync(CancellationToken.None);
+                _ = await _lifetime.RunGracefulAsync("Unsaved document saves", async token =>
+                {
+                    foreach (var tab in dirtySaves)
+                    {
+                        if (!await SaveTabAsync(tab, token))
+                        {
+                            throw new IOException($"Could not save '{tab.DisplayName}' during shutdown.");
+                        }
+                    }
+                });
             }
-            catch (Exception exception) when (IsExpectedRocketIntegrationException(exception))
+            var debugger = _nativeDebugger;
+            if (!await _lifetime.RunGracefulAsync("Debugger", ShutdownDebuggerAsync))
             {
-                AppendRocketOutput($"Rocket LSP shutdown failed: {exception.Message}");
+                debugger?.ForceTerminateOwnedProcesses();
             }
+            if (!await _lifetime.RunGracefulAsync("Rocket LSP", ShutdownRocketIntegrationAsync))
+            {
+                _rocketSession.ForceStopOwnedProcessTree();
+            }
+            _ = await _lifetime.RunForcedAsync("Session and recovery persistence", CompleteReliabilityShutdownAsync);
+            _ = await _lifetime.RunForcedAsync("Output drain", _outputBuffer.FlushAsync);
+            _outputBuffer.Complete();
 
-            await CompleteReliabilityShutdownAsync();
-
-            // Force at least one dispatcher turn even when shutdown completed synchronously.
-            // That guarantees the original Closing event has returned before Close() is called.
-            await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+            // Queue the final close after this Closing event returns. Waiting for an idle
+            // dispatcher turn could itself outlive the single application deadline.
             _allowWindowClose = true;
-            DisposeWorkspaceWatcher();
-            Close();
+            _ = Dispatcher.BeginInvoke(new Action(Close), DispatcherPriority.Send);
         }
         finally
         {
@@ -764,6 +830,19 @@ public partial class MainWindow : Window
                 _closePreparationInProgress = false;
             }
         }
+    }
+
+    private IReadOnlyList<DocumentTabViewModel>? ConfirmDirtyTabsForShutdown(IReadOnlyList<DocumentTabViewModel> tabs)
+    {
+        var saves = new List<DocumentTabViewModel>();
+        foreach (var tab in tabs.Where(document => document.IsDirty))
+        {
+            var choice = MessageBox.Show(this, $"Save changes to '{tab.DisplayName}'?", "Unsaved changes",
+                MessageBoxButton.YesNoCancel, MessageBoxImage.Warning, MessageBoxResult.Yes);
+            if (choice == MessageBoxResult.Cancel) return null;
+            if (choice == MessageBoxResult.Yes) saves.Add(tab);
+        }
+        return saves;
     }
 
     private static string FormatControlGesture(Key key, bool shift) =>
@@ -937,11 +1016,11 @@ public partial class MainWindow : Window
         }
     }
 
-    private EditorDocumentHost? GetActiveEditor()
-    {
-        var active = _viewModel.ActiveDocument;
-        return active is null ? null : FindEditorForDataContext(EditorTabs, active);
-    }
+    private EditorDocumentHost? GetActiveEditor() =>
+        _editorIntegration.ActiveView?.CommandTarget as EditorDocumentHost;
+
+    private IEditorCommandTarget? ResolveLegacyEditorCommandTarget(DocumentTabViewModel document) =>
+        FindEditorForDataContext(EditorTabs, document);
 
     private static EditorDocumentHost? FindEditorForDataContext(DependencyObject parent, DocumentTabViewModel active)
     {

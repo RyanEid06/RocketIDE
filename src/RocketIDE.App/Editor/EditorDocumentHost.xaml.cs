@@ -16,7 +16,7 @@ using RocketIDE.Rocket.LanguageServer.LspDtos;
 
 namespace RocketIDE.App.Editor;
 
-public partial class EditorDocumentHost : UserControl
+public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
 {
     private readonly DiagnosticRenderer _diagnosticRenderer;
     private readonly BracketMatchRenderer _bracketMatchRenderer;
@@ -62,11 +62,30 @@ public partial class EditorDocumentHost : UserControl
 
     public int EditorLineCount => Editor.Document.LineCount;
 
+    public int CaretLine => Editor.TextArea.Caret.Line;
+
+    public int CaretColumn => Editor.TextArea.Caret.Column;
+
+    public int CaretOffset => Editor.CaretOffset;
+
+    public int SelectionStart => Editor.SelectionStart;
+
+    public int SelectionLength => Editor.SelectionLength;
+
     public void Undo() => Editor.Undo();
 
     public void Redo() => Editor.Redo();
 
     public void SelectAll() => Editor.SelectAll();
+
+    public void SetSelection(int startOffset, int length)
+    {
+        var start = Math.Clamp(startOffset, 0, Editor.Document.TextLength);
+        var clampedLength = Math.Clamp(length, 0, Editor.Document.TextLength - start);
+        Editor.Select(start, clampedLength);
+    }
+
+    public void FocusEditor() => Editor.Focus();
 
     public void ShowFind(bool includeReplace)
     {

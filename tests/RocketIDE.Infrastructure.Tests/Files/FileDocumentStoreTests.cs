@@ -117,6 +117,7 @@ public sealed class FileDocumentStoreTests
         Assert.AreEqual("saved-in-flight", await File.ReadAllTextAsync(path));
         Assert.AreEqual("disk-v1", result.Document.Text);
         Assert.IsTrue(result.Document.IsDirty, "The editor buffer differs from what actually reached disk and must remain dirty.");
+        Assert.AreEqual("saved-in-flight", result.PersistedDocument?.Text);
     }
 
     [TestMethod]

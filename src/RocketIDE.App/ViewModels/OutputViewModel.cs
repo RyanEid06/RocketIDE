@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 
 namespace RocketIDE.App.ViewModels;
 
@@ -15,7 +17,7 @@ public sealed class OutputViewModel
         _maxLines = maxLines;
     }
 
-    public ObservableCollection<string> Lines { get; } = new();
+    public ObservableCollection<string> Lines { get; } = new OutputLineCollection();
 
     public void Append(string? line)
     {
@@ -23,11 +25,13 @@ public sealed class OutputViewModel
         {
             return;
         }
-        Lines.Add(line);
-        while (Lines.Count > _maxLines)
-        {
-            Lines.RemoveAt(0);
-        }
+        AppendMany([line]);
+    }
+
+    public void AppendMany(IEnumerable<string> lines)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+        ((OutputLineCollection)Lines).AppendMany(lines, _maxLines);
     }
 
     public void BeginCommand(string name, string target)
@@ -38,4 +42,31 @@ public sealed class OutputViewModel
     }
 
     public void Clear() => Lines.Clear();
+
+    private sealed class OutputLineCollection : ObservableCollection<string>
+    {
+        public void AppendMany(IEnumerable<string> lines, int maxLines)
+        {
+            var added = false;
+            foreach (var line in lines)
+            {
+                if (line is null) continue;
+                Items.Add(line);
+                added = true;
+            }
+            if (!added) return;
+            var excess = Items.Count - maxLines;
+            if (excess > 0 && Items is List<string> storage)
+            {
+                storage.RemoveRange(0, excess);
+            }
+            else
+            {
+                for (var index = 0; index < excess; index++) Items.RemoveAt(0);
+            }
+            OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
+            OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
+    }
 }

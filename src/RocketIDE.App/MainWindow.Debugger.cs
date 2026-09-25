@@ -137,6 +137,7 @@ public partial class MainWindow
 
     private async Task StartDebugSessionAsync()
     {
+        if (_lifetime.IsStopping) return;
         if (Interlocked.CompareExchange(ref _rocketCommandRunning, 1, 0) != 0)
         {
             AppendRocketOutput("A Rocket command is already running. Stop it before starting the debugger.");
@@ -170,14 +171,14 @@ public partial class MainWindow
                 ? []
                 : WindowsCommandLine.ParseArguments(settings.ProgramArguments);
             ShowOutputPanel();
-            _viewModel.Output.BeginCommand("Debug Build", target.IsStandalone ? target.InputPath : target.WorkingDirectory);
+            _outputBuffer.BeginCommand("Debug Build", target.IsStandalone ? target.InputPath : target.WorkingDirectory);
             _viewModel.Problems.ClearCompilerDiagnostics();
 
             string? artifact = null;
             var diagnostics = new List<RocketDiagnostic>();
             var service = new RocketCommandService(_rocketProcessRunner, CreateToolLocator(settings), _targetDiscovery);
             _activeRocketCommandService = service;
-            var progress = new UiSynchronousProgress<RocketCommandOutput>(this, item =>
+            var progress = new UiBufferedProgress<RocketCommandOutput>(item =>
             {
                 HandleRocketCommandOutput(item, RocketCommandKind.DebugBuild, target, diagnostics);
                 if (item.Message?.Reason == "build-finished" && item.Message.Success != false && !string.IsNullOrWhiteSpace(item.Message.Artifact))
@@ -222,7 +223,7 @@ public partial class MainWindow
         cancellation.Token.ThrowIfCancellationRequested();
         var debugger = await EnsureNativeDebuggerAsync(cancellation.Token);
         ShowDebugPanel();
-        _viewModel.Output.BeginCommand("Debug", paths.ExecutablePath);
+        _outputBuffer.BeginCommand("Debug", paths.ExecutablePath);
         try
         {
             await debugger.LaunchAsync(new RocketDebugLaunchRequest(
@@ -287,10 +288,7 @@ public partial class MainWindow
     private void Debugger_OutputReceived(object? sender, RocketDebugOutputEventArgs e)
     {
         var lines = e.Text.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        Dispatcher.BeginInvoke(() =>
-        {
-            foreach (var line in lines) _viewModel.Output.Append($"[debug] {line}");
-        });
+        foreach (var line in lines) AppendRocketOutput($"[debug] {line}");
     }
 
     private void Debugger_Stopped(object? sender, RocketDebugStoppedEventArgs e) =>
@@ -330,18 +328,15 @@ public partial class MainWindow
 
     private void ShowDebugPanel() => ShowBottomPanelTab(5);
 
-    private async Task ShutdownDebuggerAsync()
+    private async Task ShutdownDebuggerAsync(CancellationToken cancellationToken)
     {
         _debugOperationCancellation?.Cancel();
         var debugger = _nativeDebugger;
         _nativeDebugger = null;
         if (debugger is null) return;
         DetachDebuggerEvents(debugger);
-        try { await debugger.DisposeAsync(); }
-        catch (Exception exception) when (IsExpectedDebuggerException(exception))
-        {
-            AppendRocketOutput($"Rocket debugger shutdown failed: {exception.Message}");
-        }
+        try { await debugger.StopAsync(cancellationToken).WaitAsync(cancellationToken); }
+        finally { await debugger.DisposeAsync().AsTask().WaitAsync(cancellationToken); }
         _viewModel.Debug.ApplyState(RocketDebugSessionState.Terminated, "Debugger: stopped");
         RefreshDebugEditorPresentation();
     }

@@ -23,4 +23,5 @@ public interface IRocketNativeDebugger : IAsyncDisposable
     Task SelectThreadAsync(int debuggerThreadIndex, CancellationToken cancellationToken);
     Task SelectFrameAsync(int frameIndex, CancellationToken cancellationToken);
     Task StopAsync(CancellationToken cancellationToken);
+    void ForceTerminateOwnedProcesses();
 }

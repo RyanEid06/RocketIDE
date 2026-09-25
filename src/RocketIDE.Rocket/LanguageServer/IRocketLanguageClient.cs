@@ -14,3 +14,8 @@ public interface IRocketLanguageClient : IAsyncDisposable
     Task NotifyAsync(string method, object? parameters, CancellationToken cancellationToken);
     Task StopAsync(CancellationToken cancellationToken);
 }
+
+public interface IOwnedProcessTree
+{
+    void KillOwnedProcessTree();
+}

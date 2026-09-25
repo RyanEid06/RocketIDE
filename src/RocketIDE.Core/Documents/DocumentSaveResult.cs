@@ -10,4 +10,5 @@ public enum DocumentSaveStatus
 public sealed record DocumentSaveResult(
     DocumentSaveStatus Status,
     DocumentSnapshot Document,
-    string? Message = null);
+    string? Message = null,
+    DocumentSnapshot? PersistedDocument = null);

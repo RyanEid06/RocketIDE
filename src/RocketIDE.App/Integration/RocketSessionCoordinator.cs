@@ -22,6 +22,8 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
     private readonly Action _showOutput;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private IRocketLanguageClient? _languageClient;
+    private IRocketLanguageClient? _stoppingClient;
+    private int _shuttingDown;
     private DocumentSynchronizer? _documentSynchronizer;
     private SemanticTokensClient? _semanticTokensClient;
     private readonly Dictionary<string, LspDocumentSyncState> _documentSyncStates = new(StringComparer.OrdinalIgnoreCase);
@@ -174,14 +176,19 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
 
     public async Task EnsureAsync(string? activePath, string? workspacePath, CancellationToken cancellationToken)
     {
+        ThrowIfShuttingDown();
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(TimeSpan.FromSeconds(5));
+        var operationToken = deadline.Token;
         // Capture UI-owned document state before the first await. MainWindow's provider reads
         // its ObservableCollection and must never be called after ConfigureAwait(false) resumes
         // this coordinator on a pool thread. Document events queue behind the same gate and will
         // reconcile any open/close changes that happen while the server is starting.
         var openDocuments = _documentsProvider();
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _gate.WaitAsync(operationToken).ConfigureAwait(false);
         try
         {
+            ThrowIfShuttingDown();
             var desiredWorkspace = NormalizeWorkspace(workspacePath);
             if (_languageClient is { IsInitialized: true } &&
                 string.Equals(_workspacePath, desiredWorkspace, StringComparison.OrdinalIgnoreCase))
@@ -189,8 +196,8 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
                 return;
             }
 
-            await StopCoreAsync(cancellationToken).ConfigureAwait(false);
-            await StartCoreAsync(activePath, desiredWorkspace, openDocuments, cancellationToken).ConfigureAwait(false);
+            await StopCoreAsync(operationToken).ConfigureAwait(false);
+            await StartCoreAsync(activePath, desiredWorkspace, openDocuments, operationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -200,12 +207,17 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
 
     public async Task RestartAsync(string? activePath, string? workspacePath, CancellationToken cancellationToken)
     {
+        ThrowIfShuttingDown();
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(TimeSpan.FromSeconds(5));
+        var operationToken = deadline.Token;
         var openDocuments = _documentsProvider();
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _gate.WaitAsync(operationToken).ConfigureAwait(false);
         try
         {
-            await StopCoreAsync(cancellationToken).ConfigureAwait(false);
-            await StartCoreAsync(activePath, NormalizeWorkspace(workspacePath), openDocuments, cancellationToken).ConfigureAwait(false);
+            ThrowIfShuttingDown();
+            await StopCoreAsync(operationToken).ConfigureAwait(false);
+            await StartCoreAsync(activePath, NormalizeWorkspace(workspacePath), openDocuments, operationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -221,6 +233,46 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
             cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task EnsureAndOpenDocumentAsync(
+        RocketSessionDocument document,
+        string? activePath,
+        string? workspacePath,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ThrowIfShuttingDown();
+        // Capture the WPF document collection before leaving the caller's dispatcher thread.
+        var openDocuments = _documentsProvider();
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(TimeSpan.FromSeconds(5));
+        var operationToken = deadline.Token;
+        await _gate.WaitAsync(operationToken).ConfigureAwait(false);
+        try
+        {
+            ThrowIfShuttingDown();
+            var desiredWorkspace = NormalizeWorkspace(workspacePath);
+            if (_languageClient is not { IsInitialized: true } ||
+                !string.Equals(_workspacePath, desiredWorkspace, StringComparison.OrdinalIgnoreCase))
+            {
+                await StopCoreAsync(operationToken).ConfigureAwait(false);
+                await StartCoreAsync(activePath, desiredWorkspace, openDocuments, operationToken).ConfigureAwait(false);
+            }
+            if (_documentSynchronizer is null) return;
+            var state = await _documentSynchronizer.ChangeAsync(
+                document.Path, document.Text, document.Version, operationToken).ConfigureAwait(false);
+            if (state == LspDocumentSyncState.NotOpen)
+            {
+                state = await _documentSynchronizer.OpenAsync(
+                    document.Path, document.Text, document.Version, operationToken).ConfigureAwait(false);
+            }
+            UpdateDocumentSyncState(document, state);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
     public async Task ChangeDocumentAsync(RocketSessionDocument document, CancellationToken cancellationToken)
     {
         await WithSynchronizerAsync(
@@ -229,14 +281,21 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
             cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task SaveDocumentAsync(string path, CancellationToken cancellationToken)
+    public async Task SaveDocumentAsync(RocketSessionDocument document, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(document);
+        ThrowIfShuttingDown();
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            ThrowIfShuttingDown();
             if (_documentSynchronizer is not null)
             {
-                await _documentSynchronizer.SaveAsync(path, cancellationToken).ConfigureAwait(false);
+                var state = await _documentSynchronizer.ChangeAsync(
+                    document.Path, document.Text, document.Version, cancellationToken).ConfigureAwait(false);
+                UpdateDocumentSyncState(document, state);
+                await _documentSynchronizer.SaveAsync(
+                    document.Path, document.Text, document.Version, cancellationToken).ConfigureAwait(false);
             }
         }
         finally
@@ -247,9 +306,11 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
 
     public async Task CloseDocumentAsync(string path, CancellationToken cancellationToken)
     {
+        ThrowIfShuttingDown();
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            ThrowIfShuttingDown();
             if (_documentSynchronizer is not null)
             {
                 await _documentSynchronizer.CloseAsync(path, cancellationToken).ConfigureAwait(false);
@@ -265,6 +326,7 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
 
     public async Task ShutdownAsync(CancellationToken cancellationToken)
     {
+        Interlocked.Exchange(ref _shuttingDown, 1);
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
@@ -273,6 +335,15 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
         finally
         {
             _gate.Release();
+        }
+    }
+
+    public void ForceStopOwnedProcessTree()
+    {
+        if (_languageClient is IOwnedProcessTree running) running.KillOwnedProcessTree();
+        if (_stoppingClient is IOwnedProcessTree stopping && !ReferenceEquals(stopping, _languageClient))
+        {
+            stopping.KillOwnedProcessTree();
         }
     }
 
@@ -330,7 +401,8 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
         try
         {
             _setLspStatus("LSP: starting…");
-            await client.StartAsync(discovery.LanguageServerPath, workspacePath, cancellationToken).ConfigureAwait(false);
+            await client.StartAsync(discovery.LanguageServerPath, workspacePath, cancellationToken)
+                .WaitAsync(cancellationToken).ConfigureAwait(false);
             if (!client.IsInitialized)
             {
                 throw new IOException("rocket-lsp terminated during initialization.");
@@ -351,6 +423,7 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
         }
         catch
         {
+            if (client is IOwnedProcessTree owned) owned.KillOwnedProcessTree();
             if (ReferenceEquals(_languageClient, client))
             {
                 _languageClient = null;
@@ -360,7 +433,8 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
                 _workspacePath = null;
             }
             Unsubscribe(client);
-            await client.DisposeAsync().ConfigureAwait(false);
+            try { await client.DisposeAsync().AsTask().WaitAsync(cancellationToken).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
             InvalidateDiagnosticSession();
             _setLspStatus("LSP: offline");
             throw;
@@ -370,6 +444,7 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
     private async Task StopCoreAsync(CancellationToken cancellationToken)
     {
         var client = _languageClient;
+        _stoppingClient = client;
         _languageClient = null;
         _documentSynchronizer = null;
         _semanticTokensClient = null;
@@ -384,12 +459,24 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
         Unsubscribe(client);
         try
         {
-            await client.StopAsync(cancellationToken).ConfigureAwait(false);
+            await client.StopAsync(cancellationToken).WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            if (client is IOwnedProcessTree owned) owned.KillOwnedProcessTree();
+            throw;
         }
         finally
         {
-            await client.DisposeAsync().ConfigureAwait(false);
-            _setLspStatus("LSP: offline");
+            try
+            {
+                await client.DisposeAsync().AsTask().WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                _stoppingClient = null;
+                _setLspStatus("LSP: offline");
+            }
         }
     }
 
@@ -414,9 +501,11 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
         RocketSessionDocument document,
         CancellationToken cancellationToken)
     {
+        ThrowIfShuttingDown();
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            ThrowIfShuttingDown();
             if (_documentSynchronizer is null)
             {
                 return;
@@ -428,6 +517,14 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
         finally
         {
             _gate.Release();
+        }
+    }
+
+    private void ThrowIfShuttingDown()
+    {
+        if (Volatile.Read(ref _shuttingDown) != 0)
+        {
+            throw new ObjectDisposedException(nameof(RocketSessionCoordinator));
         }
     }
 

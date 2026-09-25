@@ -24,11 +24,19 @@ public sealed class DbgXCommandTransport : IDebuggerCommandTransport
 
     public event EventHandler<RocketDebugOutputEventArgs>? OutputReceived;
 
-    public static Task<DbgXCommandTransport> CreateAsync(CancellationToken cancellationToken = default)
+    public static async Task<DbgXCommandTransport> CreateAsync(CancellationToken cancellationToken = default)
     {
         var context = new DebuggerSynchronizationContext();
-        return InvokeAsync(context, () => Task.FromResult(new DbgXCommandTransport(context)))
-            .WaitAsync(cancellationToken);
+        try
+        {
+            return await InvokeAsync(context, () => Task.FromResult(new DbgXCommandTransport(context)))
+                .WaitAsync(TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            context.Dispose();
+            throw;
+        }
     }
 
     public Task CreateProcessAsync(
@@ -90,7 +98,11 @@ public sealed class DbgXCommandTransport : IDebuggerCommandTransport
                 _engine.DmlOutput -= Engine_DmlOutput;
                 _engine.Dispose();
                 return Task.FromResult(true);
-            }).ConfigureAwait(false);
+            }).WaitAsync(TimeSpan.FromMilliseconds(750)).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            ForceTerminateOwnedProcesses();
         }
         finally
         {
@@ -144,14 +156,22 @@ public sealed class DbgXCommandTransport : IDebuggerCommandTransport
 
     private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
 
-    private sealed class DebuggerSynchronizationContext : SynchronizationContext, IDisposable
+    public void ForceTerminateOwnedProcesses()
+    {
+        // EngHost is a child of this IDE process. Do not touch hosts owned by other apps.
+        DebuggerOwnedProcesses.KillEngineHosts(Environment.ProcessId);
+    }
+
+    internal sealed class DebuggerSynchronizationContext : SynchronizationContext, IDisposable
     {
         private readonly BlockingCollection<(SendOrPostCallback Callback, object? State)> _queue = [];
         private readonly Thread _thread;
-        private bool _disposed;
+        private readonly TimeSpan _joinTimeout;
+        private int _disposed;
 
-        public DebuggerSynchronizationContext()
+        public DebuggerSynchronizationContext(TimeSpan? joinTimeout = null)
         {
+            _joinTimeout = joinTimeout ?? TimeSpan.FromMilliseconds(250);
             _thread = new Thread(Run)
             {
                 IsBackground = true,
@@ -162,23 +182,32 @@ public sealed class DbgXCommandTransport : IDebuggerCommandTransport
 
         public override void Post(SendOrPostCallback d, object? state)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-            _queue.Add((d, state));
+            if (Volatile.Read(ref _disposed) != 0) return;
+            try { _queue.Add((d, state)); }
+            catch (InvalidOperationException) when (Volatile.Read(ref _disposed) != 0) { }
+            catch (ObjectDisposedException) when (Volatile.Read(ref _disposed) != 0) { }
         }
 
         private void Run()
         {
             SetSynchronizationContext(this);
-            foreach (var item in _queue.GetConsumingEnumerable()) item.Callback(item.State);
+            try
+            {
+                foreach (var item in _queue.GetConsumingEnumerable()) item.Callback(item.State);
+            }
+            finally
+            {
+                // The worker owns queue disposal. A caller that times out on Join must not
+                // destroy synchronization state while this thread still uses it.
+                _queue.Dispose();
+            }
         }
 
         public void Dispose()
         {
-            if (_disposed) return;
-            _disposed = true;
+            if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
             _queue.CompleteAdding();
-            if (Thread.CurrentThread != _thread) _thread.Join();
-            _queue.Dispose();
+            if (Thread.CurrentThread != _thread) _thread.Join(_joinTimeout);
         }
     }
 

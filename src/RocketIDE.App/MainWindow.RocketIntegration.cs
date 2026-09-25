@@ -22,7 +22,6 @@ namespace RocketIDE.App;
 public partial class MainWindow
 {
     private readonly RocketToolSettingsStore _rocketToolSettingsStore = RocketToolSettingsStore.CreateDefault();
-    private readonly Dictionary<DocumentId, bool> _documentDirtyStates = new();
     private RocketToolSettings? _rocketToolSettings;
     private RocketSessionCoordinator _rocketSession = null!;
     private WorkspaceEditTransactionService _workspaceEdits = null!;
@@ -176,6 +175,7 @@ public partial class MainWindow
 
     private async void Documents_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        if (_lifetime.IsStopping) return;
         try
         {
             if (e.OldItems is not null)
@@ -184,7 +184,6 @@ public partial class MainWindow
                 {
                     tab.PropertyChanged -= RocketDocument_PropertyChanged;
                     _documentChangeScheduler?.Cancel(tab.Path);
-                    _documentDirtyStates.Remove(tab.Id);
                     await _rocketSession.CloseDocumentAsync(tab.Path, CancellationToken.None);
                 }
             }
@@ -193,15 +192,14 @@ public partial class MainWindow
             {
                 foreach (DocumentTabViewModel tab in e.NewItems)
                 {
-                    _documentDirtyStates[tab.Id] = tab.IsDirty;
                     tab.PropertyChanged += RocketDocument_PropertyChanged;
                     if (!IsRocketPath(tab.Path))
                     {
                         continue;
                     }
 
-                    await _rocketSession.EnsureAsync(tab.Path, GetLspWorkspacePath(tab.Path), CancellationToken.None);
-                    await _rocketSession.OpenDocumentAsync(ToSessionDocument(tab), CancellationToken.None);
+                    await _rocketSession.EnsureAndOpenDocumentAsync(
+                        ToSessionDocument(tab), tab.Path, GetLspWorkspacePath(tab.Path), CancellationToken.None);
                 }
             }
         }
@@ -214,6 +212,7 @@ public partial class MainWindow
 
     private async void RocketDocument_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (_lifetime.IsStopping) return;
         if (sender is not DocumentTabViewModel tab || !IsRocketPath(tab.Path))
         {
             return;
@@ -226,15 +225,6 @@ public partial class MainWindow
                 _wp09RequestCancellation?.Cancel();
                 _documentChangeScheduler?.Schedule(ToSessionDocument(tab));
             }
-            else if (e.PropertyName == nameof(DocumentTabViewModel.IsDirty))
-            {
-                var wasDirty = _documentDirtyStates.GetValueOrDefault(tab.Id);
-                _documentDirtyStates[tab.Id] = tab.IsDirty;
-                if (wasDirty && !tab.IsDirty)
-                {
-                    await _rocketSession.SaveDocumentAsync(tab.Path, CancellationToken.None);
-                }
-            }
         }
         catch (Exception exception) when (IsExpectedRocketIntegrationException(exception))
         {
@@ -245,6 +235,7 @@ public partial class MainWindow
 
     private async void Explorer_RocketIntegrationPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (_lifetime.IsStopping) return;
         if (e.PropertyName != nameof(RocketIDE.App.ViewModels.Explorer.WorkspaceExplorerViewModel.Workspace))
         {
             return;
@@ -271,7 +262,7 @@ public partial class MainWindow
         {
             if (_documentChangeScheduler is not null)
             {
-                await _documentChangeScheduler.DisposeAsync();
+                await _documentChangeScheduler.DisposeAsync().AsTask().WaitAsync(cancellationToken);
                 _documentChangeScheduler = null;
             }
             await _rocketSession.ShutdownAsync(cancellationToken);
@@ -724,7 +715,7 @@ public partial class MainWindow
 
     private void SetLspStatus(string status) => DispatchUi(() => _viewModel.LspStatus = status);
 
-    private void AppendRocketOutput(string line) => DispatchUi(() => _viewModel.AppendOutput(line));
+    private void AppendRocketOutput(string line) => _outputBuffer.Enqueue(line);
 
     private void ShowOutputPanel() => DispatchUi(() => ShowBottomPanelTab(2));
 
@@ -785,6 +776,6 @@ public partial class MainWindow
         string.Equals(Path.GetExtension(path), ".rocket", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsExpectedRocketIntegrationException(Exception exception) =>
-        exception is IOException or UnauthorizedAccessException or InvalidOperationException or TimeoutException or
+        exception is IOException or UnauthorizedAccessException or InvalidOperationException or TimeoutException or OperationCanceledException or
         LspProtocolException or JsonRpcResponseException or ObjectDisposedException or System.ComponentModel.Win32Exception;
 }

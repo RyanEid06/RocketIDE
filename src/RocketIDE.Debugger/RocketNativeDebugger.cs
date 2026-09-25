@@ -3,6 +3,7 @@ namespace RocketIDE.Debugger;
 public sealed class RocketNativeDebugger : IRocketNativeDebugger
 {
     private readonly IDebuggerCommandTransport _transport;
+    private readonly TimeSpan _disposalTimeout;
     private readonly object _stateLock = new();
     private RocketDebugSessionState _state = RocketDebugSessionState.Idle;
     private RocketDebugSourceMap? _sourceMap;
@@ -16,9 +17,11 @@ public sealed class RocketNativeDebugger : IRocketNativeDebugger
     private volatile bool _stopRequested;
     private bool _disposed;
 
-    public RocketNativeDebugger(IDebuggerCommandTransport transport)
+    public RocketNativeDebugger(IDebuggerCommandTransport transport, TimeSpan? disposalTimeout = null)
     {
         _transport = transport ?? throw new ArgumentNullException(nameof(transport));
+        _disposalTimeout = disposalTimeout ?? TimeSpan.FromSeconds(2);
+        if (_disposalTimeout <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(disposalTimeout));
         _transport.OutputReceived += Transport_OutputReceived;
     }
 
@@ -193,7 +196,7 @@ public sealed class RocketNativeDebugger : IRocketNativeDebugger
                 }
             }
 
-            await _transport.StopAsync(cancellationToken).ConfigureAwait(false);
+            await _transport.StopAsync(cancellationToken).WaitAsync(cancellationToken).ConfigureAwait(false);
             lock (_stateLock)
             {
                 _processId = null;
@@ -214,11 +217,12 @@ public sealed class RocketNativeDebugger : IRocketNativeDebugger
     public async ValueTask DisposeAsync()
     {
         if (_disposed) return;
+        using var deadline = new CancellationTokenSource(_disposalTimeout);
         try
         {
             if (State is not (RocketDebugSessionState.Idle or RocketDebugSessionState.Terminated))
             {
-                try { await StopAsync(CancellationToken.None).ConfigureAwait(false); }
+                try { await StopAsync(deadline.Token).WaitAsync(deadline.Token).ConfigureAwait(false); }
                 catch { }
             }
         }
@@ -226,9 +230,29 @@ public sealed class RocketNativeDebugger : IRocketNativeDebugger
         {
             _disposed = true;
             _transport.OutputReceived -= Transport_OutputReceived;
-            await _transport.DisposeAsync().ConfigureAwait(false);
+            try { await _transport.DisposeAsync().AsTask().WaitAsync(deadline.Token).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (deadline.IsCancellationRequested) { }
+            finally { ForceTerminateOwnedProcesses(); }
             GC.SuppressFinalize(this);
         }
+    }
+
+    public void ForceTerminateOwnedProcesses()
+    {
+        int? pid;
+        lock (_stateLock) pid = _processId;
+        if (pid is not null)
+        {
+            try
+            {
+                using var process = System.Diagnostics.Process.GetProcessById(pid.Value);
+                if (!process.HasExited) process.Kill(entireProcessTree: true);
+            }
+            catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+            {
+            }
+        }
+        if (_transport is DbgXCommandTransport dbgX) dbgX.ForceTerminateOwnedProcesses();
     }
 
     internal void SetTestState(RocketDebugSessionState state, int? processId)
