@@ -96,13 +96,16 @@ public sealed class SymbolClient(IRocketLanguageClient client)
             throw new LspProtocolException("workspace/symbol returned an invalid result shape.");
         }
 
+        // A full response at the local safety bound may already have been truncated by
+        // the server. Do not rank it as though it were the complete candidate set.
+        if (response.GetArrayLength() >= 1024)
+        {
+            throw new LspProtocolException("workspace/symbol returned at least 1024 symbols; search is incomplete. Narrow the query or use a server with bounded fuzzy search.");
+        }
+
         var result = new List<RocketWorkspaceSymbol>();
         foreach (var item in response.EnumerateArray())
         {
-            if (result.Count >= 1024)
-            {
-                break;
-            }
             if (item.ValueKind != JsonValueKind.Object)
             {
                 throw new LspProtocolException("workspace/symbol returned a malformed symbol.");

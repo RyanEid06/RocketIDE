@@ -70,7 +70,7 @@ public sealed class SymbolClientTests
     }
 
     [TestMethod]
-    public void ParseWorkspaceSymbols_BoundsResults()
+    public void ParseWorkspaceSymbols_RejectsTruncatedResponseInsteadOfHidingMatches()
     {
         var path = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "workspace.rocket"));
         var uri = new Uri(path).AbsoluteUri;
@@ -84,8 +84,6 @@ public sealed class SymbolClientTests
             .ToArray();
         using var json = JsonDocument.Parse(JsonSerializer.Serialize(items));
 
-        var result = SymbolClient.ParseWorkspaceSymbols(json.RootElement);
-
-        Assert.AreEqual(1024, result.Count);
+        Assert.ThrowsExactly<LspProtocolException>(() => SymbolClient.ParseWorkspaceSymbols(json.RootElement));
     }
 }

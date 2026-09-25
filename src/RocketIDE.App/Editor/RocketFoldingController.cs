@@ -73,6 +73,11 @@ public sealed class RocketFoldingController : IDisposable
         return ScheduleRefreshAsync(TimeSpan.Zero, cancellationToken);
     }
 
+    public void NotifySessionChanged()
+    {
+        if (!_disposed) _ = RefreshSafelyAsync(TimeSpan.Zero);
+    }
+
     public IReadOnlyList<EditorFoldingRange> CaptureCollapsedState()
     {
         var manager = _foldingManager;

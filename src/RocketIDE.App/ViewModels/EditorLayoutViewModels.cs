@@ -31,6 +31,7 @@ public sealed class EditorViewViewModel : INotifyPropertyChanged, IEditorViewCon
     private double _horizontalOffset;
     private double _verticalOffset;
     private IReadOnlyList<SourceRange> _collapsedFolds = [];
+    private Func<IReadOnlyList<SourceRange>>? _captureFoldingState;
     private SourceRange? _pendingNavigation;
     private RocketSnippetSession? _snippetSession;
 
@@ -140,6 +141,9 @@ public sealed class EditorViewViewModel : INotifyPropertyChanged, IEditorViewCon
         ViewStateChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    public void SetFoldingStateCapture(Func<IReadOnlyList<SourceRange>>? capture) =>
+        _captureFoldingState = capture;
+
     public void RequestNavigation(SourceRange range)
     {
         ArgumentNullException.ThrowIfNull(range);
@@ -172,6 +176,7 @@ public sealed class EditorViewViewModel : INotifyPropertyChanged, IEditorViewCon
 
     public void Dispose()
     {
+        _captureFoldingState = null;
         Document.PropertyChanged -= Document_PropertyChanged;
         SnippetSession?.Cancel();
         SnippetSession = null;
@@ -187,7 +192,7 @@ public sealed class EditorViewViewModel : INotifyPropertyChanged, IEditorViewCon
         SelectionLength = SelectionLength,
         HorizontalOffset = HorizontalOffset,
         VerticalOffset = VerticalOffset,
-        CollapsedFolds = CollapsedFolds
+        CollapsedFolds = (_captureFoldingState?.Invoke() ?? CollapsedFolds)
             .Select(range => new EditorFoldState(range.StartLine, range.StartCharacter, range.EndLine, range.EndCharacter))
             .ToList(),
     };

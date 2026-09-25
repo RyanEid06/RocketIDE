@@ -1,5 +1,7 @@
 # FINAL-WP02 evidence — Lifecycle, Synchronization, and Shutdown
 
+**HISTORICAL — NOT CURRENT ACCEPTANCE EVIDENCE.** This records the WP02 source-branch checkpoint. See `FINAL-WP02-WP05-INTEGRATION-EVIDENCE.md` for the current combined candidate.
+
 ## Scope and baseline
 
 - Dedicated worktree: `.worktrees/rocketide-final-wp02-wp07`, branch `codex/rocketide-final-wp02-wp07`.

@@ -21,6 +21,7 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
     private readonly Action<string> _appendOutput;
     private readonly Action _showOutput;
     private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly object _forceStopGate = new();
     private IRocketLanguageClient? _languageClient;
     private IRocketLanguageClient? _stoppingClient;
     private IRocketLanguageClient? _forceStoppedClient;
@@ -448,8 +449,12 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
             return;
         }
 
-        if (ReferenceEquals(Interlocked.Exchange(ref _forceStoppedClient, client), client)) return;
-        owned.KillOwnedProcessTree();
+        lock (_forceStopGate)
+        {
+            if (ReferenceEquals(_forceStoppedClient, client)) return;
+            owned.KillOwnedProcessTree();
+            _forceStoppedClient = client;
+        }
     }
 
     public async ValueTask DisposeAsync()

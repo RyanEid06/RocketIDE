@@ -2,6 +2,7 @@ using System.IO;
 using System.Text;
 using RocketIDE.App.ViewModels;
 using RocketIDE.Core.Documents;
+using RocketIDE.Core.Diagnostics;
 using RocketIDE.Infrastructure.Files;
 
 namespace RocketIDE.App.Tests.Editor;
@@ -64,6 +65,24 @@ public sealed class EditorLayoutViewModelTests
         Assert.AreEqual(7, second.SelectionStart);
         Assert.AreEqual(20d, first.VerticalOffset);
         Assert.AreEqual(40d, second.VerticalOffset);
+    }
+
+    [TestMethod]
+    public void CaptureStateReadsCurrentFoldPresentationFromEachView()
+    {
+        var document = CreateDocument("fold-state.rocket");
+        var layout = new EditorLayoutViewModel();
+        var first = layout.OpenOrActivate(document);
+        var second = layout.SplitActive(EditorSplitOrientation.Vertical);
+        first.SetFoldingStateCapture(() => [new SourceRange(0, 0, 3, 0)]);
+        second.SetFoldingStateCapture(() => []);
+
+        var firstState = first.CaptureState();
+        var secondState = second.CaptureState();
+
+        Assert.AreEqual(1, firstState.CollapsedFolds.Count);
+        Assert.AreEqual(0, secondState.CollapsedFolds.Count);
+        Assert.AreSame(first.Document.EditorDocument, second.Document.EditorDocument);
     }
 
     [TestMethod]

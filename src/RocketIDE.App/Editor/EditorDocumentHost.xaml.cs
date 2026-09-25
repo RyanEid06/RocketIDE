@@ -26,6 +26,8 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
     private readonly RocketHoverController _hoverController;
     private readonly RocketSignatureHelpController _signatureHelpController;
     private readonly RocketSemanticTokenController _semanticTokenController;
+    private RocketFoldingController? _foldingController;
+    private IRocketFoldingRangeProvider? _attachedFoldingProvider;
     private DocumentTabViewModel? _document;
     private EditorViewViewModel? _view;
     private bool _rocketFeaturesAttached;
@@ -43,6 +45,18 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
     {
         get => (IRocketEditorFeatureService?)GetValue(FeatureServiceProperty);
         set => SetValue(FeatureServiceProperty, value);
+    }
+
+    public static readonly DependencyProperty FoldingProviderProperty = DependencyProperty.Register(
+        nameof(FoldingProvider),
+        typeof(IRocketFoldingRangeProvider),
+        typeof(EditorDocumentHost),
+        new PropertyMetadata(null, FoldingProviderChanged));
+
+    public IRocketFoldingRangeProvider? FoldingProvider
+    {
+        get => (IRocketFoldingRangeProvider?)GetValue(FoldingProviderProperty);
+        set => SetValue(FoldingProviderProperty, value);
     }
 
     public EditorDocumentHost()
@@ -408,6 +422,21 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
         _hoverController.Attach(document);
         _signatureHelpController.Attach(document);
         _semanticTokenController.Attach(document);
+        if (FoldingProvider is { } foldingProvider)
+        {
+            _foldingController = new RocketFoldingController(
+                Editor,
+                new RocketFoldingRangeAdapter(foldingProvider, () => _document));
+            _foldingController.Attach(document);
+            _foldingController.RestoreCollapsedState(
+                _view?.CollapsedFolds.Select(range => new EditorFoldingRange(range.StartLine, range.EndLine)) ?? []);
+            if (_view is { } view)
+            {
+                view.SetFoldingStateCapture(CaptureCollapsedFolds);
+            }
+            foldingProvider.SessionChanged += FoldingProvider_SessionChanged;
+            _attachedFoldingProvider = foldingProvider;
+        }
         _rocketFeaturesAttached = true;
     }
 
@@ -422,10 +451,38 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
         _hoverController.Detach();
         _signatureHelpController.Detach();
         _semanticTokenController.Detach();
+        if (_foldingController is { } foldingController)
+        {
+            _view?.SetCollapsedFolds(CaptureCollapsedFolds());
+            _view?.SetFoldingStateCapture(null);
+            if (_attachedFoldingProvider is { } foldingProvider)
+                foldingProvider.SessionChanged -= FoldingProvider_SessionChanged;
+            _attachedFoldingProvider = null;
+            foldingController.Dispose();
+            _foldingController = null;
+        }
         _rocketFeaturesAttached = false;
     }
 
+    private IReadOnlyList<SourceRange> CaptureCollapsedFolds() =>
+        _foldingController?.CaptureCollapsedState()
+            .Select(range => new SourceRange(range.StartLine, 0, range.EndLine, 0))
+            .ToArray() ?? [];
+
+    private void FoldingProvider_SessionChanged(object? sender, EventArgs e) =>
+        _foldingController?.NotifySessionChanged();
+
     private static void FeatureServiceChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
+    {
+        if (dependencyObject is EditorDocumentHost host && host._document is { } document &&
+            IsRocketDocument(document) && document.AllowLsp)
+        {
+            host.DetachRocketFeatures();
+            host.AttachRocketFeatures(document);
+        }
+    }
+
+    private static void FoldingProviderChanged(DependencyObject dependencyObject, DependencyPropertyChangedEventArgs e)
     {
         if (dependencyObject is EditorDocumentHost host && host._document is { } document &&
             IsRocketDocument(document) && document.AllowLsp)

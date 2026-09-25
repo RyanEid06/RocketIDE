@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using RocketIDE.App.Integration;
 using RocketIDE.Core.Diagnostics;
+using RocketIDE.Rocket.LanguageServer;
 using RocketIDE.Rocket.LanguageServer.Features;
 
 namespace RocketIDE.App.ViewModels;
@@ -157,7 +158,7 @@ public sealed class SymbolSearchViewModel : INotifyPropertyChanged, IDisposable
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
         }
-        catch (Exception exception) when (exception is IOException or InvalidOperationException)
+        catch (Exception exception) when (exception is IOException or InvalidOperationException or LspProtocolException or JsonRpcResponseException)
         {
             if (serial == Volatile.Read(ref _searchSerial))
             {

@@ -27,7 +27,7 @@ public sealed class SymbolAndFoldingStalenessTests
     }
 
     [TestMethod]
-    public async Task FoldingProvider_RejectsSupersededSameDocumentRequest()
+    public async Task FoldingProvider_AllowsConcurrentSameVersionRequestsForSplitViews()
     {
         var document = CreateDocument();
         var first = new TaskCompletionSource<IReadOnlyList<RocketFoldingRange>?>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -40,7 +40,24 @@ public sealed class SymbolAndFoldingStalenessTests
         first.SetResult([new RocketFoldingRange(0, 0, 2, 0, null)]);
 
         Assert.IsNotNull(await secondRequest);
-        Assert.IsNull(await firstRequest);
+        Assert.IsNotNull(await firstRequest);
+    }
+
+    [TestMethod]
+    public async Task FoldingProvider_DoesNotRequestAfterApplicationShutdown()
+    {
+        var document = CreateDocument();
+        using var lifetime = new CancellationTokenSource();
+        lifetime.Cancel();
+        var requests = 0;
+        var provider = new RocketFoldingRangeProvider((_, _) =>
+        {
+            requests++;
+            return Task.FromResult<IReadOnlyList<RocketFoldingRange>?>([]);
+        }, () => 4, lifetime.Token);
+
+        Assert.IsNull(await provider.GetRangesAsync(document, CancellationToken.None));
+        Assert.AreEqual(0, requests);
     }
 
     private static RocketDocumentSymbol Symbol(string path)

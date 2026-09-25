@@ -34,6 +34,36 @@ public sealed class RocketSessionCoordinatorTests
     }
 
     [TestMethod]
+    public async Task ForceStop_ConcurrentCallerWaitsForOwnedProcessKillToFinish()
+    {
+        using var temp = new TempDirectory();
+        var killStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseKill = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var fakeClient = new FakeLanguageClient { KillStarted = killStarted, ReleaseKill = releaseKill };
+        var discovery = new RocketToolDiscoveryResult(
+            Path.Combine(temp.Path, "rocketc.exe"), Path.Combine(temp.Path, "rocket-lsp.exe"),
+            "rocketc 2.1.0", "rocket-lsp 1.0.0", []);
+        await using var coordinator = CreateCoordinator(fakeClient, discovery);
+        await coordinator.EnsureAsync(temp.Path, temp.Path, CancellationToken.None);
+
+        var first = Task.Run(coordinator.ForceStopOwnedProcessTree);
+        try
+        {
+            await killStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            var second = Task.Run(coordinator.ForceStopOwnedProcessTree);
+            Assert.IsFalse(await Task.WhenAny(second, Task.Delay(50)) == second,
+                "A concurrent force-stop must not report completion before the owned process kill finishes.");
+            releaseKill.TrySetResult();
+            await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.AreEqual(1, fakeClient.ForcedKillCount);
+        }
+        finally
+        {
+            releaseKill.TrySetResult();
+        }
+    }
+
+    [TestMethod]
     public async Task RestartAsync_HungFakeLspStopHonorsDeadlineAndKillsOwnedTree()
     {
         using var temp = new TempDirectory();
@@ -525,6 +555,8 @@ public sealed class RocketSessionCoordinatorTests
         private int _forcedKillRecorded;
         public int ForcedKillCount => Volatile.Read(ref _forcedKillCount);
         public bool HangOnStop { get; init; }
+        public TaskCompletionSource? KillStarted { get; init; }
+        public TaskCompletionSource? ReleaseKill { get; init; }
         public Task? StartGate { get; init; }
         private readonly TaskCompletionSource _stopped = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public Func<string, object?, object?>? RequestHandler { get; init; }
@@ -566,6 +598,8 @@ public sealed class RocketSessionCoordinatorTests
 
         public void KillOwnedProcessTree()
         {
+            KillStarted?.TrySetResult();
+            ReleaseKill?.Task.GetAwaiter().GetResult();
             if (Interlocked.Exchange(ref _forcedKillRecorded, 1) != 0)
             {
                 return;

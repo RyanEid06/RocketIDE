@@ -2,8 +2,10 @@ using System.IO;
 using System.Text;
 using ICSharpCode.AvalonEdit;
 using RocketIDE.App.Editor;
+using RocketIDE.App.Integration;
 using RocketIDE.App.ViewModels;
 using RocketIDE.Core.Documents;
+using RocketIDE.Rocket.LanguageServer.Features;
 
 namespace RocketIDE.App.Tests.Editor;
 
@@ -55,6 +57,35 @@ public sealed class RocketFoldingControllerTests
             Assert.AreEqual(1, first.CaptureCollapsedState().Count);
             Assert.AreEqual(0, second.CaptureCollapsedState().Count);
             Assert.AreSame(firstEditor.Document, secondEditor.Document);
+
+            first.Detach();
+            Assert.AreEqual(0, first.CaptureCollapsedState().Count);
+            Assert.AreEqual(0, second.CaptureCollapsedState().Count);
+            second.RestoreCollapsedState([new EditorFoldingRange(0, 2)]);
+            Assert.AreEqual(1, second.CaptureCollapsedState().Count);
+        });
+    }
+
+    [TestMethod]
+    public void AuthoritativeAdapterMapsCurrentSnapshotAndIgnoresUnsupportedResult()
+    {
+        RunSta(() =>
+        {
+            var document = CreateDocument("one\n  two\n  three\nfour");
+            var provider = new SnapshotProvider(new RocketFoldingSnapshot(
+                document.Path, document.Version, 3,
+                [new RocketFoldingRange(0, 0, 2, 0, null)]));
+            var adapter = new RocketFoldingRangeAdapter(provider, () => document);
+            var editor = new TextEditor { Document = document.EditorDocument };
+            using var controller = new RocketFoldingController(editor, adapter);
+            controller.Attach(document);
+            controller.RefreshAsync().GetAwaiter().GetResult();
+            controller.RestoreCollapsedState([new EditorFoldingRange(0, 2)]);
+            Assert.AreEqual(1, controller.CaptureCollapsedState().Count);
+
+            provider.Snapshot = null;
+            controller.RefreshAsync().GetAwaiter().GetResult();
+            Assert.AreEqual(0, controller.CaptureCollapsedState().Count);
         });
     }
 
@@ -143,6 +174,21 @@ public sealed class RocketFoldingControllerTests
         {
             cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult<IReadOnlyList<EditorFoldingRange>?>(ranges);
+        }
+    }
+
+    private sealed class SnapshotProvider(RocketFoldingSnapshot? snapshot) : IRocketFoldingRangeProvider
+    {
+        public event EventHandler? SessionChanged
+        {
+            add { }
+            remove { }
+        }
+        public RocketFoldingSnapshot? Snapshot { get; set; } = snapshot;
+        public Task<RocketFoldingSnapshot?> GetRangesAsync(DocumentTabViewModel document, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(Snapshot);
         }
     }
 

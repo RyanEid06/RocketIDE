@@ -34,7 +34,8 @@ public partial class MainWindow
             () => _rocketSession.SessionGeneration);
         _wp03FoldingProvider = new RocketFoldingRangeProvider(
             _rocketSession.RequestFoldingRangesAsync,
-            () => _rocketSession.SessionGeneration);
+            () => _rocketSession.SessionGeneration,
+            _lifetime.WorkToken);
         var validatedNavigation = new ValidatedEditorNavigation(
             EditorNavigation,
             async (path, token) => FindOpenDocument(path)?.Text ?? await ReadNavigationTextAsync(path, token),
@@ -258,20 +259,41 @@ public partial class MainWindow
         using var viewModel = new SymbolSearchViewModel(SymbolSearchViewModel.FlattenDocumentSymbols(snapshot.Symbols));
         var dialog = new SymbolPickerWindow("Go to Symbol in File", viewModel) { Owner = this };
         if (dialog.ShowDialog() == true && dialog.SelectedSymbol is { } selected)
+        {
+            if (_rocketSession.SessionGeneration != snapshot.SessionGeneration ||
+                document.Version != snapshot.Version ||
+                !_viewModel.Documents.Contains(document))
+            {
+                SetLspStatus("LSP: file symbols changed; search again");
+                return;
+            }
             await _wp03NavigationHistory.NavigateAsync(selected.Path, selected.Range, cancellationToken);
+        }
     }
 
     private async Task ShowWorkspaceSymbolsAsync(CancellationToken cancellationToken)
     {
         var workspace = _viewModel.Explorer.Workspace?.Path;
+        var generation = _rocketSession.SessionGeneration;
         using var viewModel = new SymbolSearchViewModel(async (query, token) =>
         {
             var symbols = await _rocketSession.RequestWorkspaceSymbolsAsync(query, token) ?? [];
+            if (_rocketSession.SessionGeneration != generation ||
+                !string.Equals(_viewModel.Explorer.Workspace?.Path, workspace, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The Rocket workspace or language-server session changed. Search again.");
             return symbols.Select(symbol => SymbolSearchViewModel.FromWorkspaceSymbol(symbol, workspace)).ToArray();
         });
         var dialog = new SymbolPickerWindow("Go to Symbol in Workspace", viewModel) { Owner = this };
         if (dialog.ShowDialog() == true && dialog.SelectedSymbol is { } selected)
+        {
+            if (_rocketSession.SessionGeneration != generation ||
+                !string.Equals(_viewModel.Explorer.Workspace?.Path, workspace, StringComparison.OrdinalIgnoreCase))
+            {
+                SetLspStatus("LSP: workspace symbols changed; search again");
+                return;
+            }
             await _wp03NavigationHistory.NavigateAsync(selected.Path, selected.Range, cancellationToken);
+        }
     }
 
     private void ShowOutline()
@@ -294,6 +316,7 @@ public partial class MainWindow
         DispatchUi(() =>
         {
             _wp03DocumentSymbols.Clear();
+            _wp03FoldingProvider.NotifySessionChanged();
             _wp03UnsupportedProjectStatusGeneration = 0;
             _ = _wp03Outline.RefreshAsync();
             if (e.IsOnline) QueueWp03ProjectStatusRefresh();
