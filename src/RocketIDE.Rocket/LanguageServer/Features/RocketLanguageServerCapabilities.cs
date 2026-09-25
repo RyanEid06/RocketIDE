@@ -22,7 +22,10 @@ public sealed record RocketLanguageServerCapabilities(
     bool SupportsRename = false,
     bool SupportsPrepareRename = false,
     bool SupportsCodeActions = false,
-    bool SupportsDocumentFormatting = false)
+    bool SupportsDocumentFormatting = false,
+    bool SupportsDocumentSymbols = false,
+    bool SupportsWorkspaceSymbols = false,
+    bool SupportsFoldingRanges = false)
 {
     public static RocketLanguageServerCapabilities None { get; } = new(
         false,
@@ -86,6 +89,9 @@ public sealed record RocketLanguageServerCapabilities(
             prepareProvider.ValueKind == JsonValueKind.True;
         var supportsCodeActions = IsBooleanOrOptionsProvider(capabilities, "codeActionProvider", out _);
         var supportsFormatting = IsBooleanOrOptionsProvider(capabilities, "documentFormattingProvider", out _);
+        var supportsDocumentSymbols = IsBooleanOrOptionsProvider(capabilities, "documentSymbolProvider", out _);
+        var supportsWorkspaceSymbols = IsBooleanOrOptionsProvider(capabilities, "workspaceSymbolProvider", out _);
+        var supportsFoldingRanges = IsBooleanOrOptionsProvider(capabilities, "foldingRangeProvider", out _);
 
         return new RocketLanguageServerCapabilities(
             supportsCompletion,
@@ -102,7 +108,10 @@ public sealed record RocketLanguageServerCapabilities(
             supportsRename,
             supportsPrepareRename,
             supportsCodeActions,
-            supportsFormatting);
+            supportsFormatting,
+            supportsDocumentSymbols,
+            supportsWorkspaceSymbols,
+            supportsFoldingRanges);
     }
 
     private static bool IsBooleanOrOptionsProvider(JsonElement parent, string propertyName, out JsonElement value)

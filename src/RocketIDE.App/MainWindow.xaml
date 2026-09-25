@@ -20,7 +20,7 @@
                 <Separator />
                 <MenuItem Header="_Open File..." InputGestureText="Ctrl+O" Click="OpenFile_Click" />
                 <MenuItem Header="Open _Folder..." InputGestureText="Ctrl+Shift+O" Click="OpenFolder_Click" />
-                <MenuItem Header="_Quick Open File..." InputGestureText="Ctrl+P" IsEnabled="{Binding CanQuickOpen}" Click="QuickOpenFile_Click" />
+                <MenuItem Header="_Quick Open File..." InputGestureText="Ctrl+P" IsEnabled="{Binding CanQuickOpen}" Tag="workspace.quickOpen" Click="RegisteredCommand_Click" />
                 <MenuItem x:Name="RecentProjectsMenu" Header="Recent _Projects" SubmenuOpened="RecentProjects_SubmenuOpened" />
                 <Separator />
                 <MenuItem Header="_Save" InputGestureText="Ctrl+S" IsEnabled="{Binding HasDocuments}" Click="Save_Click" />
@@ -33,70 +33,77 @@
                 <MenuItem Header="E_xit" Click="Exit_Click" />
             </MenuItem>
             <MenuItem Header="_Edit">
-                <MenuItem Header="_Undo" InputGestureText="Ctrl+Z" IsEnabled="{Binding HasDocuments}" Click="Undo_Click" />
-                <MenuItem Header="_Redo" InputGestureText="Ctrl+Y" IsEnabled="{Binding HasDocuments}" Click="Redo_Click" />
+                <MenuItem Header="_Undo" InputGestureText="Ctrl+Z" IsEnabled="{Binding HasDocuments}" Tag="editor.undo" Click="RegisteredCommand_Click" />
+                <MenuItem Header="_Redo" InputGestureText="Ctrl+Y" IsEnabled="{Binding HasDocuments}" Tag="editor.redo" Click="RegisteredCommand_Click" />
                 <Separator />
-                <MenuItem Header="_Find..." InputGestureText="Ctrl+F" IsEnabled="{Binding HasDocuments}" Click="Find_Click" />
-                <MenuItem Header="_Replace..." InputGestureText="Ctrl+H" IsEnabled="{Binding HasDocuments}" Click="Replace_Click" />
-                <MenuItem Header="Search in _Workspace..." InputGestureText="Ctrl+Shift+F" Click="SearchWorkspace_Click" />
-                <MenuItem Header="Replace in _Files..." InputGestureText="Ctrl+Shift+H" Click="ReplaceWorkspace_Click" />
+                <MenuItem Header="_Find..." InputGestureText="Ctrl+F" IsEnabled="{Binding HasDocuments}" Tag="editor.find" Click="RegisteredCommand_Click" />
+                <MenuItem Header="_Replace..." InputGestureText="Ctrl+H" IsEnabled="{Binding HasDocuments}" Tag="editor.replace" Click="RegisteredCommand_Click" />
+                <MenuItem Header="Search in _Workspace..." InputGestureText="Ctrl+Shift+F" Tag="workspace.search" Click="RegisteredCommand_Click" />
+                <MenuItem Header="Replace in _Files..." InputGestureText="Ctrl+Shift+H" Tag="workspace.replace" Click="RegisteredCommand_Click" />
                 <Separator />
-                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="Rename _Symbol..." InputGestureText="F2" IsEnabled="{Binding HasDocuments}" Click="RenameSymbol_Click" />
-                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Quick Fixes (server-provided)" InputGestureText="Ctrl+." IsEnabled="{Binding HasDocuments}" Click="CodeActions_Click" />
-                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Format Document" InputGestureText="Shift+Alt+F" IsEnabled="{Binding HasDocuments}" Click="FormatDocument_Click" />
+                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="Rename _Symbol..." InputGestureText="F2" IsEnabled="{Binding HasDocuments}" Tag="editor.renameSymbol" Click="RegisteredCommand_Click" />
+                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Quick Fixes (server-provided)" InputGestureText="Ctrl+." IsEnabled="{Binding HasDocuments}" Tag="editor.codeActions" Click="RegisteredCommand_Click" />
+                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Format Document" InputGestureText="Shift+Alt+F" IsEnabled="{Binding HasDocuments}" Tag="editor.formatDocument" Click="RegisteredCommand_Click" />
             </MenuItem>
-            <MenuItem Header="_Selection"><MenuItem Header="Select _All" InputGestureText="Ctrl+A" IsEnabled="{Binding HasDocuments}" Click="SelectAll_Click" /></MenuItem>
+            <MenuItem Header="_Selection"><MenuItem Header="Select _All" InputGestureText="Ctrl+A" IsEnabled="{Binding HasDocuments}" Tag="editor.selectAll" Click="RegisteredCommand_Click" /></MenuItem>
             <MenuItem Header="_View">
                 <MenuItem x:Name="ExplorerViewMenu" Header="Explorer" IsCheckable="True" IsChecked="True" Click="ExplorerViewMenu_Click" />
                 <MenuItem x:Name="BottomPanelViewMenu" Header="Bottom Panel" IsCheckable="True" IsChecked="True" Click="BottomPanelViewMenu_Click" />
                 <Separator />
-                <MenuItem Header="_Problems" InputGestureText="Ctrl+Shift+M" Click="ShowProblems_Click" />
-                <MenuItem Header="_Output" InputGestureText="Ctrl+Shift+U" Click="ShowOutput_Click" />
+                <MenuItem Header="_Problems" InputGestureText="Ctrl+Shift+M" Tag="view.problems" Click="RegisteredCommand_Click" />
+                <MenuItem Header="_Output" InputGestureText="Ctrl+Shift+U" Tag="view.output" Click="RegisteredCommand_Click" />
+                <MenuItem Header="_Outline" Tag="view.outline" Click="RegisteredCommand_Click" />
+                <MenuItem Header="Command _Palette..." InputGestureText="Ctrl+Shift+P" Tag="view.commandPalette" Click="RegisteredCommand_Click" />
             </MenuItem>
             <MenuItem Header="_Navigate">
-                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Go to Definition" InputGestureText="F12" IsEnabled="{Binding HasDocuments}" Click="GotoDefinition_Click" />
-                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="Find _References" InputGestureText="Shift+F12" IsEnabled="{Binding HasDocuments}" Click="FindReferences_Click" />
+                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Go to Definition" InputGestureText="F12" IsEnabled="{Binding HasDocuments}" Tag="navigate.definition" Click="RegisteredCommand_Click" />
+                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="Find _References" InputGestureText="Shift+F12" IsEnabled="{Binding HasDocuments}" Tag="navigate.references" Click="RegisteredCommand_Click" />
+                <MenuItem Header="Symbol in _File..." Tag="navigate.symbolFile" Click="RegisteredCommand_Click" />
+                <MenuItem Header="Symbol in _Workspace..." InputGestureText="Ctrl+T" Tag="navigate.symbolWorkspace" Click="RegisteredCommand_Click" />
                 <Separator />
-                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Go to Line..." InputGestureText="Ctrl+G" IsEnabled="{Binding HasDocuments}" Click="GotoLine_Click" />
+                <MenuItem Header="_Back" InputGestureText="Alt+Left" Tag="navigate.back" Click="RegisteredCommand_Click" />
+                <MenuItem Header="_Forward" InputGestureText="Alt+Right" Tag="navigate.forward" Click="RegisteredCommand_Click" />
+                <Separator />
+                <MenuItem Style="{StaticResource IDE.MenuItemStyle}" Header="_Go to Line..." InputGestureText="Ctrl+G" IsEnabled="{Binding HasDocuments}" Tag="navigate.goToLine" Click="RegisteredCommand_Click" />
             </MenuItem>
             <MenuItem Header="_Build">
-                <MenuItem Header="_Check Rocket Target" IsEnabled="{Binding CanRocketCheck}" Click="CheckRocket_Click" />
-                <MenuItem Header="_Build Rocket Target" InputGestureText="Ctrl+B" IsEnabled="{Binding CanRocketBuild}" Click="BuildRocket_Click" />
+                <MenuItem Header="_Check Rocket Target" IsEnabled="{Binding CanRocketCheck}" Tag="rocket.check" Click="RegisteredCommand_Click" />
+                <MenuItem Header="_Build Rocket Target" InputGestureText="Ctrl+B" IsEnabled="{Binding CanRocketBuild}" Tag="rocket.build" Click="RegisteredCommand_Click" />
             </MenuItem>
             <MenuItem Header="_Run">
-                <MenuItem Header="_Run Rocket Target" InputGestureText="Ctrl+R" IsEnabled="{Binding CanRocketRun}" Click="RunRocket_Click" />
-                <MenuItem Header="_Stop Rocket" InputGestureText="Ctrl+Shift+F5" IsEnabled="{Binding CanRocketStop}" Click="StopRocket_Click" />
+                <MenuItem Header="_Run Rocket Target" InputGestureText="Ctrl+R" IsEnabled="{Binding CanRocketRun}" Tag="rocket.run" Click="RegisteredCommand_Click" />
+                <MenuItem Header="_Stop Rocket" InputGestureText="Ctrl+Shift+F5" IsEnabled="{Binding CanRocketStop}" Tag="rocket.stop" Click="RegisteredCommand_Click" />
                 <Separator />
-                <MenuItem Header="_Test Rocket Target" IsEnabled="{Binding CanRocketTest}" Click="TestRocket_Click" />
+                <MenuItem Header="_Test Rocket Target" IsEnabled="{Binding CanRocketTest}" Tag="rocket.test" Click="RegisteredCommand_Click" />
             </MenuItem>
             <MenuItem Header="_Debug">
-                <MenuItem Header="_Start / Continue" InputGestureText="F5" IsEnabled="{Binding CanDebugStartContinue}" Click="DebugStartContinue_Click" />
-                <MenuItem Header="_Pause" InputGestureText="Pause" IsEnabled="{Binding CanDebugPause}" Click="DebugPause_Click" />
-                <MenuItem Header="S_top" InputGestureText="Shift+F5" IsEnabled="{Binding CanDebugStop}" Click="DebugStop_Click" />
+                <MenuItem Header="_Start / Continue" InputGestureText="F5" IsEnabled="{Binding CanDebugStartContinue}" Tag="debug.startContinue" Click="RegisteredCommand_Click" />
+                <MenuItem Header="_Pause" InputGestureText="Pause" IsEnabled="{Binding CanDebugPause}" Tag="debug.pause" Click="RegisteredCommand_Click" />
+                <MenuItem Header="S_top" InputGestureText="Shift+F5" IsEnabled="{Binding CanDebugStop}" Tag="debug.stop" Click="RegisteredCommand_Click" />
                 <Separator />
-                <MenuItem Header="Toggle _Breakpoint" InputGestureText="F9" IsEnabled="{Binding CanDebugToggleBreakpoint}" Click="DebugToggleBreakpoint_Click" />
+                <MenuItem Header="Toggle _Breakpoint" InputGestureText="F9" IsEnabled="{Binding CanDebugToggleBreakpoint}" Tag="debug.toggleBreakpoint" Click="RegisteredCommand_Click" />
                 <Separator />
-                <MenuItem Header="Step _Over" InputGestureText="F10" IsEnabled="{Binding CanDebugStepOver}" Click="DebugStepOver_Click" />
-                <MenuItem Header="Step _Into" InputGestureText="F11" IsEnabled="{Binding CanDebugStepInto}" Click="DebugStepInto_Click" />
-                <MenuItem Header="Step O_ut" InputGestureText="Shift+F11" IsEnabled="{Binding CanDebugStepOut}" Click="DebugStepOut_Click" />
+                <MenuItem Header="Step _Over" InputGestureText="F10" IsEnabled="{Binding CanDebugStepOver}" Tag="debug.stepOver" Click="RegisteredCommand_Click" />
+                <MenuItem Header="Step _Into" InputGestureText="F11" IsEnabled="{Binding CanDebugStepInto}" Tag="debug.stepInto" Click="RegisteredCommand_Click" />
+                <MenuItem Header="Step O_ut" InputGestureText="Shift+F11" IsEnabled="{Binding CanDebugStepOut}" Tag="debug.stepOut" Click="RegisteredCommand_Click" />
             </MenuItem>
             <MenuItem Header="_Tools">
                 <MenuItem Header="Validate Rocket _Environment" Click="ValidateRocketEnvironment_Click" />
                 <MenuItem Header="Rocket SDK _Settings..." Click="RocketSdkSettings_Click" />
                 <Separator />
-                <MenuItem Header="_New Rocket Project..." IsEnabled="{Binding CanRocketNewProject}" Click="NewRocketProject_Click" />
+                <MenuItem Header="_New Rocket Project..." IsEnabled="{Binding CanRocketNewProject}" Tag="rocket.new" Click="RegisteredCommand_Click" />
                 <MenuItem Header="_Resolve Dependencies" IsEnabled="{Binding CanRocketAdvanced}">
-                    <MenuItem Header="_Normal" Click="ResolveDependencies_Click" />
+                    <MenuItem Header="_Normal" Tag="rocket.resolve" Click="RegisteredCommand_Click" />
                     <MenuItem Header="_Locked (--locked)" Click="ResolveDependenciesLocked_Click" />
                     <MenuItem Header="_Offline (--offline)" Click="ResolveDependenciesOffline_Click" />
                 </MenuItem>
-                <MenuItem Header="Dependency _Tree" IsEnabled="{Binding CanRocketAdvanced}" Click="DependencyTree_Click" />
-                <MenuItem Header="_Audit Dependencies" IsEnabled="{Binding CanRocketAdvanced}" Click="AuditDependencies_Click" />
-                <MenuItem Header="_Target Information" IsEnabled="{Binding CanRocketAdvanced}" Click="TargetInformation_Click" />
-                <MenuItem Header="Format _Target/Workspace" IsEnabled="{Binding CanRocketAdvanced}" Click="FormatTarget_Click" />
-                <MenuItem Header="_Coverage" IsEnabled="{Binding CanRocketAdvanced}" Click="Coverage_Click" />
-                <MenuItem Header="_Profile" IsEnabled="{Binding CanRocketAdvanced}" Click="Profile_Click" />
-                <MenuItem Header="_Benchmark" IsEnabled="{Binding CanRocketAdvanced}" Click="Benchmark_Click" />
+                <MenuItem Header="Dependency _Tree" IsEnabled="{Binding CanRocketAdvanced}" Tag="rocket.tree" Click="RegisteredCommand_Click" />
+                <MenuItem Header="_Audit Dependencies" IsEnabled="{Binding CanRocketAdvanced}" Tag="rocket.audit" Click="RegisteredCommand_Click" />
+                <MenuItem Header="_Target Information" IsEnabled="{Binding CanRocketAdvanced}" Tag="rocket.target" Click="RegisteredCommand_Click" />
+                <MenuItem Header="Format _Target/Workspace" IsEnabled="{Binding CanRocketAdvanced}" Tag="rocket.format" Click="RegisteredCommand_Click" />
+                <MenuItem Header="_Coverage" IsEnabled="{Binding CanRocketAdvanced}" Tag="rocket.coverage" Click="RegisteredCommand_Click" />
+                <MenuItem Header="_Profile" IsEnabled="{Binding CanRocketAdvanced}" Tag="rocket.profile" Click="RegisteredCommand_Click" />
+                <MenuItem Header="_Benchmark" IsEnabled="{Binding CanRocketAdvanced}" Tag="rocket.benchmark" Click="RegisteredCommand_Click" />
             </MenuItem>
             <MenuItem Header="_Help"><MenuItem Header="About RocketIDE" Click="About_Click" /></MenuItem>
         </Menu>
@@ -108,13 +115,13 @@
                 <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Folder" ToolTip="Open folder" AutomationProperties.Name="Open folder button" Click="OpenFolder_Click" />
                 <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Save" IsEnabled="{Binding HasDocuments}" ToolTip="Save active file" AutomationProperties.Name="Save active file button" Click="Save_Click" />
                 <Border Width="1" Height="22" Margin="5,0" Background="{DynamicResource IDE.BorderBrush}" />
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Build" IsEnabled="{Binding CanRocketBuild}" ToolTip="Build active Rocket target" Click="BuildRocket_Click" />
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Run" IsEnabled="{Binding CanRocketRun}" ToolTip="Run active Rocket executable target" Click="RunRocket_Click" />
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Debug" IsEnabled="{Binding CanDebugStartContinue}" ToolTip="Start or continue Rocket debugging (F5)" AutomationProperties.Name="Start or continue Rocket debugging button" Click="DebugStartContinue_Click" />
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Pause" IsEnabled="{Binding CanDebugPause}" ToolTip="Pause Rocket debugging" AutomationProperties.Name="Pause Rocket debugging button" Click="DebugPause_Click" />
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Stop Debug" IsEnabled="{Binding CanDebugStop}" ToolTip="Stop Rocket debugging (Shift+F5)" AutomationProperties.Name="Stop Rocket debugging button" Click="DebugStop_Click" />
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Stop" IsEnabled="{Binding CanRocketStop}" ToolTip="Stop active Rocket compiler/program process tree" AutomationProperties.Name="Stop Rocket compiler or program button" Click="StopRocket_Click" />
-                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Test" IsEnabled="{Binding CanRocketTest}" ToolTip="Test active Rocket target" Click="TestRocket_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Build" IsEnabled="{Binding CanRocketBuild}" ToolTip="Build active Rocket target" Tag="rocket.build" Click="RegisteredCommand_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Run" IsEnabled="{Binding CanRocketRun}" ToolTip="Run active Rocket executable target" Tag="rocket.run" Click="RegisteredCommand_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Debug" IsEnabled="{Binding CanDebugStartContinue}" ToolTip="Start or continue Rocket debugging (F5)" AutomationProperties.Name="Start or continue Rocket debugging button" Tag="debug.startContinue" Click="RegisteredCommand_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Pause" IsEnabled="{Binding CanDebugPause}" ToolTip="Pause Rocket debugging" AutomationProperties.Name="Pause Rocket debugging button" Tag="debug.pause" Click="RegisteredCommand_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Stop Debug" IsEnabled="{Binding CanDebugStop}" ToolTip="Stop Rocket debugging (Shift+F5)" AutomationProperties.Name="Stop Rocket debugging button" Tag="debug.stop" Click="RegisteredCommand_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Stop" IsEnabled="{Binding CanRocketStop}" ToolTip="Stop active Rocket compiler/program process tree" AutomationProperties.Name="Stop Rocket compiler or program button" Tag="rocket.stop" Click="RegisteredCommand_Click" />
+                <Button Style="{StaticResource IDE.ToolbarButtonStyle}" Content="Test" IsEnabled="{Binding CanRocketTest}" ToolTip="Test active Rocket target" Tag="rocket.test" Click="RegisteredCommand_Click" />
             </StackPanel>
         </Border>
 

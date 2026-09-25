@@ -60,6 +60,7 @@ public partial class MainWindow : Window
         _viewModel.Search.ReplaceApplier = ApplyWorkspaceReplaceAsync;
         DataContext = _viewModel;
         InitializeRocketIntegration();
+        InitializeWp03();
         InitializeReliability();
     }
 
@@ -850,6 +851,16 @@ public partial class MainWindow : Window
 
     private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (ShouldPreserveFocusedTextInputGesture(e))
+        {
+            return;
+        }
+
+        if (await TryDispatchWp03GestureAsync(e))
+        {
+            return;
+        }
+
         if (TryHandleDebuggerGesture(e.Key, Keyboard.Modifiers))
         {
             e.Handled = true;

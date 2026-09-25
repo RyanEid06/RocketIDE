@@ -23,6 +23,7 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
     private readonly SemaphoreSlim _gate = new(1, 1);
     private IRocketLanguageClient? _languageClient;
     private IRocketLanguageClient? _stoppingClient;
+    private IRocketLanguageClient? _forceStoppedClient;
     private int _shuttingDown;
     private DocumentSynchronizer? _documentSynchronizer;
     private SemanticTokensClient? _semanticTokensClient;
@@ -66,6 +67,10 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
 
     public IReadOnlyList<string> SignatureRetriggerCharacters =>
         _languageClient?.Capabilities.SignatureRetriggerCharacters ?? Array.Empty<string>();
+
+    public long SessionGeneration => Volatile.Read(ref _activeDiagnosticGeneration);
+
+    public bool IsOnline => _languageClient?.IsInitialized == true;
 
     public Task<RocketCompletionResult?> RequestCompletionAsync(
         string path,
@@ -171,6 +176,98 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
             async (client, _) => await new NavigationClient(client).RequestFormattingAsync(path, tabSize, insertSpaces, cancellationToken).ConfigureAwait(false),
             "document formatting",
             cancellationToken);
+
+    public Task<IReadOnlyList<RocketDocumentSymbol>?> RequestDocumentSymbolsAsync(
+        string path,
+        CancellationToken cancellationToken) =>
+        RequestFeatureAsync(
+            path,
+            capabilities => capabilities.SupportsDocumentSymbols,
+            async (client, _) => await new SymbolClient(client).RequestDocumentSymbolsAsync(path, cancellationToken).ConfigureAwait(false),
+            "document symbols",
+            cancellationToken);
+
+    public Task<IReadOnlyList<RocketFoldingRange>?> RequestFoldingRangesAsync(
+        string path,
+        CancellationToken cancellationToken) =>
+        RequestFeatureAsync(
+            path,
+            capabilities => capabilities.SupportsFoldingRanges,
+            async (client, _) => await new FoldingClient(client).RequestAsync(path, cancellationToken).ConfigureAwait(false),
+            "folding ranges",
+            cancellationToken);
+
+    public async Task<IReadOnlyList<RocketWorkspaceSymbol>?> RequestWorkspaceSymbolsAsync(
+        string query,
+        CancellationToken cancellationToken)
+    {
+        IRocketLanguageClient client;
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var candidate = _languageClient;
+            if (candidate is null || !candidate.IsInitialized || !candidate.Capabilities.SupportsWorkspaceSymbols)
+            {
+                return null;
+            }
+            client = candidate;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+
+        try
+        {
+            var result = await new SymbolClient(client).RequestWorkspaceSymbolsAsync(query, cancellationToken).ConfigureAwait(false);
+            return ReferenceEquals(client, _languageClient) && client.IsInitialized ? result : null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is JsonRpcResponseException or LspProtocolException or IOException or InvalidOperationException or ObjectDisposedException)
+        {
+            _appendOutput($"Rocket LSP workspace symbols request failed: {exception.Message}");
+            return null;
+        }
+    }
+
+    public async Task<RocketProjectStatusRequestResult> RequestProjectStatusAsync(CancellationToken cancellationToken)
+    {
+        IRocketLanguageClient client;
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var candidate = _languageClient;
+            if (candidate is null || !candidate.IsInitialized)
+            {
+                return new RocketProjectStatusRequestResult(false, null);
+            }
+            client = candidate;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+
+        try
+        {
+            var result = await new ProjectStatusClient(client).RequestAsync(cancellationToken).ConfigureAwait(false);
+            return ReferenceEquals(client, _languageClient) && client.IsInitialized
+                ? result
+                : new RocketProjectStatusRequestResult(false, null);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is JsonRpcResponseException or LspProtocolException or IOException or InvalidOperationException or ObjectDisposedException)
+        {
+            _appendOutput($"Rocket LSP project status request failed: {exception.Message}");
+            return new RocketProjectStatusRequestResult(true, null);
+        }
+    }
 
     public void InvalidateSemanticTokens(string path) => _semanticTokensClient?.Invalidate(path);
 
@@ -340,11 +437,19 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
 
     public void ForceStopOwnedProcessTree()
     {
-        if (_languageClient is IOwnedProcessTree running) running.KillOwnedProcessTree();
-        if (_stoppingClient is IOwnedProcessTree stopping && !ReferenceEquals(stopping, _languageClient))
+        ForceStopClient(_languageClient);
+        ForceStopClient(_stoppingClient);
+    }
+
+    private void ForceStopClient(IRocketLanguageClient? client)
+    {
+        if (client is not IOwnedProcessTree owned)
         {
-            stopping.KillOwnedProcessTree();
+            return;
         }
+
+        if (ReferenceEquals(Interlocked.Exchange(ref _forceStoppedClient, client), client)) return;
+        owned.KillOwnedProcessTree();
     }
 
     public async ValueTask DisposeAsync()
@@ -463,7 +568,7 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            if (client is IOwnedProcessTree owned) owned.KillOwnedProcessTree();
+            ForceStopClient(client);
             throw;
         }
         finally

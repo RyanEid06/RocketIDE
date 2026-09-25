@@ -415,7 +415,7 @@ public partial class MainWindow
             return;
         }
 
-        var menu = new ContextMenu { PlacementTarget = editorHost ?? GetActiveEditor() };
+        var menu = new ContextMenu { PlacementTarget = (UIElement?)editorHost ?? this };
         foreach (var action in actions)
         {
             var unsupported = action.HasUnsupportedCommand || action.Edit is null;
@@ -556,17 +556,11 @@ public partial class MainWindow
             return;
         }
 
-        var tab = open ?? await OpenDocumentAsync(location.Path);
-        if (tab is null)
-        {
-            return;
-        }
-        _viewModel.ActiveDocument = tab;
-        tab.RequestNavigation(new SourceRange(
+        await _wp03NavigationHistory.NavigateAsync(location.Path, new SourceRange(
             location.Range.Start.Line,
             location.Range.Start.Character,
             location.Range.End.Line,
-            location.Range.End.Character));
+            location.Range.End.Character), CancellationToken.None);
     }
 
     private static async Task<string> ReadNavigationTextAsync(string path, CancellationToken cancellationToken)
@@ -600,6 +594,7 @@ public partial class MainWindow
         if (previous is not null)
         {
             previous.Cancel();
+            previous.Dispose();
         }
         return cancellation;
     }
@@ -664,6 +659,7 @@ public partial class MainWindow
                 if (status is not null)
                 {
                     SetLspStatus($"LSP: online · {status.Files} files · {status.ElapsedMilliseconds} ms");
+                    QueueWp03ProjectStatusRefresh();
                 }
             }
             catch (JsonException exception)
