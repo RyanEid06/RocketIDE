@@ -21,12 +21,14 @@ Followed ROCKETIDE_ALL_DEFERRED_ACCEPTANCE_PROMPT.md in full. The audit was rest
 - Disposable project basic-project opened in the native UI. LSP reported 3 files / 12 symbols and IDE Build succeeded.
 - Direct compiler Check returned success=true / exit 0. Direct compiler Run printed audit fixture / exit 0. Direct compiler Test on the no-tests fixture returned R5001 / exit 2.
 - Native UI reproduced missing Run stdout/exit reporting and the Test panel’s stale running summary. Screenshots are evidence/ui-run-output-missing.png and evidence/ui-test-panel-stuck.png.
+- Further native checks: IDE Check exited 0; an unsaved malformed buffer produced R4001 in Problems and navigated to line 2; Go to Definition, Find References and the Rename Symbol happy path succeeded; workspace search found both saved occurrences and a unique dirty-buffer marker; replace preview/apply replaced 2 matches in one file and Undo restored the fixture; Quick Open filtered/opened `src/entities.rocket`; Command Palette filtering ran IDE Check. The malformed buffer was discarded and dirty search/replace edits were undone.
+- Closed the second RocketIDE session normally and restored `%LOCALAPPDATA%\RocketIDE` from the original snapshot. Final verification: 71 expected files, 71 actual files, 0 path/length/SHA-256 mismatches.
 - Rows not individually exercised are explicitly NOT RUN or BLOCKED in DEFERRED_TEST_MATRIX.md. Historical integration notes were treated as pointers to criteria, not current evidence.
 
 ## State and cleanup
 
 - No test or source changes were made. The app session and generated package are isolated to the audit worktree. The existing original workspace smoke file was observed in a separate editor group and was not edited.
-- The audit RocketIDE process and the accidentally opened Visual Studio window were closed normally. The pre-launch RocketIDE LocalApplicationData snapshot was restored; all 71 files match by relative path, length, and SHA-256 (0 mismatches). The exact snapshot manifest remains under user-state-before.
+- The audit RocketIDE process and the accidentally opened Visual Studio window were closed normally. The pre-launch RocketIDE LocalApplicationData snapshot was restored after the final UI session; all 71 files match by relative path, length, and SHA-256 (0 mismatches). The exact snapshot manifest remains under user-state-before.
 - The accidental OS association launch of Visual Studio happened when the full source path was typed into the Open File dialog address bar. No source was opened or edited there; this operator error is excluded from bug findings.
 - Package is not deployed, CI was not triggered, no PR/issues/messages were created, and no merge or push was performed.
 

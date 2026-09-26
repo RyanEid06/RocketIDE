@@ -25,17 +25,17 @@ Outcome values are exactly PASS, FAIL, BLOCKED, NOT RUN, or NOT APPLICABLE. A PA
 | A11 | WP10 direct compiler Run and program output | PASS | rocketc run on the disposable fixture exited 0 and printed “audit fixture”. This is CLI evidence only. |
 | A12 | Direct compiler Test error response for this no-tests fixture | PASS | rocketc test returned structured R5001 diagnostic “package test directory does not exist” and exit 2. This is the expected fixture precondition failure and supports the UI reproduction; it is not a passing IDE Test result. |
 | A13 | Product/compiler/test source remains unchanged | PASS | Audit was report-only. No source, existing test, script, dependency, CI, or acceptance-criteria file was edited. Tracked status was clean before audit reports were written. |
-| A14 | IDE Check diagnostics and Problems routing | NOT RUN | The direct CLI check passed, but the IDE menu Check outcome and diagnostic navigation were not established. |
+| A14 | IDE Check diagnostics and Problems routing | PASS | Invoked Check Rocket target from the Command Palette on the disposable project; Output reported `Rocket Check exited with code 0`. A malformed-source diagnostic range was not tested. |
 | A15 | IDE Run streams program output and exit result to Output | FAIL | Toolbar Run was observed disabling while the process ran and re-enabling afterward. Output still showed only earlier LSP/Build entries; it omitted both the CLI-proven “audit fixture” stdout and the Run exit line. See BUG-001 and evidence/ui-run-output-missing.png. |
 | A16 | IDE Test shows a terminal PASS/FAIL/summary result | FAIL | After invoking Test against the no-tests package, the Test panel remained “Test run started…” with an empty result grid after the command ended and controls re-enabled. Direct CLI produced R5001/exit 2. See BUG-002 and evidence/ui-test-panel-stuck.png. |
 | A17 | IDE Stop terminates the owned child-process tree | NOT RUN | No controlled long-running fixture was started and stopped. |
-| A18 | Live diagnostics and exact source-range navigation | NOT RUN | No invalid edit was introduced in the disposable workspace. |
-| A19 | WP09 Go to Definition / Find References against live Rocket LSP | NOT RUN | Not exercised. |
-| A20 | WP09 Rename and all-or-nothing server workspace edits | NOT RUN | Not exercised. |
+| A18 | Live diagnostics and exact source-range navigation | PASS | An unsaved malformed `entities.rocket` buffer produced one live `R4001` error in Problems at line 2, column 5; selecting the problem moved the editor to line 2, column 11 within the reported span. The dirty buffer was discarded and diagnostics cleared. |
+| A19 | WP09 Go to Definition / Find References against live Rocket LSP | PASS | F12 on `clamp_value(0)` moved to its declaration; Shift+F12 returned two server-provided locations at main.rocket:1:4 and 11:12. Repeated after a disposable rename and the updated ranges reflected `bounded_value`. |
+| A20 | WP09 Rename Symbol happy path across definition and use | PASS | F2 renamed the fixture symbol `clamp_value` to `bounded_value` at declaration and call site, saved successfully, and updated the reference ranges. Restored the fixture with Undo and Save. Atomic rejection/conflict behavior remains untested. |
 | A21 | WP09 server-provided Quick Fix / code actions | NOT RUN | Not exercised. |
 | A22 | WP09 Format Document and formatter capability behavior | NOT RUN | Not exercised. |
-| A23 | WP11 dirty-buffer workspace search and replace | NOT RUN | Not exercised. |
-| A24 | WP11 replace preview, conflict detection, cancellation, and result stress | NOT RUN | Not exercised. |
+| A23 | WP11 workspace search in indexed project and open dirty buffer | PASS | Search for `clamp_value` found two locations in one fixture file. After adding a unique unsaved marker in the open main.rocket buffer, search returned exactly one result at line 11. Undo removed the marker; no fixture file was left dirty. |
+| A24 | WP11 replace preview and apply | PASS | Preview showed two matches in one file. Apply reported “2 matches replaced in 1 file.” Undo and Save restored the known fixture. Conflict, explicit cancellation, and stress behavior remain untested. |
 | A25 | WP12 source around/above 4 MiB stays editable and outside LSP | NOT RUN | No large source fixture was created. |
 | A26 | WP12 large-workspace responsiveness | NOT RUN | No workload or latency measurement was taken. |
 | A27 | WP13 configured-SDK advanced commands and structured failure handling | NOT RUN | No dependency, target, format, coverage, profile, or benchmark command was invoked. |
@@ -52,7 +52,7 @@ Outcome values are exactly PASS, FAIL, BLOCKED, NOT RUN, or NOT APPLICABLE. A PA
 | A38 | Full clean-machine end-to-end workflow from package through recovery and debugger | NOT RUN | This combines multiple unrun gates and cannot be inferred from the baseline suite. |
 | A39 | GitHub Windows CI / uploaded verification and package artifacts | NOT RUN | No CI workflow was triggered or queried for this audit. |
 | A40 | FINAL-WP02 lifecycle, document sync, save affinity, restart and shutdown acceptance | NOT RUN | Current full unit/integration baseline is recorded at A02; the historic user-visible lifecycle replay was not repeated. |
-| A41 | FINAL-WP03 Quick Open, symbols, Outline, history, and Command Palette | NOT RUN | Not exercised in this pass. |
+| A41 | FINAL-WP03 Quick Open and Command Palette filtering | PASS | Quick Open indexed 3 project files, filtering `entities` returned `src\\entities.rocket`, and opened it. Command Palette filter `check` returned Check Rocket target and ran it. Go to Symbol, Outline, and history flows remain untested. |
 | A42 | FINAL-WP04 editor productivity, preferences, folding, wrap and format-on-save | NOT RUN | Not exercised in this pass. |
 | A43 | FINAL-WP05 split editing, independent presentation, dirty close, snippet acceptance/undo | NOT RUN | Two groups were visible, but independent state, close behavior, snippet insertion, completion, and undo were not exercised. |
 | A44 | FINAL-WP06 future implementation packet | NOT APPLICABLE | This audit does not start the separately planned future WP06 implementation. Existing WP17 live debugger acceptance remains in scope at A34–A35 and is NOT RUN. |
@@ -62,7 +62,7 @@ Outcome values are exactly PASS, FAIL, BLOCKED, NOT RUN, or NOT APPLICABLE. A PA
 
 ## Reconciled counts
 
-47 rows total: 13 PASS, 2 FAIL, 2 BLOCKED, 28 NOT RUN, 2 NOT APPLICABLE.
+47 rows total: 20 PASS, 2 FAIL, 2 BLOCKED, 21 NOT RUN, 2 NOT APPLICABLE.
 
 All documented WP09–WP17 manual deferrals in ROADMAP.md and docs/WP11-WP17-CODE-ONLY-FOLLOWUPS.md map to A14–A39, A46, or A47. The FINAL-WP02 through FINAL-WP05 visible-feature deferrals map to A40–A43. FINAL-WP06 and FINAL-WP07 exclusions are explained at A44–A45. A PASS on automated verification or packaging is not full GUI acceptance or release readiness.
 

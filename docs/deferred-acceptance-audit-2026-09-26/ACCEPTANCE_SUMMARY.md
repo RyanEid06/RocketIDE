@@ -8,10 +8,10 @@ The audit is **not accepted**. The current baseline gate and package creation pa
 
 | Outcome | Rows |
 |---|---:|
-| PASS | 13 |
+| PASS | 20 |
 | FAIL | 2 |
 | BLOCKED | 2 |
-| NOT RUN | 28 |
+| NOT RUN | 21 |
 | NOT APPLICABLE | 2 |
 | Total | 47 |
 
@@ -22,6 +22,7 @@ The audit is **not accepted**. The current baseline gate and package creation pa
 - scripts/verify-wp05-snippets.ps1 passed all five snippet compiler fixtures.
 - scripts/package.ps1 created a portable ZIP with SHA-256 e2540ca1b8b79697313057c5f2a6552326054317ab5bc885eb970a8ac7819f98. The script’s debugger assembly and x64/amd64 EngHost presence checks passed.
 - A native RocketIDE session opened a disposable project, initialized rocket-lsp and successfully built the fixture. Direct compiler Check and Run passed.
+- Native IDE Check returned exit code 0. Live diagnostics reached Problems and navigated to the malformed fixture location. Go to Definition, Find References, Rename Symbol, dirty-buffer workspace search, replace preview/apply, Quick Open, and Command Palette filtering had passing happy-path checks; limits are detailed per row in the matrix.
 
 ## Confirmed bugs
 
@@ -35,7 +36,7 @@ The audit is **not accepted**. The current baseline gate and package creation pa
 
 ## Work not performed
 
-This pass did not exercise WP09 semantic editor actions; WP10 Stop and IDE Check diagnostics; WP11 search/replace conflicts and cancellation; WP12 large files; WP13 advanced commands; WP14 crash/recovery; WP16 keyboard and screen-reader behavior; WP17 live debugging; or the FINAL-WP02–WP05 manual feature matrix. See the matrix for each individual outcome.
+The remaining NOT RUN checks include WP09 positive quick-fix and formatter capability cases; WP10 Stop; WP11 multi-file conflict, cancellation, and stress cases; WP12 large files; WP13 advanced commands; WP14 crash/recovery; WP16 keyboard and screen-reader behavior; WP17 live debugging; and broader FINAL-WP02–WP05 feature matrices. The clean-machine and alternate-display gates remain BLOCKED. See the matrix for each individual outcome.
 
-No source, tests, scripts, dependencies, CI configuration, acceptance criteria, branches, production refs, or remote repositories were modified. The audit package and evidence are local artifacts only. The package was not launched on a clean machine; this is not a release sign-off.
+No product source, tests, scripts, dependencies, CI configuration, or acceptance criteria were modified. Audit reports were committed locally on the isolated audit branch only; no production ref or remote repository changed. The package was not launched on a clean machine; this is not a release sign-off.
 
