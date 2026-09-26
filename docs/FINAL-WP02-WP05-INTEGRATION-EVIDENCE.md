@@ -1,6 +1,6 @@
 # FINAL-WP02–WP05 RocketIDE integration evidence
 
-**Status: verified branch candidate; production merge pending.** WP02–WP05 and confirmed fixes are integrated on `codex/rocketide-final-wp02-wp05-integration`. Code candidate `c374cf86bd1976a610afecf723f4c6bf4c4c3779` passed 473 tests and packaging. Signature ordering, recovery, supported signature GUI and representative active-work shutdown have now been verified. The support limitations below remain explicit. No production branch has been merged or pushed. No WP06 work was started.
+**Status: WP02–WP05 merged and pushed to RocketIDE production `main`.** The verified integration branch was fast-forwarded without rewriting any source history. Published acceptance commit: `f5fb2d0c6e7c4dea9b0c451ea0f8ce4c2fdeca3b`; its code is `c374cf86bd1976a610afecf723f4c6bf4c4c3779` plus evidence only. The final gate passed 473 tests, zero warnings/errors and x64 publish. Signature ordering, recovery, supported signature GUI and representative active-work shutdown have been verified. The support limitations below remain explicit. This final documentation follow-up changes no product code. No WP06 work was started.
 
 ## Current candidate, 2026-09-26
 
@@ -92,12 +92,15 @@ Format-on-save and wordWrap were restored to false after their smoke tests. The 
 - GitHub branch metadata: main protected=false, required checks empty, active branch rules empty; merge commits allowed. Repository CONTRIBUTING permits the recorded full gate on a real Windows machine as acceptance evidence. No mandatory pull-request policy was found.
 - All protected/source worktrees remained clean at the final status check. Rocket fix and WP01 SHAs remain as recorded above.
 - Final independent review of `c374cf8` reported no remaining known critical/high blocker and recommended no further code change. Review explicitly retained the same-version semantic request and non-exhaustive shutdown measurement limitations above.
+- Final pre-merge gate on `f5fb2d0` again passed **473/473**, Release 0 warnings/errors and x64 publish. Candidate tree: `6a993936349a624f8b5bd9fb834e49ba1d1a7a3b`.
+- Production was fast-forwarded from `062b78f` to `f5fb2d0`. Initial atomic push returned HTTP 408; a live-ref check proved no remote change. Retrying with HTTP/1.1 succeeded. Fresh fetch/live checks proved local main, origin/main and the live main SHA all equalled `f5fb2d0c6e7c4dea9b0c451ea0f8ce4c2fdeca3b`, ahead/behind **0/0**. The integration branch was published at the same SHA. All source branches/worktrees remain preserved; Rocket was not pushed.
+- Final evidence-only follow-up, post-merge verification, package provenance and final remote SHA synchronization are reported in the task completion record so this document need not contain a self-referential commit hash.
 
 ### Remaining limitations and final integration steps
 
 - Unsupported real formatting, empty-call signature behavior, native source-debugger locals, isolated semantic-color provenance, exhaustive overlap shutdown and full duplicate-work profiling remain limited as explicitly described above. Supported WP02–WP05 routing and the confirmed integration defects have been checked; no known critical/high integration defect remains from the completed reviews.
 - The fixed LSP remains a separately branched toolchain dependency. Rocket production and WP01 are unchanged; the task forbids pushing Rocket.
-- Reconcile current production main, verify the exact final tree, merge/push only when ready, prove all production SHAs and 0/0, and run the post-merge gate. None of those final integration actions has occurred.
+- The published integration is the baseline for the next separately authorized work package, subject to the explicit upstream/tool-support limitations above. No next package was begun.
 
 ## Historical pre-fix evidence — NOT CURRENT ACCEPTANCE EVIDENCE
 
