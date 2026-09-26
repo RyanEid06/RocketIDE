@@ -20,6 +20,7 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
     private readonly Action<string> _setLspStatus;
     private readonly Action<string> _appendOutput;
     private readonly Action _showOutput;
+    private readonly Func<string, CancellationToken, Task>? _flushDocumentChangesAsync;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly object _forceStopGate = new();
     private IRocketLanguageClient? _languageClient;
@@ -42,7 +43,8 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
         Action<string> setRocketSdkStatus,
         Action<string> setLspStatus,
         Action<string> appendOutput,
-        Action showOutput)
+        Action showOutput,
+        Func<string, CancellationToken, Task>? flushDocumentChangesAsync = null)
     {
         _settingsProvider = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
         _locatorFactory = locatorFactory ?? throw new ArgumentNullException(nameof(locatorFactory));
@@ -52,6 +54,7 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
         _setLspStatus = setLspStatus ?? throw new ArgumentNullException(nameof(setLspStatus));
         _appendOutput = appendOutput ?? throw new ArgumentNullException(nameof(appendOutput));
         _showOutput = showOutput ?? throw new ArgumentNullException(nameof(showOutput));
+        _flushDocumentChangesAsync = flushDocumentChangesAsync;
     }
 
     public event EventHandler<RocketServerNotificationEventArgs>? NotificationReceived;
@@ -107,7 +110,8 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
             capabilities => capabilities.SupportsSignatureHelp,
             (client, _) => new SignatureHelpClient(client).RequestAsync(path, position, triggerCharacter, isRetrigger, cancellationToken),
             "signature help",
-            cancellationToken);
+            cancellationToken,
+            flushPendingChanges: true);
 
     public Task<RocketSemanticTokensResult?> RequestSemanticTokensAsync(
         string path,
@@ -751,12 +755,25 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
         Func<RocketLanguageServerCapabilities, bool> capabilityPredicate,
         Func<IRocketLanguageClient, SemanticTokensClient?, Task<T?>> request,
         string featureName,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool flushPendingChanges = false)
         where T : class
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(capabilityPredicate);
         ArgumentNullException.ThrowIfNull(request);
+
+        // Signature triggers contain freshly typed punctuation. Flush that edit
+        // before querying; formatting already owns the save gate and must not flush.
+        if (flushPendingChanges && _flushDocumentChangesAsync is not null)
+        {
+            try { await _flushDocumentChangesAsync(path, cancellationToken).ConfigureAwait(false); }
+            catch (Exception exception) when (exception is IOException or InvalidOperationException)
+            {
+                _appendOutput($"Rocket LSP {featureName} synchronization failed: {exception.Message}");
+                return null;
+            }
+        }
 
         IRocketLanguageClient client;
         SemanticTokensClient? semanticTokens;

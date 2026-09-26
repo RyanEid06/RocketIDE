@@ -7,6 +7,47 @@ namespace RocketIDE.App.Tests.Integration;
 public sealed class DocumentChangeSchedulerTests
 {
     [TestMethod]
+    public async Task FlushAsync_PromotesPendingChangeAndWaitsForItsTransportWrite()
+    {
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var scheduler = new DocumentChangeScheduler(async (_, _) =>
+        {
+            entered.SetResult();
+            await release.Task;
+        }, TimeSpan.FromHours(1));
+        scheduler.Schedule(new RocketSessionDocument("flush.rocket", "print()", 2, "flush"));
+        var flush = scheduler.FlushAsync("flush.rocket", CancellationToken.None);
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.IsFalse(flush.IsCompleted);
+        release.SetResult();
+        await flush;
+    }
+
+    [TestMethod]
+    public async Task FlushAsync_CancelledWaitDoesNotDiscardScheduledChange()
+    {
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var delivered = false;
+        await using var scheduler = new DocumentChangeScheduler(async (_, _) =>
+        {
+            entered.SetResult();
+            await release.Task;
+            delivered = true;
+        }, TimeSpan.FromHours(1));
+        scheduler.Schedule(new RocketSessionDocument("flush.rocket", "print()", 2, "flush"));
+        using var cancellation = new CancellationTokenSource();
+        var flush = scheduler.FlushAsync("flush.rocket", cancellation.Token);
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        cancellation.Cancel();
+        await Assert.ThrowsExactlyAsync<TaskCanceledException>(() => flush);
+        release.SetResult();
+        await scheduler.WaitForIdleAsync();
+        Assert.IsTrue(delivered);
+    }
+
+    [TestMethod]
     public void SaveAsync_PreservesEditorThreadAfterAsynchronousSynchronization()
     {
         Exception? failure = null;

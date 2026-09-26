@@ -15,6 +15,58 @@ namespace RocketIDE.App.Tests;
 public sealed class RocketSessionCoordinatorTests
 {
     [TestMethod]
+    public async Task SignatureHelp_FlushesDebouncedChangeBeforeRequestingCurrentCall()
+    {
+        using var temp = new TempDirectory();
+        var source = Path.Combine(temp.Path, "main.rocket");
+        var order = new ConcurrentQueue<string>();
+        var synchronized = 0;
+        var fakeClient = new FakeLanguageClient
+        {
+            Capabilities = RocketLanguageServerCapabilities.None with
+            {
+                SupportsSignatureHelp = true,
+                SignatureTriggerCharacters = ["("],
+            },
+            RequestHandler = (method, _) =>
+            {
+                order.Enqueue(method);
+                return JsonDocument.Parse(Volatile.Read(ref synchronized) == 1
+                    ? """{"signatures":[{"label":"fn print(value) -> Unit"}]}"""
+                    : "null").RootElement.Clone();
+            },
+        };
+        var discovery = new RocketToolDiscoveryResult(
+            Path.Combine(temp.Path, "rocketc.exe"), Path.Combine(temp.Path, "rocket-lsp.exe"),
+            "rocketc 3.0.0", "rocket-lsp 1.0.0", []);
+        DocumentChangeScheduler? scheduler = null;
+        await using var coordinator = new RocketSessionCoordinator(
+            _ => Task.FromResult(RocketToolSettings.Automatic), _ => new FakeLocator(discovery),
+            () => fakeClient, () => [], _ => { }, _ => { }, _ => { }, () => { },
+            (path, token) => scheduler!.FlushAsync(path, token));
+        await coordinator.EnsureAndOpenDocumentAsync(
+            new RocketSessionDocument(source, "fn main() -> Int:\n    print", 1, "main.rocket"),
+            source, temp.Path, CancellationToken.None);
+        await using var changes = new DocumentChangeScheduler(async (document, token) =>
+        {
+            await coordinator.ChangeDocumentAsync(document, token);
+            order.Enqueue("textDocument/didChange");
+            Volatile.Write(ref synchronized, 1);
+        }, TimeSpan.FromSeconds(30));
+        scheduler = changes;
+        changes.Schedule(new RocketSessionDocument(source, "fn main() -> Int:\n    print()", 2, "main.rocket"));
+
+        var help = await coordinator.RequestSignatureHelpAsync(source, new LspPosition(1, 10), "(", false,
+            CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.AreEqual("fn print(value) -> Unit", help?.Signatures.Single().Label);
+        CollectionAssert.AreEqual(new[] { "textDocument/didChange", "textDocument/signatureHelp" }, order.ToArray());
+        var change = fakeClient.Notifications.Single(notification => notification.Method == "textDocument/didChange");
+        Assert.AreEqual(2, JsonSerializer.SerializeToElement(change.Parameters, LspJson.Options)
+            .GetProperty("textDocument").GetProperty("version").GetInt32());
+    }
+
+    [TestMethod]
     public async Task Shutdown_HungFakeLspCanBeForceStoppedWithinApplicationDeadline()
     {
         using var temp = new TempDirectory();

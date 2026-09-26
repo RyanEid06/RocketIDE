@@ -40,7 +40,8 @@ public partial class MainWindow
             SetRocketSdkStatus,
             SetLspStatus,
             AppendRocketOutput,
-            ShowOutputPanel);
+            ShowOutputPanel,
+            (path, token) => _documentChangeScheduler?.FlushAsync(path, token) ?? Task.CompletedTask);
         _workspaceEdits = WorkspaceEditTransactionService.CreateFileSystemService(GetOpenWorkspaceEditDocuments);
         _documentChangeScheduler = new DocumentChangeScheduler(
             (document, cancellationToken) => _rocketSession.ChangeDocumentAsync(document, cancellationToken),

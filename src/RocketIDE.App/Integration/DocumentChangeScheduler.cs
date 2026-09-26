@@ -43,8 +43,25 @@ public sealed class DocumentChangeScheduler : IAsyncDisposable
             pending = new PendingChange(document, new CancellationTokenSource());
             _pending[path] = pending;
             var task = RunAsync(path, pending, GetPathGate(path));
+            pending.Completion = task;
             _activeTasks.Add(task);
         }
+    }
+
+    public async Task FlushAsync(string path, CancellationToken cancellationToken)
+    {
+        PendingChange? pending;
+        lock (_gate)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            _pending.TryGetValue(NormalizePath(path), out pending);
+            pending?.FlushRequested.TrySetResult();
+        }
+        if (pending is null) return;
+        // Cancelling a feature request abandons its wait, not the scheduled edit.
+        await pending.Completion.WaitAsync(cancellationToken).ConfigureAwait(false);
+        if (pending.Failure is { } failure)
+            throw new IOException("The pending document change could not be synchronized.", failure);
     }
 
     public Task<RocketSessionDocument?> SaveAsync(
@@ -192,7 +209,11 @@ public sealed class DocumentChangeScheduler : IAsyncDisposable
         try
         {
             await Task.Yield();
-            await Task.Delay(_delay, pending.Cancellation.Token).ConfigureAwait(false);
+            using var delayCancellation = CancellationTokenSource.CreateLinkedTokenSource(pending.Cancellation.Token);
+            var delay = Task.Delay(_delay, delayCancellation.Token);
+            await Task.WhenAny(delay, pending.FlushRequested.Task).ConfigureAwait(false);
+            await delayCancellation.CancelAsync().ConfigureAwait(false);
+            pending.Cancellation.Token.ThrowIfCancellationRequested();
             await pathGate.WaitAsync(pending.Cancellation.Token).ConfigureAwait(false);
             try
             {
@@ -211,6 +232,7 @@ public sealed class DocumentChangeScheduler : IAsyncDisposable
         }
         catch (Exception exception)
         {
+            pending.Failure = exception;
             _onError?.Invoke(exception);
         }
         finally
@@ -255,6 +277,9 @@ public sealed class DocumentChangeScheduler : IAsyncDisposable
 
     private sealed class PendingChange(RocketSessionDocument document, CancellationTokenSource cancellation)
     {
+        public TaskCompletionSource FlushRequested { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public Task Completion { get; set; } = Task.CompletedTask;
+        public Exception? Failure { get; set; }
         public RocketSessionDocument Document { get; } = document;
 
         public CancellationTokenSource Cancellation { get; } = cancellation;
