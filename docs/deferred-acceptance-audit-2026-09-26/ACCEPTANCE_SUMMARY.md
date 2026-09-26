@@ -8,10 +8,10 @@ The audit is **not accepted**. The current baseline gate and package creation pa
 
 | Outcome | Rows |
 |---|---:|
-| PASS | 20 |
+| PASS | 21 |
 | FAIL | 2 |
 | BLOCKED | 2 |
-| NOT RUN | 21 |
+| NOT RUN | 20 |
 | NOT APPLICABLE | 2 |
 | Total | 47 |
 
@@ -23,6 +23,7 @@ The audit is **not accepted**. The current baseline gate and package creation pa
 - scripts/package.ps1 created a portable ZIP with SHA-256 e2540ca1b8b79697313057c5f2a6552326054317ab5bc885eb970a8ac7819f98. The script’s debugger assembly and x64/amd64 EngHost presence checks passed.
 - A native RocketIDE session opened a disposable project, initialized rocket-lsp and successfully built the fixture. Direct compiler Check and Run passed.
 - Native IDE Check returned exit code 0. Live diagnostics reached Problems and navigated to the malformed fixture location. Go to Definition, Find References, Rename Symbol, dirty-buffer workspace search, replace preview/apply, Quick Open, and Command Palette filtering had passing happy-path checks; limits are detailed per row in the matrix.
+- A 4,300,041-byte source file opened in large-file mode, showed Rocket LSP disabled above its 4 MiB document limit, and supported local edit/save. The temporary source file was removed after restoring the edited byte.
 
 ## Confirmed bugs
 

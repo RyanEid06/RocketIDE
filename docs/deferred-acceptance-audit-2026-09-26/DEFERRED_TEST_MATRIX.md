@@ -36,7 +36,7 @@ Outcome values are exactly PASS, FAIL, BLOCKED, NOT RUN, or NOT APPLICABLE. A PA
 | A22 | WP09 Format Document and formatter capability behavior | NOT RUN | Not exercised. |
 | A23 | WP11 workspace search in indexed project and open dirty buffer | PASS | Search for `clamp_value` found two locations in one fixture file. After adding a unique unsaved marker in the open main.rocket buffer, search returned exactly one result at line 11. Undo removed the marker; no fixture file was left dirty. |
 | A24 | WP11 replace preview and apply | PASS | Preview showed two matches in one file. Apply reported “2 matches replaced in 1 file.” Undo and Save restored the known fixture. Conflict, explicit cancellation, and stress behavior remain untested. |
-| A25 | WP12 source around/above 4 MiB stays editable and outside LSP | NOT RUN | No large source fixture was created. |
+| A25 | WP12 source above 4 MiB stays editable and outside LSP | PASS | Opened a 4,300,041-byte Rocket file. The UI stated LSP is disabled above its 4 MiB UTF-8 document limit; Output logged the exclusion, and local edit/save worked. The one-character edit was undone and saved; the fixture file was then removed. |
 | A26 | WP12 large-workspace responsiveness | NOT RUN | No workload or latency measurement was taken. |
 | A27 | WP13 configured-SDK advanced commands and structured failure handling | NOT RUN | No dependency, target, format, coverage, profile, or benchmark command was invoked. |
 | A28 | WP14 forced IDE kill with dirty buffers | NOT RUN | Recovery behavior was deliberately not disturbed during this pass. |
@@ -62,7 +62,7 @@ Outcome values are exactly PASS, FAIL, BLOCKED, NOT RUN, or NOT APPLICABLE. A PA
 
 ## Reconciled counts
 
-47 rows total: 20 PASS, 2 FAIL, 2 BLOCKED, 21 NOT RUN, 2 NOT APPLICABLE.
+47 rows total: 21 PASS, 2 FAIL, 2 BLOCKED, 20 NOT RUN, 2 NOT APPLICABLE.
 
 All documented WP09–WP17 manual deferrals in ROADMAP.md and docs/WP11-WP17-CODE-ONLY-FOLLOWUPS.md map to A14–A39, A46, or A47. The FINAL-WP02 through FINAL-WP05 visible-feature deferrals map to A40–A43. FINAL-WP06 and FINAL-WP07 exclusions are explained at A44–A45. A PASS on automated verification or packaging is not full GUI acceptance or release readiness.
 
