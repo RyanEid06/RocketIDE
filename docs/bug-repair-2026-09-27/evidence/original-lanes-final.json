@@ -1,0 +1,29 @@
+[
+  {
+    "Repository": "C:\\Users\\Administrator\\.codex\\worktrees\\rocketide-deferred-acceptance\\RocketIDE",
+    "Head": "d2e82e59a40c5296ca53c4ddf70a2d5edd210536",
+    "Branch": "codex/rocketide-deferred-acceptance",
+    "Status": [
+      " M docs/deferred-acceptance-audit-2026-09-26/ACCEPTANCE_SUMMARY.md",
+      " M docs/deferred-acceptance-audit-2026-09-26/AUDIT_PROGRESS.md",
+      " M docs/deferred-acceptance-audit-2026-09-26/BUG_REPORTS.md",
+      " M docs/deferred-acceptance-audit-2026-09-26/DEFERRED_TEST_MATRIX.md",
+      " M docs/deferred-acceptance-audit-2026-09-26/FIX_HANDOFF.md",
+      "?? docs/deferred-acceptance-audit-2026-09-26/HIGHER_MODEL_BUG_FIX_PROMPT.md",
+      "?? docs/deferred-acceptance-audit-2026-09-26/evidence/closure-2026-09-26.md",
+      "?? docs/deferred-acceptance-audit-2026-09-26/evidence/continuation-2026-09-27.md"
+    ]
+  },
+  {
+    "Repository": "C:\\Users\\Administrator\\Desktop\\Projects\\Rocket\\out\\w\\lsp",
+    "Head": "1ad63fea58abecaea632ec6ab57e741fbf165c1b",
+    "Branch": "codex/rocketide-final-wp01-lsp",
+    "Status": []
+  },
+  {
+    "Repository": "C:\\Users\\Administrator\\Desktop\\Projects\\Rocket\\out\\worktrees\\rocket-lsp-fuzzy-symbols",
+    "Head": "f1086f3e9f57678a39608a30df4fa73021af701f",
+    "Branch": "codex/rocket-lsp-fuzzy-symbols",
+    "Status": []
+  }
+]

@@ -1,0 +1,19 @@
+Test project C:/Users/Administrator/Desktop/Projects/RocketIDE-Build/rocket-bug003/out/build/bug003
+    Start 11: language_server
+1/5 Test #11: language_server ..................   Passed    0.89 sec
+    Start 12: analysis_queue
+2/5 Test #12: analysis_queue ...................   Passed    0.20 sec
+    Start 13: language_server_analysis
+3/5 Test #13: language_server_analysis .........   Passed    0.45 sec
+    Start 15: workspace_state
+4/5 Test #15: workspace_state ..................   Passed    0.75 sec
+    Start 16: formatter
+5/5 Test #16: formatter ........................   Passed    0.19 sec
+
+100% tests passed, 0 tests failed out of 5
+
+Label Time Summary:
+hardening    =   1.08 sec*proc (2 tests)
+phase20      =   1.08 sec*proc (2 tests)
+
+Total Test time (real) =   3.71 sec

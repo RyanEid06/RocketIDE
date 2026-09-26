@@ -1,0 +1,17 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "269B54FFB7841E0000532B81ABFA7564D2BF7B04E1FCA36B339D2B2501E37DE7",
+    "Path": "C:\\Users\\Administrator\\Desktop\\Projects\\RocketIDE-Build\\audit-closure\\A21-quickfix\\src\\main.rocket"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "80DF104052CA8A340E83C3DAA917F1FFE9ED724403104D34C7CF7BEAC543E3FC",
+    "Path": "C:\\Users\\Administrator\\Desktop\\Projects\\RocketIDE-Build\\audit-closure\\A21-quickfix\\src\\math.rocket"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "49DD19FE818FED8A212C98B6B9D976AC2B42BD7E647AFBACAB17CA3D8E10C067",
+    "Path": "C:\\Users\\Administrator\\.codex\\worktrees\\rocketide-deferred-acceptance\\RocketIDE\\artifacts\\deferred-acceptance\\fixtures\\basic-project\\src\\main.rocket"
+  }
+]

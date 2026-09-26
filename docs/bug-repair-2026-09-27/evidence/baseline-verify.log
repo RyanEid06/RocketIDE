@@ -1,0 +1,71 @@
+== RocketIDE SDK guard ==
+Using .NET SDK 10.0.401
+== RocketIDE source ignore guard ==
+== RocketIDE clean generated build state ==
+== RocketIDE restore ==
+  Determining projects to restore...
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Rocket\RocketIDE.Rocket.csproj (in 105 ms).
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Core\RocketIDE.Core.csproj (in 94 ms).
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Infrastructure\RocketIDE.Infrastructure.csproj (in 5.18 sec).
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.Infrastructure.Tests\RocketIDE.Infrastructure.Tests.csproj (in 5.27 sec).
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.Rocket.Tests\RocketIDE.Rocket.Tests.csproj (in 5.27 sec).
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.Core.Tests\RocketIDE.Core.Tests.csproj (in 5.27 sec).
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Debugger\RocketIDE.Debugger.csproj (in 5.56 sec).
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.Debugger.Tests\RocketIDE.Debugger.Tests.csproj (in 5.56 sec).
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.App\RocketIDE.App.csproj (in 5.56 sec).
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\RocketIDE.App.Tests.csproj (in 5.56 sec).
+== RocketIDE win-x64 publish restore ==
+  Determining projects to restore...
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Infrastructure\RocketIDE.Infrastructure.csproj (in 180 ms).
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Rocket\RocketIDE.Rocket.csproj (in 180 ms).
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Core\RocketIDE.Core.csproj (in 175 ms).
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Debugger\RocketIDE.Debugger.csproj (in 310 ms).
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.App\RocketIDE.App.csproj (in 310 ms).
+== RocketIDE build ==
+  RocketIDE.Core -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Core\bin\Release\net10.0\RocketIDE.Core.dll
+  RocketIDE.Debugger -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Debugger\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.dll
+  RocketIDE.Infrastructure -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Infrastructure\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Infrastructure.dll
+  RocketIDE.Core.Tests -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.Core.Tests\bin\Release\net10.0\RocketIDE.Core.Tests.dll
+  RocketIDE.Rocket -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Rocket\bin\Release\net10.0\RocketIDE.Rocket.dll
+  RocketIDE.Infrastructure.Tests -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.Infrastructure.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Infrastructure.Tests.dll
+  RocketIDE.Rocket.Tests -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.Rocket.Tests\bin\Release\net10.0\RocketIDE.Rocket.Tests.dll
+  RocketIDE.Debugger.Tests -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.Debugger.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.Tests.dll
+  RocketIDE.App -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.App\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.dll
+  RocketIDE.App.Tests -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.App.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:11.95
+== RocketIDE tests ==
+Test run for C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.Core.Tests\bin\Release\net10.0\RocketIDE.Core.Tests.dll (.NETCoreApp,Version=v10.0)
+Test run for C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.Rocket.Tests\bin\Release\net10.0\RocketIDE.Rocket.Tests.dll (.NETCoreApp,Version=v10.0)
+Test run for C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.Infrastructure.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Infrastructure.Tests.dll (.NETCoreApp,Version=v10.0)
+Test run for C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.App.Tests.dll (.NETCoreApp,Version=v10.0)
+Test run for C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.Debugger.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.A total of 1 test files matched the specified pattern.A total of 1 test files matched the specified pattern.A total of 1 test files matched the specified pattern.A total of 1 test files matched the specified pattern.
+
+
+
+
+
+Passed!  - Failed:     0, Passed:    40, Skipped:     0, Total:    40, Duration: 114 ms - RocketIDE.Core.Tests.dll (net10.0)
+
+Passed!  - Failed:     0, Passed:   143, Skipped:     0, Total:   143, Duration: 518 ms - RocketIDE.Rocket.Tests.dll (net10.0)
+
+Passed!  - Failed:     0, Passed:    22, Skipped:     0, Total:    22, Duration: 517 ms - RocketIDE.Debugger.Tests.dll (net10.0)
+
+Passed!  - Failed:     0, Passed:    63, Skipped:     0, Total:    63, Duration: 2 s - RocketIDE.Infrastructure.Tests.dll (net10.0)
+
+Passed!  - Failed:     0, Passed:   205, Skipped:     0, Total:   205, Duration: 2 s - RocketIDE.App.Tests.dll (net10.0)
+== RocketIDE publish smoke ==
+  RocketIDE.Core -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Core\bin\Release\net10.0\RocketIDE.Core.dll
+  RocketIDE.Debugger -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Debugger\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.dll
+  RocketIDE.Infrastructure -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Infrastructure\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Infrastructure.dll
+  RocketIDE.Rocket -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Rocket\bin\Release\net10.0\RocketIDE.Rocket.dll
+  RocketIDE.App -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.App\bin\Release\net10.0-windows10.0.19041.0\win-x64\RocketIDE.dll
+  RocketIDE.App -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\artifacts\verify-win-x64\
+Published C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\artifacts\verify-win-x64\RocketIDE.exe (287744 bytes)
+Debugger engine host C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\artifacts\verify-win-x64\amd64\EngHost.exe
+RocketIDE verification PASSED.

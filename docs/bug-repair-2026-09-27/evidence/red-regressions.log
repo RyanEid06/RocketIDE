@@ -1,0 +1,78 @@
+  RocketIDE.Core -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Core\bin\Release\net10.0\RocketIDE.Core.dll
+  RocketIDE.Debugger -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Debugger\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.dll
+  RocketIDE.Infrastructure -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Infrastructure\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Infrastructure.dll
+  RocketIDE.Rocket -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.Rocket\bin\Release\net10.0\RocketIDE.Rocket.dll
+  RocketIDE.App -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\src\RocketIDE.App\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.dll
+  RocketIDE.App.Tests -> C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.App.Tests.dll
+Test run for C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.App.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed OutputViewport_FollowsRunStdoutAndExitAfterBuildHistory [264 ms]
+  Error Message:
+   Microsoft.VisualStudio.TestTools.UnitTesting.AssertFailedException: Assertion failed. Expected values to be equal within tolerance.
+Run stdout and final exit must be in the visible tail, not hidden below old Build entries.
+
+expected: 25
+actual:   0
+delta:    0.1
+
+Assert.AreEqual(scroll.ScrollableHeight, scroll.VerticalOffset, <delta>)
+   at RocketIDE.App.Tests.RepairRegressionTests.<>c.<OutputViewport_FollowsRunStdoutAndExitAfterBuildHistory>b__0_0() in C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\RepairRegressionTests.cs:line 34
+   at RocketIDE.App.Tests.RepairRegressionTests.<>c__DisplayClass8_0.<RunSta>b__0() in C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\RepairRegressionTests.cs:line 106
+  Stack Trace:
+     at RocketIDE.App.Tests.RepairRegressionTests.RunSta(Action action) in C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\RepairRegressionTests.cs:line 109
+   at RocketIDE.App.Tests.RepairRegressionTests.OutputViewport_FollowsRunStdoutAndExitAfterBuildHistory() in C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\RepairRegressionTests.cs:line 18
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Tests_CompilerFailureWithoutSummaryTerminatesAndRerunClearsIt [1 ms]
+  Error Message:
+   Assertion failed. Expected value to not be null.
+Test process completion must terminate the Tests state even without test-summary.
+
+actual: null
+
+Assert.IsNotNull(method)
+  Stack Trace:
+     at RocketIDE.App.Tests.RepairRegressionTests.Complete(TestsViewModel vm, Nullable`1 exit, Boolean cancelled, String error) in C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\RepairRegressionTests.cs:line 84
+   at RocketIDE.App.Tests.RepairRegressionTests.Tests_CompilerFailureWithoutSummaryTerminatesAndRerunClearsIt() in C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\RepairRegressionTests.cs:line 47
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Tests_CancellationAndLaunchFailureFinishIncompleteRowsTruthfully [< 1 ms]
+  Error Message:
+   Assertion failed. Expected value to not be null.
+Test process completion must terminate the Tests state even without test-summary.
+
+actual: null
+
+Assert.IsNotNull(method)
+  Stack Trace:
+     at RocketIDE.App.Tests.RepairRegressionTests.Complete(TestsViewModel vm, Nullable`1 exit, Boolean cancelled, String error) in C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\RepairRegressionTests.cs:line 84
+   at RocketIDE.App.Tests.RepairRegressionTests.Tests_CancellationAndLaunchFailureFinishIncompleteRowsTruthfully() in C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\RepairRegressionTests.cs:line 64
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Tests_SummaryRemainsVisibleButDoesNotHideNonzeroExit [< 1 ms]
+  Error Message:
+   Assertion failed. Expected value to not be null.
+Test process completion must terminate the Tests state even without test-summary.
+
+actual: null
+
+Assert.IsNotNull(method)
+  Stack Trace:
+     at RocketIDE.App.Tests.RepairRegressionTests.Complete(TestsViewModel vm, Nullable`1 exit, Boolean cancelled, String error) in C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\RepairRegressionTests.cs:line 84
+   at RocketIDE.App.Tests.RepairRegressionTests.Tests_SummaryRemainsVisibleButDoesNotHideNonzeroExit() in C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\RepairRegressionTests.cs:line 77
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed Formatting_UsesAdvertisedRocketFormatActionWhenStandardProviderAbsent [14 ms]
+  Error Message:
+   Assertion failed. Expected value to not be null.
+The advertised Rocket formatting action must be available to Format Document.
+
+actual: null
+
+Assert.IsNotNull(edits)
+  Stack Trace:
+     at RocketIDE.App.Tests.RocketSessionCoordinatorTests.Formatting_UsesAdvertisedRocketFormatActionWhenStandardProviderAbsent() in C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\RocketSessionCoordinatorTests.cs:line 592
+   at RocketIDE.App.Tests.RocketSessionCoordinatorTests.Formatting_UsesAdvertisedRocketFormatActionWhenStandardProviderAbsent() in C:\Users\Administrator\.codex\worktrees\rocketide-bug001-004\RocketIDE\tests\RocketIDE.App.Tests\RocketSessionCoordinatorTests.cs:line 593
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.ExecuteInternalAsync(Object[] arguments, CancellationTokenSource timeoutTokenSource)
+
+Failed!  - Failed:     5, Passed:     0, Skipped:     0, Total:     5, Duration: 300 ms - RocketIDE.App.Tests.dll (net10.0)

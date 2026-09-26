@@ -1,0 +1,17 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "AC43B6E2B016A357499B6F62820927A9334CD5C69A67BF8AAD6DD92A386F7D9F",
+    "Path": "C:\\Users\\Administrator\\Desktop\\Projects\\Rocket\\out\\w\\lsp\\out\\build\\windows-release\\rocketc.exe"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "C5986606E98016589E7BF3611DE60964634D7AF3A8171CCD5F83F4064FBDFE1B",
+    "Path": "C:\\Users\\Administrator\\Desktop\\Projects\\Rocket\\out\\worktrees\\rocket-lsp-fuzzy-symbols\\out\\build\\lsp-symbols-stage0\\rocket-lsp.exe"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "48D7AAB7F9D34D08323228B7485E2942DB2309C9EDE918D595B5FFAACC1E184D",
+    "Path": "C:\\Users\\Administrator\\Desktop\\Projects\\RocketIDE-Build\\rocket-bug003\\out\\build\\bug003\\rocket-lsp.exe"
+  }
+]

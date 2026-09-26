@@ -1,0 +1,320 @@
+[
+  {
+    "sent": {
+      "jsonrpc": "2.0",
+      "method": "initialize",
+      "params": {
+        "processId": null,
+        "rootUri": "file:///C:/Users/Administrator/Desktop/Projects/RocketIDE-Build/audit-closure/A21-quickfix",
+        "capabilities": {},
+        "workspaceFolders": [
+          {
+            "uri": "file:///C:/Users/Administrator/Desktop/Projects/RocketIDE-Build/audit-closure/A21-quickfix",
+            "name": "A21-quickfix"
+          }
+        ]
+      },
+      "id": 1
+    }
+  },
+  {
+    "received": {
+      "id": 1,
+      "jsonrpc": "2.0",
+      "result": {
+        "capabilities": {
+          "codeActionProvider": {
+            "codeActionKinds": [
+              "quickfix",
+              "source.fixAll.rocket",
+              "source.format.rocket"
+            ],
+            "resolveProvider": false
+          },
+          "completionProvider": {
+            "resolveProvider": false,
+            "triggerCharacters": [
+              "."
+            ]
+          },
+          "definitionProvider": true,
+          "documentSymbolProvider": true,
+          "experimental": {
+            "rocketWorkspaceSymbolSearch": {
+              "generation": "rocket/projectStatus",
+              "maxResults": 200,
+              "version": 1
+            }
+          },
+          "foldingRangeProvider": true,
+          "hoverProvider": true,
+          "positionEncoding": "utf-16",
+          "referencesProvider": true,
+          "renameProvider": {
+            "prepareProvider": true
+          },
+          "semanticTokensProvider": {
+            "full": {
+              "delta": true
+            },
+            "legend": {
+              "tokenModifiers": [
+                "declaration",
+                "definition",
+                "readonly",
+                "static",
+                "deprecated",
+                "abstract",
+                "async",
+                "modification",
+                "documentation",
+                "defaultLibrary"
+              ],
+              "tokenTypes": [
+                "namespace",
+                "type",
+                "struct",
+                "enum",
+                "interface",
+                "typeParameter",
+                "parameter",
+                "variable",
+                "property",
+                "function",
+                "method",
+                "keyword",
+                "string",
+                "number",
+                "comment",
+                "decorator"
+              ]
+            },
+            "range": false
+          },
+          "signatureHelpProvider": {
+            "retriggerCharacters": [
+              ","
+            ],
+            "triggerCharacters": [
+              "(",
+              ","
+            ]
+          },
+          "textDocumentSync": {
+            "change": 2,
+            "openClose": true,
+            "save": {
+              "includeText": true
+            }
+          },
+          "workspace": {
+            "workspaceFolders": {
+              "changeNotifications": true,
+              "supported": true
+            }
+          },
+          "workspaceSymbolProvider": true
+        },
+        "serverInfo": {
+          "name": "rocket-lsp",
+          "version": "1.0.0"
+        }
+      }
+    }
+  },
+  {
+    "sent": {
+      "jsonrpc": "2.0",
+      "method": "initialized",
+      "params": {}
+    }
+  },
+  {
+    "sent": {
+      "jsonrpc": "2.0",
+      "method": "textDocument/didOpen",
+      "params": {
+        "textDocument": {
+          "uri": "file:///C:/Users/Administrator/Desktop/Projects/RocketIDE-Build/audit-closure/A21-quickfix/src/math.rocket",
+          "languageId": "rocket",
+          "version": 1,
+          "text": "pub fn doubled(value: Int) -> Int:\n    return value * 2\n"
+        }
+      }
+    }
+  },
+  {
+    "sent": {
+      "jsonrpc": "2.0",
+      "method": "textDocument/didOpen",
+      "params": {
+        "textDocument": {
+          "uri": "file:///C:/Users/Administrator/Desktop/Projects/RocketIDE-Build/audit-closure/A21-quickfix/src/main.rocket",
+          "languageId": "rocket",
+          "version": 1,
+          "text": "fn main() -> Int:\n    return doubled(21)\n"
+        }
+      }
+    }
+  },
+  {
+    "received": {
+      "jsonrpc": "2.0",
+      "method": "textDocument/publishDiagnostics",
+      "params": {
+        "diagnostics": [
+          {
+            "code": "R4002",
+            "message": "unknown function or constructor 'doubled'",
+            "range": {
+              "end": {
+                "character": 18,
+                "line": 1
+              },
+              "start": {
+                "character": 11,
+                "line": 1
+              }
+            },
+            "severity": 1,
+            "source": "rocketc"
+          }
+        ],
+        "uri": "file:///C:/Users/Administrator/Desktop/Projects/RocketIDE-Build/audit-closure/A21-quickfix/src/main.rocket",
+        "version": 1
+      }
+    }
+  },
+  {
+    "received": {
+      "jsonrpc": "2.0",
+      "method": "textDocument/publishDiagnostics",
+      "params": {
+        "diagnostics": [],
+        "uri": "file:///C:/Users/Administrator/Desktop/Projects/RocketIDE-Build/audit-closure/A21-quickfix/src/math.rocket",
+        "version": 1
+      }
+    }
+  },
+  {
+    "received": {
+      "jsonrpc": "2.0",
+      "method": "rocket/analysisStatus",
+      "params": {
+        "analysisPending": false,
+        "bytes": 97,
+        "cancelledGenerations": 1,
+        "coalescedGenerations": 1,
+        "completedGenerations": 1,
+        "discoveryCacheHits": 0,
+        "discoveryCacheMisses": 2,
+        "elapsedMilliseconds": 1,
+        "failedGenerations": 0,
+        "files": 2,
+        "generation": 3,
+        "invalidatedFiles": 2,
+        "parsedCacheEntries": 2,
+        "reparsedFiles": 2,
+        "requestedGeneration": 3,
+        "semanticallyAnalyzedFiles": 2,
+        "staleGenerations": 1,
+        "startedGenerations": 2
+      }
+    }
+  },
+  {
+    "sent": {
+      "jsonrpc": "2.0",
+      "method": "textDocument/codeAction",
+      "params": {
+        "textDocument": {
+          "uri": "file:///C:/Users/Administrator/Desktop/Projects/RocketIDE-Build/audit-closure/A21-quickfix/src/main.rocket"
+        },
+        "range": {
+          "end": {
+            "character": 18,
+            "line": 1
+          },
+          "start": {
+            "character": 11,
+            "line": 1
+          }
+        },
+        "context": {
+          "diagnostics": [
+            {
+              "code": "R4002",
+              "message": "unknown function or constructor 'doubled'",
+              "range": {
+                "end": {
+                  "character": 18,
+                  "line": 1
+                },
+                "start": {
+                  "character": 11,
+                  "line": 1
+                }
+              },
+              "severity": 1,
+              "source": "rocketc"
+            }
+          ],
+          "only": [
+            "quickfix"
+          ]
+        }
+      },
+      "id": 2
+    }
+  },
+  {
+    "received": {
+      "id": 2,
+      "jsonrpc": "2.0",
+      "result": [
+        {
+          "diagnostics": [
+            {
+              "code": "R4002",
+              "message": "unknown function or constructor 'doubled'",
+              "range": {
+                "end": {
+                  "character": 18,
+                  "line": 1
+                },
+                "start": {
+                  "character": 11,
+                  "line": 1
+                }
+              },
+              "severity": 1,
+              "source": "rocketc"
+            }
+          ],
+          "edit": {
+            "changes": {
+              "file:///C:/Users/Administrator/Desktop/Projects/RocketIDE-Build/audit-closure/A21-quickfix/src/main.rocket": [
+                {
+                  "newText": "import math\n",
+                  "range": {
+                    "end": {
+                      "character": 0,
+                      "line": 0
+                    },
+                    "start": {
+                      "character": 0,
+                      "line": 0
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "isPreferred": true,
+          "kind": "quickfix",
+          "title": "Import math"
+        }
+      ]
+    }
+  }
+]
