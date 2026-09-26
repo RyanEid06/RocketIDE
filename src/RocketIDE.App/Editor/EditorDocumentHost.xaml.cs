@@ -31,6 +31,7 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
     private DocumentTabViewModel? _document;
     private EditorViewViewModel? _view;
     private bool _rocketFeaturesAttached;
+    private bool _restoringViewState;
 
     public event EventHandler? ViewActivated;
     public event EventHandler<RocketEditorCommandRequestedEventArgs>? RocketCommandRequested;
@@ -181,6 +182,22 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
 
     private void AttachView(EditorViewViewModel view)
     {
+        // Document assignment and caret/selection restoration raise synchronous
+        // editor events. Do not let those intermediate states replace the saved view.
+        _restoringViewState = true;
+        try
+        {
+            AttachViewCore(view);
+        }
+        finally
+        {
+            _restoringViewState = false;
+        }
+        ReportViewState();
+    }
+
+    private void AttachViewCore(EditorViewViewModel view)
+    {
         _view = view;
         _view.AttachCommandTarget(this);
         _view.FocusRequested += View_FocusRequested;
@@ -322,8 +339,8 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
     {
         var length = Editor.Document.TextLength;
         var caret = Math.Clamp(view.CaretOffset, 0, length);
-        Editor.CaretOffset = caret;
         SetSelection(Math.Clamp(view.SelectionStart, 0, length), view.SelectionLength);
+        Editor.CaretOffset = caret;
         var scrollInfo = (IScrollInfo)Editor.TextArea.TextView;
         scrollInfo.SetHorizontalOffset(view.HorizontalOffset);
         scrollInfo.SetVerticalOffset(view.VerticalOffset);
@@ -364,7 +381,7 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
 
     private void ReportViewState()
     {
-        if (_view is null) return;
+        if (_view is null || _restoringViewState) return;
         _view.UpdateCaret(Editor.TextArea.Caret.Line, Editor.TextArea.Caret.Column, Editor.CaretOffset);
         _view.UpdateSelection(Editor.SelectionStart, Editor.SelectionLength);
         _view.UpdateScroll(Editor.TextArea.TextView.HorizontalOffset, Editor.TextArea.TextView.VerticalOffset);
