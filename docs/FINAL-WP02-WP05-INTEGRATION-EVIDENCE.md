@@ -1,6 +1,105 @@
 # FINAL-WP02–WP05 RocketIDE integration evidence
 
-**Status: integration candidate only; production merge blocked.** This is the current evidence for the dedicated RocketIDE integration branch. The WP02 source-branch evidence is historical and is not acceptance evidence for this combined tree.
+**Status: verified branch candidate; production merge pending.** WP02–WP05 and confirmed fixes are integrated on `codex/rocketide-final-wp02-wp05-integration`. Code candidate `c374cf86bd1976a610afecf723f4c6bf4c4c3779` passed 473 tests and packaging. Signature ordering, recovery, supported signature GUI and representative active-work shutdown have now been verified. The support limitations below remain explicit. No production branch has been merged or pushed. No WP06 work was started.
+
+## Current candidate, 2026-09-26
+
+### Branches and toolchain
+
+- RocketIDE production is `main`, verified live at `062b78fe2d12675b86fd44ccf3c0e24e98b81d01`; origin is `https://github.com/RyanEid06/RocketIDE.git`. The source WP histories and worktrees remain preserved. Integration merge ancestry is recorded below.
+- Symbol contract/ranking fix: `bfbb690`; caret crash/completion routing fix: `7a6663b`. Earlier integration head was `8439fb0`. View restoration fix: `7d9c41b`. Shutdown recovery and save-affinity fix: `e3590b086efe5ce0596db4ca7b0140cfa3442a0c`.
+- The user explicitly authorized a narrow Rocket LSP repair on a separate branch. Rocket `codex/rocket-lsp-fuzzy-symbols` at `f1086f3e9f57678a39608a30df4fa73021af701f` contains fixes `c57de76` and `f1086f3` atop WP01 tip `1ad63fea58abecaea632ec6ab57e741fbf165c1b`. WP01 and its worktree were unchanged. Rocket master remains `10f295dd000b93fe50d254be21fedffd17892aeb`. No Rocket push or production merge occurred.
+- Compiler: `Rocket/out/w/lsp/out/build/windows-release/rocketc.exe`, version 3.0.0, SHA-256 `AC43B6E2B016A357499B6F62820927A9334CD5C69A67BF8AAD6DD92A386F7D9F`.
+- LSP: `Rocket/out/worktrees/rocket-lsp-fuzzy-symbols/out/build/lsp-symbols-stage0/rocket-lsp.exe`, version 1.0.0, SHA-256 `C5986606E98016589E7BF3611DE60964634D7AF3A8171CCD5F83F4064FBDFE1B`. This build includes WP01 document symbols/folding and the explicit bounded fuzzy contract. The version string alone does not distinguish it from older incompatible binaries.
+- The user saved these SDK paths; persistence and an online session were observed after relaunch. Workspace output trust remained unchecked.
+
+### Confirmed defects and repairs
+
+- Production folding was unwired; each editor view now owns a controller/manager fed by authoritative LSP ranges. Coordinates are restored only against matching current ranges. Same-version split requests, stale sessions/versions, disposal and cancellation are covered.
+- The LSP forced-stop race marked completion before the process-tree kill finished; deterministic concurrent regression failed before the fix and passed after serialization.
+- The old server omitted `plctrl` matches and arbitrarily limited results to 1,024. The authorized server fix searches its complete index with bounded deterministic top-200 selection and snapshot generations. Rocket's focused `language_server` test was 1/1 baseline, failed the new regression before repair, and passed 1/1 after repair.
+- RocketIDE requires `experimental.rocketWorkspaceSymbolSearch` version 1, maxResults 200, generation `rocket/projectStatus`. Unsupported servers report an explicit error. The parser rejects oversized, null, missing-generation and mixed-generation responses. Navigation rechecks generation/workspace/session after selection.
+- Client display-path reranking could put `PlayerController` ahead of exact `Player`. A failing regression confirmed it; remote results now retain server order. File symbols still use local fuzzy filtering of authoritative document symbols.
+- GUI Tab at the end of a buffer crashed with offset 12 on length 8: AvalonEdit had already moved the caret before an additional relative update. Tab/outdent and pair deletion now set absolute saved offsets. Both Tab and pair-deletion regressions failed before repair; focused EditorKeyBehavior tests passed 7/7. Modified shortcuts are left to their owners.
+- Completion Tab/Enter was intercepted by generic indentation/newline handling. An open completion popup now receives those keys. Selected snippet acceptance was visibly replayed with Tab in the upper group and Enter in the lower group, with `$0` and one-step undo.
+- **Review repair verified:** requested shutdown saves could fail/timeout while final cleanup still deleted recovery. The exit now checkpoints the requested buffers before saving, serializes periodic/exit recovery writes, retains the checkpoint on failure, and marks the session unclean. Shutdown conflicts/errors preserve recovery without opening an unbounded nested modal. Focused coordinator tests passed 3/3.
+- **Review repair verified:** attaching/restoring a host synchronously reported intermediate caret events into the stored view, replacing selection/scroll. A real host reproduction showed selection 3,6 becoming 9,0. The host now suppresses state reports during restoration and restores selection before caret.
+- **Review repair verified:** signature requests raced the 75 ms document-change debounce. Commit `c374cf8` adds a per-document flush before signature requests, preserving the existing transport/path gate; caller cancellation does not drop the scheduled change. Three additional regressions cover promotion/transport completion, cancelled waits and didChange-before-signature ordering. Only signature requests flush; generic feature flushing would deadlock the format-on-save path that already owns the document gate. Review approved this scope.
+
+### Current automated and package evidence
+
+- Environment: Windows, .NET SDK 10.0.401. `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify.ps1` passed Release with 0 warnings/errors; Core 40, Rocket 143, Debugger 22, Infrastructure 63, App 205 = **473/473**; win-x64 publish succeeded. This includes all current code repairs through `c374cf8`. The production ref was fetched again and remains an ancestor with no production-only commits.
+- Initial sandboxed NuGet restore errors (`NU1301`/`NU1900`, TLS authentication) were resolved by rerunning unchanged with normal NuGet access.
+- `scripts/package.ps1 -OutputRoot artifacts/integration-wp02-wp05-package -Version integration-wp02-wp05` succeeded. ZIP SHA-256 independently verified: `e2ecf7fa9226368ce55e6c72b7d5b983ad7a6f55a26e3370921fbd9e11d0d2bf`. 834 entries; RocketIDE.exe 287,744 bytes, RocketIDE.Debugger.dll 78,848, amd64/EngHost.exe 42,808, runtime configuration present. Both selected executables are PE machine 0x8664 (x64); the debugger dependency also ships x86/arm64 helpers. Repackaged after the signature repair; hash and contents independently verified.
+- `scripts/verify-wp05-snippets.ps1` passed all five compiler fixtures: main, fn, impl, match, testmain.
+- `git diff --check` passed after the review repairs.
+
+### Review and recovery replay
+
+- Independent review confirmed save-affinity failure: `ConfigureAwait(false)` in save orchestration resumed UI-owned AvalonEdit mutation on a worker thread. A real STA Dispatcher/AvalonEdit regression failed before repair and passed after SaveAsync retained its caller context. Queued change processing remains asynchronous. Reviewer approved the narrow fix; no further important finding in the reviewed paths.
+- Focused scheduler/recovery/production-host tests passed 10/10. Host test covers independent caret/selection, backward selection, measured scroll extent/offsets and rebinding; it failed before repair and passed afterward.
+- Deliberate generated-file conflict GUI replay on the final publish: selected Save at exit with dirty split text and changed disk content. Process exited 242 ms after the Save decision. Disk retained external text; recovery JSON contained the exact unsaved editor text; session cleanShutdown was false. Relaunch offered recovery with a conflict warning; Yes restored the text in both horizontal views. Normal save then displayed the overwrite decision, succeeded after confirmation, made both views clean and removed recovery.json. No new crash log appeared.
+
+### Real protocol, latency, cancellation and memory
+
+- Ignored harness: `artifacts/lsp-smoke/LspSmoke.csproj`, using production RocketIDE clients. Separate generated fixtures avoid editing user source.
+- 1,200-extra-struct fixture: initialize 70 ms; initial empty workspace query exactly 200 in 1,937 ms including indexing; Player 2 in 5 ms; plctrl 2 in 5 ms. Symbol generation 2 matched project status; after didChange, generation 3 matched. Document symbols 1,204 in 144 ms; folding 1,204 in 5 ms; stop 8 ms.
+- Active cancellation run: initialize 148 ms; active symbol query cancelled in 68 ms; subsequent empty query 200 in 3,159 ms including indexing; Player/plctrl 5/4 ms. Generations remained consistent after revision. Document symbols 1,204 in 150 ms, folds 1,204 in 8 ms, stop 10 ms.
+- 100 alternating symbol queries took 725 ms; server private bytes changed from 25,067,520 to 25,464,832; peak working set 42,086,400. This short run is not a leak proof or long-duration stress test.
+- Separate shutdown during an active symbol request took 7 ms; pending request ended with JsonRpcResponseException, harness exit 0.
+- Quick Open production benchmark: 2,391 visible files, 46 ms cold/30 ms warm; bounded result queries 4–6 ms; result cap 250, scan cap 10,000; generated directories excluded and precancelled query cancelled. UI saturation/large remote filesystem performance is not established by this local measurement.
+- Two views share one logical synchronization subscription and one semantic client/delta cache/gate. Per-view controllers can issue separate semantic-token presentation requests; the client does not promise equal-version request deduplication. This does not send duplicate logical didChange notifications or introduce IDE semantic analysis. No competing parser or semantic source scan was introduced. Full server recomputation profiling remains unmeasured; no speculative optimization was made.
+- Real lifecycle harness extensions reused the production client with separate 1,200-symbol fixtures: stop while initialization was still pending took 19 ms; stop with workspace symbols, document symbols, folding, completion and semantic-token requests all still pending took 6 ms. All pending requests settled with JsonRpcResponseException; harness exit 0. These are protocol checks, not GUI timings.
+
+### Fresh GUI observations
+
+All observations used the candidate publish in the ignored RocketIDE smoke workspace, never a protected Rocket workspace.
+
+| Flow | Observation |
+| --- | --- |
+| Launch, SDK, workspace/file open | PASS; persisted toolchain paths, LSP online, source in Explorer/editor |
+| Quick Open | PASS; one-file fixture listed and Open navigated |
+| Workspace symbols | PASS; empty query 200; plctrl returned PlayerController and field; fresh selection navigated; stale generation rejected with search-again message |
+| File symbols and history | PASS; main selected at line 1, Alt+Left returned line 3 and Alt+Right restored line 1 |
+| Outline | PASS; displayed authoritative 1,203 top-level entries; a later small-fixture double-click selected main in the editor |
+| Command Palette | PASS; 42 commands, Check Rocket target routed and succeeded with exit 0 |
+| Split views | PASS vertical and horizontal; same-file shared edits/dirty state; independent caret, selection, scroll and collapsed fold; closing dirty secondary retained text in primary |
+| Folding | PASS authoritative markers; collapsing one view did not collapse the other |
+| Snippets/completion | PASS menu insertion, selected completion Tab/Enter in both groups, `$0`, single undo; modifier policy has automated coverage; OS Windows-key shortcut not driven by automation |
+| Diagnostics | PASS; temporary invalid text produced live diagnostics shared across views; undo restored valid text |
+| Semantic colors | Visible in both views; semantic-token provenance not separately isolated from syntax coloring |
+| Format on Save | Unsupported formatter fallback observed: saving without formatting, both views clean and disk correct; transactional/concurrent edits covered by tests, real formatter not advertised |
+| Debugger markers | PASS F9 line marker visible in both views; program built/launched and printed Hello, Rocket!; source breakpoint/locals NOT accepted: stopped in native exit code with missing private-symbol locals |
+| Recovery | PASS conflict replay restored exact unsaved shared text and horizontal layout; subsequent launch also visibly restored distinct selections. Selection/scroll rebinding has a real production-host regression; large-scroll restart was not separately replayed |
+| Active shutdown | PASS representative GUI routes: Run 243 ms, Test 183 ms, dirty split/snippet Save 402 ms; owned processes gone and sessions clean. Earlier debugger/LSP close 637 ms; failed-save conflict 242 ms with recovery deliberately retained |
+| Word wrap and hover | PASS; long line wrapped in both views when focused; authoritative print hover tooltip observed in both views |
+| Signature help | PASS supported complete-call trigger in both views: inserting the missing comma in add(1 2) produced the authoritative add signature tooltip. Empty print() remains an upstream limitation: raw protocol returns no signatures even after synchronized didChange and a delay |
+
+Format-on-save and wordWrap were restored to false after their smoke tests. The old LspSmoke.exe dialog was a harness exception against the earlier incompatible master-based server; later harness runs exited normally. The actual editor caret crash is separately identified and fixed above.
+
+### Active-work shutdown detail and limits
+
+- Run: finite fixture paced by the Windows Sleep API (50 ms, at most 1,000 lines) kept both rocketc and its child running. Close input UTC ms 1790438828832; process exit 1790438829075: **243 ms**. IDE, LSP, compiler and program PIDs were all absent afterward; session cleanShutdown true.
+- Test: UI showed TESTS (1), RUNNING, with compiler and target processes present. Close input 1790438898910; exit 1790438899093: **183 ms**. All four owned PIDs were absent afterward.
+- Active snippet: Function snippet inserted in the lower view with first placeholder selected and shared dirty text. Exit Save decision 1790439245256; exit 1790439245658: **402 ms**. Exact snippet text persisted; cleanShutdown true; IDE/LSP absent; no new crash log.
+- Heavy output: a finite 10-million-line fixture completed, the output view remained usable, and the IDE working set was 306,724,864 bytes afterward. The run finished before the close observation, so this is output-load evidence, not shutdown-under-heavy-output evidence. Automatic approval review rejected a proposed billion-iteration increase as unnecessarily resource intensive; it was not executed. The safer paced fixture above verified active process-tree teardown.
+- Bounded output-active follow-up: 100-line bursts with a 50 ms sleep and an overall 100,000-line cap. Output was visibly flowing, Run was disabled/Stop enabled, compiler and target were live, and IDE working set was 271,970,304 bytes. Close input 1790439533167; exit 1790439533346: **179 ms**. All four owned PIDs disappeared; session cleanShutdown true. This safely exercises output draining and process teardown while output is active.
+- Startup/analysis and concurrent feature requests were checked with the real protocol harness above. Format-on-Save is not advertised by this LSP, so real formatter-active exit is unsupported; transactional/concurrent-save and timeout behavior are exercised by the automated scheduler/lifetime tests. These representative observations do not claim every possible operation overlap or a synthetic OS/native hang was manually reproduced.
+
+### Reconciliation and policy
+
+- Fresh fetch and live symref on 2026-09-26 still identify main at `062b78fe2d12675b86fd44ccf3c0e24e98b81d01`; production-only commits: zero. The code candidate is 17 commits ahead. No new semantic reconciliation is needed.
+- GitHub branch metadata: main protected=false, required checks empty, active branch rules empty; merge commits allowed. Repository CONTRIBUTING permits the recorded full gate on a real Windows machine as acceptance evidence. No mandatory pull-request policy was found.
+- All protected/source worktrees remained clean at the final status check. Rocket fix and WP01 SHAs remain as recorded above.
+- Final independent review of `c374cf8` reported no remaining known critical/high blocker and recommended no further code change. Review explicitly retained the same-version semantic request and non-exhaustive shutdown measurement limitations above.
+
+### Remaining limitations and final integration steps
+
+- Unsupported real formatting, empty-call signature behavior, native source-debugger locals, isolated semantic-color provenance, exhaustive overlap shutdown and full duplicate-work profiling remain limited as explicitly described above. Supported WP02–WP05 routing and the confirmed integration defects have been checked; no known critical/high integration defect remains from the completed reviews.
+- The fixed LSP remains a separately branched toolchain dependency. Rocket production and WP01 are unchanged; the task forbids pushing Rocket.
+- Reconcile current production main, verify the exact final tree, merge/push only when ready, prove all production SHAs and 0/0, and run the post-merge gate. None of those final integration actions has occurred.
+
+## Historical pre-fix evidence — NOT CURRENT ACCEPTANCE EVIDENCE
 
 ## Scope and preflight
 
