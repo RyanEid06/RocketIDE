@@ -372,14 +372,14 @@
                                 <TextBlock VerticalAlignment="Center" Text="Rocket compiler, program, debugger, environment, and language-server output" Foreground="{DynamicResource IDE.TextMutedBrush}" />
                                 <Button DockPanel.Dock="Right" Style="{StaticResource IDE.SmallButtonStyle}" Content="Clear" Click="ClearOutput_Click" />
                             </DockPanel>
-                            <ListBox x:Name="OutputList" Grid.Row="1" ItemsSource="{Binding Output.Lines}" SelectionMode="Extended" BorderThickness="0" Background="Transparent" FontFamily="Consolas" FontSize="12" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" PreviewKeyDown="OutputList_PreviewKeyDown">
+                            <views:OutputListBox x:Name="OutputList" Grid.Row="1" ItemsSource="{Binding Output.Lines}" SelectionMode="Extended" BorderThickness="0" Background="Transparent" FontFamily="Consolas" FontSize="12" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" PreviewKeyDown="OutputList_PreviewKeyDown">
                                 <ListBox.ContextMenu>
                                     <ContextMenu>
                                         <MenuItem Header="Copy Selected" Click="CopyOutputSelected_Click" />
                                         <MenuItem Header="Copy All" Click="CopyOutputAll_Click" />
                                     </ContextMenu>
                                 </ListBox.ContextMenu>
-                            </ListBox>
+                            </views:OutputListBox>
                         </Grid>
                     </TabItem>
                     <TabItem Header="{Binding Tests.HeaderText}">

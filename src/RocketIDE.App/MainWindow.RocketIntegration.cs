@@ -469,6 +469,8 @@ public partial class MainWindow
             return;
         }
         var version = tab.Version;
+        if (_documentChangeScheduler is { } scheduler) await scheduler.FlushAsync(path, cancellationToken);
+        if (!IsSameDocumentVersion(path, version)) return;
         var edits = await _rocketSession.RequestFormattingAsync(path, 4, true, cancellationToken);
         if (!IsSameDocumentVersion(path, version) || edits is null)
         {

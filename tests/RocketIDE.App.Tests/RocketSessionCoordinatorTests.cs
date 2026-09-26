@@ -567,6 +567,98 @@ public sealed class RocketSessionCoordinatorTests
         Assert.IsFalse(fakeClient.Requests.Any(item => item.Method == "textDocument/prepareRename"));
     }
 
+    [TestMethod]
+    public async Task Formatting_UsesAdvertisedRocketFormatActionWhenStandardProviderAbsent()
+    {
+        using var temp = new TempDirectory();
+        var source = Path.Combine(temp.Path, "math.rocket");
+        var uri = new Uri(source).AbsoluteUri;
+        var capabilities = JsonDocument.Parse("""{"codeActionProvider":{"codeActionKinds":["quickfix","source.format.rocket"]}}""");
+        var fakeClient = new FakeLanguageClient
+        {
+            Capabilities = RocketLanguageServerCapabilities.Parse(capabilities.RootElement),
+            RequestHandler = (method, parameters) =>
+            {
+                Assert.AreEqual("textDocument/codeAction", method);
+                var request = JsonSerializer.SerializeToElement(parameters, LspJson.Options);
+                Assert.AreEqual("source.format.rocket", request.GetProperty("context").GetProperty("only")[0].GetString());
+                return JsonDocument.Parse("""[{"title":"Format Rocket document","kind":"source.format.rocket","edit":{"changes":{ __URI__:[{"range":{"start":{"line":0,"character":0},"end":{"line":2,"character":0}},"newText":"pub fn doubled(value: Int) -> Int:\n    return value * 2\n"}]}}}]""".Replace("__URI__", JsonSerializer.Serialize(uri))).RootElement.Clone();
+            },
+        };
+        var discovery = new RocketToolDiscoveryResult(Path.Combine(temp.Path,"rocketc.exe"), Path.Combine(temp.Path,"rocket-lsp.exe"), "rocketc 3.0.0", "rocket-lsp 1.0.0", []);
+        await using var coordinator = CreateCoordinator(fakeClient, discovery);
+        await coordinator.EnsureAndOpenDocumentAsync(new RocketSessionDocument(source,"pub fn doubled(value:Int)->Int:\n    return value*2\n",1,"math.rocket"),source,temp.Path,CancellationToken.None);
+        var edits = await coordinator.RequestFormattingAsync(source,4,true,CancellationToken.None);
+        Assert.IsNotNull(edits, "The advertised Rocket formatting action must be available to Format Document.");
+        Assert.AreEqual("pub fn doubled(value: Int) -> Int:\n    return value * 2\n", edits.Single().NewText);
+    }
+
+    [TestMethod]
+    [DataRow("command")]
+    [DataRow("disabled")]
+    [DataRow("other-file")]
+    [DataRow("multi-file")]
+    [DataRow("versioned")]
+    [DataRow("competing")]
+    public async Task Formatting_RejectsUnsafeOrAmbiguousRocketActions(string scenario)
+    {
+        var source = Path.GetFullPath("math.rocket");
+        var uri = new Uri(source).AbsoluteUri;
+        var edits = new[] { new { range = new LspRange(new(0,0),new(0,1)), newText = "formatted" } };
+        var changes = new Dictionary<string, object> { [uri] = edits };
+        if (scenario == "other-file") { changes.Clear(); changes[new Uri(Path.GetFullPath("other.rocket")).AbsoluteUri] = edits; }
+        if (scenario == "multi-file") changes[new Uri(Path.GetFullPath("other.rocket")).AbsoluteUri] = edits;
+        object edit = scenario == "versioned"
+            ? new { documentChanges = new[] { new { textDocument = new { uri, version = 99 }, edits } } }
+            : new { changes };
+        var action = new Dictionary<string, object> { ["title"]="Format", ["kind"]="source.format.rocket", ["edit"]=edit };
+        if (scenario == "command") action["command"] = new { command="dangerous.command" };
+        if (scenario == "disabled") action["disabled"] = new { reason="stale" };
+        var client = new FakeLanguageClient { RequestHandler = (_,_) => JsonSerializer.SerializeToElement(
+            scenario == "competing" ? new[] {action, action} : new[] {action}, LspJson.Options) };
+        var result = await new NavigationClient(client).RequestRocketFormattingActionAsync(source,CancellationToken.None);
+        Assert.IsNull(result, "Formatting must not silently apply part of an unsafe or ambiguous workspace edit.");
+    }
+
+    [TestMethod]
+    public async Task Formatting_CancellationAfterResponseDoesNotReturnEdits()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var client = new FakeLanguageClient { RequestHandler = (_,_) =>
+        { cancellation.Cancel(); return JsonDocument.Parse("[]").RootElement.Clone(); } };
+        await Assert.ThrowsExactlyAsync<OperationCanceledException>(() =>
+            new NavigationClient(client).RequestRocketFormattingActionAsync(Path.GetFullPath("math.rocket"),cancellation.Token));
+    }
+
+    [TestMethod]
+    public async Task Formatting_PrefersStandardProviderWhenBothAreAdvertised()
+    {
+        using var temp = new TempDirectory();
+        var source = Path.Combine(temp.Path,"math.rocket");
+        var client = new FakeLanguageClient
+        {
+            Capabilities = RocketLanguageServerCapabilities.None with { SupportsDocumentFormatting=true, SupportsRocketFormattingAction=true },
+            RequestHandler = (method,_) =>
+            { Assert.AreEqual("textDocument/formatting", method); return JsonDocument.Parse("[]").RootElement.Clone(); },
+        };
+        var discovery = new RocketToolDiscoveryResult(Path.Combine(temp.Path,"rocketc.exe"),Path.Combine(temp.Path,"rocket-lsp.exe"),"3.0.0","1.0.0",[]);
+        await using var coordinator = CreateCoordinator(client,discovery);
+        await coordinator.EnsureAndOpenDocumentAsync(new RocketSessionDocument(source,"source",1,"math.rocket"),source,temp.Path,CancellationToken.None);
+        var result = await coordinator.RequestFormattingAsync(source,4,true,CancellationToken.None);
+        Assert.IsNotNull(result); Assert.AreEqual(0,result.Count);
+        Assert.AreEqual(1,client.Requests.Count);
+    }
+
+    [TestMethod]
+    public void Formatting_RequiresExplicitRocketActionAdvertisement()
+    {
+        foreach(var json in new[] { "{}", "{\"codeActionProvider\":true}", "{\"codeActionProvider\":{\"codeActionKinds\":[\"quickfix\"]}}" })
+        {
+            using var document=JsonDocument.Parse(json);
+            Assert.IsFalse(RocketLanguageServerCapabilities.Parse(document.RootElement).SupportsRocketFormattingAction);
+        }
+    }
+
     private static RocketSessionCoordinator CreateCoordinator(FakeLanguageClient client, RocketToolDiscoveryResult discovery) =>
         new(
             _ => Task.FromResult(RocketToolSettings.Automatic),

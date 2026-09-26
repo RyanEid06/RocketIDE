@@ -230,6 +230,11 @@ public partial class MainWindow
         var cancellation = new CancellationTokenSource();
         _rocketCommandCancellation = cancellation;
         _viewModel.SetRocketCommandRunning(true);
+        var presentationTasks = new List<Task>();
+        int? testExitCode = null;
+        var testCancelled = false;
+        string? testError = null;
+        if (kind == RocketCommandKind.Test) _viewModel.Tests.BeginRun();
         try
         {
             var activePath = GetRocketCommandActivePath();
@@ -247,6 +252,7 @@ public partial class MainWindow
 
             if (!await SaveDirtyDocumentsBeforeRocketCommandAsync())
             {
+                testCancelled = true;
                 AppendRocketOutput($"Rocket {kind} cancelled because an unsaved document could not be saved.");
                 return;
             }
@@ -262,7 +268,6 @@ public partial class MainWindow
             _viewModel.Problems.ClearCompilerDiagnostics();
             if (kind == RocketCommandKind.Test)
             {
-                _viewModel.Tests.BeginRun();
                 BottomTabs.SelectedIndex = 3;
             }
             else
@@ -278,7 +283,15 @@ public partial class MainWindow
                 _targetDiscovery);
             _activeRocketCommandService = service;
             var progress = new UiBufferedProgress<RocketCommandOutput>(item =>
-                HandleRocketCommandOutput(item, kind, target, diagnostics));
+            {
+                var presentation = HandleRocketCommandOutputAsync(item, kind, target, diagnostics);
+                lock (presentationTasks)
+                {
+                    // Retain pending or faulted work, never the full output history.
+                    presentationTasks.RemoveAll(task => task.IsCompletedSuccessfully);
+                    if (!presentation.IsCompletedSuccessfully) presentationTasks.Add(presentation);
+                }
+            });
 
             var result = await service.ExecuteAsync(
                 kind,
@@ -287,34 +300,46 @@ public partial class MainWindow
                 progress,
                 cancellation.Token);
 
+            testExitCode = result.ProcessResult.ExitCode;
+            testCancelled = result.ProcessResult.Cancelled;
             AppendRocketOutput(result.ProcessResult.Cancelled
                 ? $"Rocket {kind} stopped."
                 : $"Rocket {kind} exited with code {result.ProcessResult.ExitCode}.");
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
+            testCancelled = true;
             AppendRocketOutput($"Rocket {kind} stopped.");
         }
         catch (Exception exception) when (IsExpectedRocketCommandException(exception))
         {
+            testError = exception.Message;
             AppendRocketOutput($"Rocket {kind} failed: {exception.Message}");
             ShowOutputPanel();
         }
         finally
         {
-            if (ReferenceEquals(_rocketCommandCancellation, cancellation))
+            try
             {
-                _rocketCommandCancellation = null;
+                // Drain presentation before completing this run or allowing a new run.
+                await Task.WhenAll(presentationTasks);
+                if (kind == RocketCommandKind.Test)
+                    _viewModel.Tests.CompleteRun(testExitCode, testCancelled, testError);
             }
-            cancellation.Dispose();
-            _activeRocketCommandService = null;
-            _viewModel.SetRocketCommandRunning(false);
-            Interlocked.Exchange(ref _rocketCommandRunning, 0);
-            UpdateRocketCommandAvailability();
+            finally
+            {
+                if (ReferenceEquals(_rocketCommandCancellation, cancellation))
+                    _rocketCommandCancellation = null;
+                cancellation.Dispose();
+                _activeRocketCommandService = null;
+                _viewModel.SetRocketCommandRunning(false);
+                Interlocked.Exchange(ref _rocketCommandRunning, 0);
+                UpdateRocketCommandAvailability();
+            }
         }
     }
 
-    private void HandleRocketCommandOutput(
+    private Task HandleRocketCommandOutputAsync(
         RocketCommandOutput output,
         RocketCommandKind kind,
         RocketIDE.Rocket.Projects.RocketTarget target,
@@ -323,9 +348,9 @@ public partial class MainWindow
         AppendRocketOutput(output.DisplayText);
         if (output.Message is null)
         {
-            return;
+            return Task.CompletedTask;
         }
-        DispatchUi(() =>
+        return Dispatcher.InvokeAsync(() =>
         {
             if (string.Equals(output.Message.Reason, "diagnostic", StringComparison.Ordinal) &&
                 RocketMessageParser.TryMapDiagnostic(output.Message, target, out var diagnostic, kind.ToString()) &&
@@ -335,11 +360,11 @@ public partial class MainWindow
                 _viewModel.Problems.SetCompilerDiagnostics(diagnostics);
             }
 
-            if (output.Message.Reason is "test-started" or "test-finished" or "test-summary")
+            if (kind == RocketCommandKind.Test)
             {
                 _viewModel.Tests.Apply(output.Message);
             }
-        });
+        }).Task;
     }
 
     private async Task<bool> SaveDirtyDocumentsBeforeRocketCommandAsync()

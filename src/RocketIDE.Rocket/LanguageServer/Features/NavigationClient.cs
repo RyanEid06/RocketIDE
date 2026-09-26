@@ -144,6 +144,28 @@ public sealed class NavigationClient(IRocketLanguageClient client)
         return ParseTextEdits(response, "textDocument/formatting");
     }
 
+    public async Task<IReadOnlyList<RocketTextEdit>?> RequestRocketFormattingActionAsync(
+        string path, CancellationToken cancellationToken)
+    {
+        var response = await client.RequestAsync<JsonElement>("textDocument/codeAction", new
+        {
+            textDocument = new { uri = LspFeatureParsing.PathToUri(path) },
+            range = new LspRange(new LspPosition(0, 0), new LspPosition(0, 0)),
+            context = new { diagnostics = Array.Empty<object>(), only = new[] { "source.format.rocket" } },
+        }, cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        var actions = ParseCodeActions(response).Where(action => action.Kind == "source.format.rocket").ToArray();
+        if (actions.Length == 0) return [];
+        // Never run commands, choose between competing actions, or discard edits to other files.
+        if (actions.Length != 1 || actions[0].HasUnsupportedCommand ||
+            !string.IsNullOrEmpty(actions[0].DisabledReason) || actions[0].Edit is not { } edit ||
+            edit.Documents.Count != 1) return null;
+        var document = edit.Documents[0];
+        if (!string.Equals(Path.GetFullPath(path), document.Path, StringComparison.OrdinalIgnoreCase) ||
+            document.Version is not null) return null;
+        return document.Edits;
+    }
+
     internal static IReadOnlyList<RocketLocation> ParseDefinitionResponse(JsonElement response)
     {
         if (response.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)

@@ -28,6 +28,8 @@ public sealed record RocketLanguageServerCapabilities(
     bool SupportsFoldingRanges = false,
     bool SupportsAuthoritativeWorkspaceSymbolSearch = false)
 {
+    public bool SupportsRocketFormattingAction { get; init; }
+
     public static RocketLanguageServerCapabilities None { get; } = new(
         false,
         Array.Empty<string>(),
@@ -122,7 +124,12 @@ public sealed record RocketLanguageServerCapabilities(
             supportsDocumentSymbols,
             supportsWorkspaceSymbols,
             supportsFoldingRanges,
-            supportsAuthoritativeWorkspaceSymbolSearch);
+            supportsAuthoritativeWorkspaceSymbolSearch)
+        {
+            SupportsRocketFormattingAction = supportsCodeActions &&
+                capabilities.TryGetProperty("codeActionProvider", out var provider) &&
+                ReadStringArray(provider, "codeActionKinds").Contains("source.format.rocket", StringComparer.Ordinal),
+        };
     }
 
     private static bool IsBooleanOrOptionsProvider(JsonElement parent, string propertyName, out JsonElement value)

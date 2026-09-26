@@ -182,7 +182,7 @@ public partial class MainWindow
             _activeRocketCommandService = service;
             var progress = new UiBufferedProgress<RocketCommandOutput>(item =>
             {
-                HandleRocketCommandOutput(item, RocketCommandKind.DebugBuild, target, diagnostics);
+                _ = HandleRocketCommandOutputAsync(item, RocketCommandKind.DebugBuild, target, diagnostics);
                 if (item.Message?.Reason == "build-finished" && item.Message.Success != false && !string.IsNullOrWhiteSpace(item.Message.Artifact))
                 {
                     artifact = item.Message.Artifact;

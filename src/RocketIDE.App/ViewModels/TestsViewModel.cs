@@ -51,6 +51,8 @@ public sealed class TestsViewModel : INotifyPropertyChanged
 {
     private string _summaryText = "No test run yet.";
     private string _headerText = "TESTS";
+    private string? _compilerDiagnostic;
+    private bool _hasSummary;
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public ObservableCollection<RocketTestItemViewModel> Items { get; } = new();
@@ -70,6 +72,8 @@ public sealed class TestsViewModel : INotifyPropertyChanged
     public void BeginRun()
     {
         Items.Clear();
+        _compilerDiagnostic = null;
+        _hasSummary = false;
         SummaryText = "Test run started…";
         HeaderText = "TESTS";
     }
@@ -85,11 +89,29 @@ public sealed class TestsViewModel : INotifyPropertyChanged
             case "test-finished" when !string.IsNullOrWhiteSpace(message.Name):
                 FindOrCreate(message.Name!).Finish(message.Status, message.ExitCode);
                 break;
+            case "diagnostic" when message.Level == "error":
+                _compilerDiagnostic = $"{message.Code}: {message.Message}";
+                break;
             case "test-summary":
+                _hasSummary = true;
                 SummaryText = $"{message.Passed ?? 0} passed · {message.Failed ?? 0} failed · {message.ExpectedFailures ?? 0} expected failure(s) · {message.Selected ?? 0} selected";
                 break;
         }
         HeaderText = Items.Count == 0 ? "TESTS" : $"TESTS ({Items.Count})";
+    }
+
+    public void CompleteRun(int? exitCode, bool cancelled, string? error)
+    {
+        foreach (var item in Items.Where(item => item.Status == "RUNNING"))
+            item.Finish(cancelled ? "CANCELLED" : "INCOMPLETE", null);
+
+        var terminal = cancelled ? "Test run cancelled."
+            : error is not null ? $"Test run failed: {error}"
+            : exitCode is { } code ? $"Test process exited with code {code}."
+            : "Test run ended without a process result.";
+        SummaryText = _hasSummary ? $"{SummaryText} - {terminal}"
+            : $"{terminal} No test summary received.";
+        if (_compilerDiagnostic is not null) SummaryText += $" {_compilerDiagnostic}";
     }
 
     private RocketTestItemViewModel FindOrCreate(string name)

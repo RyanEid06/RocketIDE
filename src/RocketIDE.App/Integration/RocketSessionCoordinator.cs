@@ -177,8 +177,10 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
         string path, int tabSize, bool insertSpaces, CancellationToken cancellationToken) =>
         RequestFeatureAsync(
             path,
-            capabilities => capabilities.SupportsDocumentFormatting,
-            async (client, _) => await new NavigationClient(client).RequestFormattingAsync(path, tabSize, insertSpaces, cancellationToken).ConfigureAwait(false),
+            capabilities => capabilities.SupportsDocumentFormatting || capabilities.SupportsRocketFormattingAction,
+            async (client, _) => client.Capabilities.SupportsDocumentFormatting
+                ? await new NavigationClient(client).RequestFormattingAsync(path, tabSize, insertSpaces, cancellationToken).ConfigureAwait(false)
+                : await new NavigationClient(client).RequestRocketFormattingActionAsync(path, cancellationToken).ConfigureAwait(false),
             "document formatting",
             cancellationToken);
 
