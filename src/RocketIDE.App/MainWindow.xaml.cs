@@ -566,6 +566,9 @@ public partial class MainWindow : Window
             var overwriteExternalChanges = false;
             if (tab.HasRecoveryConflict)
             {
+                // Exit must remain bounded; retain the checkpoint for a later
+                // explicit overwrite decision instead of opening a nested modal.
+                if (_lifetime.IsStopping) return null;
                 var recoveryChoice = MessageBox.Show(
                     this,
                     $"'{tab.DisplayName}' was restored from recovery, but the source file changed, was deleted, or was recreated on disk.\n\n" +
@@ -588,6 +591,7 @@ public partial class MainWindow : Window
             var result = await _documentStore.SaveAsync(tab.Id, overwriteExternalChanges, cancellationToken);
             if (result.Status == DocumentSaveStatus.Conflict)
             {
+                if (_lifetime.IsStopping) return null;
                 var choice = MessageBox.Show(
                     this,
                     $"'{tab.DisplayName}' changed on disk after you opened or last saved it.\n\nOverwrite the external changes with the editor buffer?",
@@ -619,6 +623,11 @@ public partial class MainWindow : Window
         }
         catch (Exception exception) when (IsExpectedFileException(exception))
         {
+            if (_lifetime.IsStopping)
+            {
+                Logger.Warning($"Shutdown save failed for '{tab.Path}'; retaining recovery.", exception);
+                return null;
+            }
             ShowFileError("Save failed", tab.Path, exception);
             return null;
         }
@@ -778,11 +787,18 @@ public partial class MainWindow : Window
                 return;
             }
 
+            var requestedPaths = dirtySaves.Select(tab => tab.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var exitSnapshots = CreateRecoverySnapshots().Where(snapshot => requestedPaths.Contains(snapshot.OriginalPath)).ToArray();
+            _recoveryTimer?.Stop();
+            _sessionCheckpointTimer?.Stop();
+            IsEnabled = false;
             _lifetime.BeginShutdown();
             ShutdownRocketCommands();
+            _shutdownSavesSucceeded = await _lifetime.RunGracefulAsync("Recovery checkpoint",
+                token => _shutdownRecovery.BeginShutdownAsync(exitSnapshots, _recoveryNeedsDecision, token));
             if (dirtySaves.Count > 0)
             {
-                _ = await _lifetime.RunGracefulAsync("Unsaved document saves", async token =>
+                var savesSucceeded = await _lifetime.RunGracefulAsync("Unsaved document saves", async token =>
                 {
                     foreach (var tab in dirtySaves)
                     {
@@ -792,6 +808,7 @@ public partial class MainWindow : Window
                         }
                     }
                 });
+                _shutdownSavesSucceeded &= savesSucceeded;
             }
             var debugger = _nativeDebugger;
             if (!await _lifetime.RunGracefulAsync("Debugger", ShutdownDebuggerAsync))

@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Threading;
 using RocketIDE.App.ViewModels;
+using RocketIDE.App.Integration;
 using RocketIDE.Core.Logging;
 using RocketIDE.Core.Recovery;
 using RocketIDE.Infrastructure.Recovery;
@@ -22,9 +23,12 @@ public partial class MainWindow
     private bool _reliabilityLoaded;
     private bool _sessionRestoreInProgress;
     private bool _recoveryNeedsDecision;
+    private ShutdownRecoveryCoordinator _shutdownRecovery = null!;
+    private bool _shutdownSavesSucceeded;
 
     private void InitializeReliability()
     {
+        _shutdownRecovery = new ShutdownRecoveryCoordinator(_recoveryStore);
         _recoveryTimer = new DispatcherTimer(DispatcherPriority.Background)
         {
             Interval = TimeSpan.FromSeconds(30),
@@ -231,14 +235,7 @@ public partial class MainWindow
         try
         {
             var snapshots = CreateRecoverySnapshots();
-            if (snapshots.Count == 0)
-            {
-                await _recoveryStore.ClearAsync(CancellationToken.None);
-            }
-            else
-            {
-                await _recoveryStore.SaveAsync(new RecoverySet(snapshots, DateTimeOffset.UtcNow), CancellationToken.None);
-            }
+            await _shutdownRecovery.CheckpointAsync(snapshots, CancellationToken.None);
         }
         catch (Exception exception) when (IsExpectedReliabilityException(exception))
         {
@@ -275,11 +272,8 @@ public partial class MainWindow
         _sessionCheckpointTimer?.Stop();
         try
         {
-            await SaveSessionAsync(cleanShutdown: true, cancellationToken);
-            if (!_recoveryNeedsDecision)
-            {
-                await _recoveryStore.ClearAsync(cancellationToken);
-            }
+            await SaveSessionAsync(cleanShutdown: _shutdownSavesSucceeded && !_recoveryNeedsDecision, cancellationToken);
+            await _shutdownRecovery.CompleteShutdownAsync(_shutdownSavesSucceeded, _recoveryNeedsDecision, cancellationToken);
         }
         catch (Exception exception) when (IsExpectedReliabilityException(exception))
         {

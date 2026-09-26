@@ -7,6 +7,44 @@ namespace RocketIDE.App.Tests.Integration;
 public sealed class DocumentChangeSchedulerTests
 {
     [TestMethod]
+    public void SaveAsync_PreservesEditorThreadAfterAsynchronousSynchronization()
+    {
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+            dispatcher.InvokeAsync(async () =>
+            {
+                try
+                {
+                    var editorDocument = new ICSharpCode.AvalonEdit.Document.TextDocument("before");
+                    await using var scheduler = new DocumentChangeScheduler(async (_, token) => await Task.Delay(10, token));
+                    var current = new RocketSessionDocument("thread.rocket", "before", 1, "thread");
+                    await scheduler.SaveAsync(current,
+                        (document, _) =>
+                        {
+                            Assert.IsTrue(dispatcher.CheckAccess(), "Preparation must use the editor thread.");
+                            return Task.FromResult(document);
+                        },
+                        (document, _) =>
+                        {
+                            editorDocument.Text = "saved";
+                            return Task.FromResult<RocketSessionDocument?>(document);
+                        }, (_, _) => Task.CompletedTask, CancellationToken.None);
+                    Assert.AreEqual("saved", editorDocument.Text);
+                }
+                catch (Exception exception) { failure = exception; }
+                finally { dispatcher.BeginInvokeShutdown(System.Windows.Threading.DispatcherPriority.Send); }
+            });
+            System.Windows.Threading.Dispatcher.Run();
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        Assert.IsTrue(thread.Join(TimeSpan.FromSeconds(10)));
+        if (failure is not null) Assert.Fail(failure.ToString());
+    }
+
+    [TestMethod]
     public async Task Schedule_CoalescesRapidVersionsToLatestDocument()
     {
         var calls = new List<RocketSessionDocument>();

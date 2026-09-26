@@ -76,23 +76,25 @@ public sealed class DocumentChangeScheduler : IAsyncDisposable
             pathGate = GetPathGate(path);
         }
 
-        await pathGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        // Save preparation and persistence may touch UI-owned editor state.
+        // Preserve the caller's context across serialization and LSP awaits.
+        await pathGate.WaitAsync(cancellationToken);
         try
         {
             var documentToPersist = currentDocument;
-            var synchronized = await TrySynchronizeAsync(documentToPersist, cancellationToken).ConfigureAwait(false);
+            var synchronized = await TrySynchronizeAsync(documentToPersist, cancellationToken);
             if (synchronized && prepareForPersistAsync is not null)
             {
-                documentToPersist = await prepareForPersistAsync(documentToPersist, cancellationToken).ConfigureAwait(false)
+                documentToPersist = await prepareForPersistAsync(documentToPersist, cancellationToken)
                     ?? throw new InvalidOperationException("The pre-persist document preparation returned null.");
                 EnsureSamePath(path, documentToPersist);
                 if (!Matches(currentDocument, documentToPersist))
                 {
-                    synchronized = await TrySynchronizeAsync(documentToPersist, cancellationToken).ConfigureAwait(false);
+                    synchronized = await TrySynchronizeAsync(documentToPersist, cancellationToken);
                 }
             }
 
-            var savedDocument = await persistAsync(documentToPersist, cancellationToken).ConfigureAwait(false);
+            var savedDocument = await persistAsync(documentToPersist, cancellationToken);
             if (savedDocument is null)
             {
                 return null;
@@ -100,13 +102,13 @@ public sealed class DocumentChangeScheduler : IAsyncDisposable
             EnsureSamePath(path, savedDocument);
             if (!synchronized || !Matches(documentToPersist, savedDocument))
             {
-                synchronized = await TrySynchronizeAsync(savedDocument, cancellationToken).ConfigureAwait(false);
+                synchronized = await TrySynchronizeAsync(savedDocument, cancellationToken);
             }
             if (synchronized)
             {
                 try
                 {
-                    await notifySavedAsync(savedDocument, cancellationToken).ConfigureAwait(false);
+                    await notifySavedAsync(savedDocument, cancellationToken);
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
