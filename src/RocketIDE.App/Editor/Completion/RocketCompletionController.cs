@@ -25,6 +25,8 @@ internal sealed class RocketCompletionController : IDisposable
     private DocumentTabViewModel? _document;
     private bool _disposed;
 
+    public bool IsOpen => _window is { IsVisible: true };
+
     public RocketCompletionController(
         TextEditor editor,
         Func<IRocketEditorFeatureService?> serviceProvider,

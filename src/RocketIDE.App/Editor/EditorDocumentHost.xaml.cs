@@ -393,7 +393,9 @@ public partial class EditorDocumentHost : UserControl, IEditorCommandTarget
                 return;
             }
 
-            if (EditorKeyBehavior.HandlePreviewKeyDown(Editor, e))
+            // AvalonEdit's completion input handler must receive Tab/Enter before
+            // the editor applies indentation or inserts a newline.
+            if (!_completionController.IsOpen && EditorKeyBehavior.HandlePreviewKeyDown(Editor, e))
             {
                 e.Handled = true;
             }

@@ -58,6 +58,11 @@ public static class EditorKeyBehavior
         ArgumentNullException.ThrowIfNull(editor);
         ArgumentNullException.ThrowIfNull(e);
 
+        if ((Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Windows)) != 0)
+        {
+            return false;
+        }
+
         if (e.Key == Key.Enter)
         {
             var caretOffset = editor.CaretOffset;
@@ -99,8 +104,9 @@ public static class EditorKeyBehavior
             var after = editor.Document.GetCharAt(editor.CaretOffset);
             if (RocketEditorRules.IsAutoClosePair(before, after))
             {
-                editor.Document.Remove(editor.CaretOffset - 1, 2);
-                editor.CaretOffset--;
+                var start = editor.CaretOffset - 1;
+                editor.Document.Remove(start, 2);
+                editor.CaretOffset = start;
                 return true;
             }
         }
@@ -115,8 +121,9 @@ public static class EditorKeyBehavior
         {
             if (!outdent)
             {
-                editor.Document.Insert(editor.CaretOffset, indent);
-                editor.CaretOffset += indent.Length;
+                var start = editor.CaretOffset;
+                editor.Document.Insert(start, indent);
+                editor.CaretOffset = start + indent.Length;
             }
             else
             {
@@ -127,8 +134,9 @@ public static class EditorKeyBehavior
                 var spaces = text.Reverse().TakeWhile(character => character == ' ').Count();
                 if (spaces > 0)
                 {
-                    editor.Document.Remove(editor.CaretOffset - spaces, spaces);
-                    editor.CaretOffset -= spaces;
+                    var removalStart = editor.CaretOffset - spaces;
+                    editor.Document.Remove(removalStart, spaces);
+                    editor.CaretOffset = removalStart;
                 }
             }
 
