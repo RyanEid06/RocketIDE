@@ -9,21 +9,38 @@ namespace RocketIDE.App.Tests.Wp03;
 public sealed class SymbolSearchViewModelTests
 {
     [TestMethod]
-    public async Task FuzzyQueryRanksAuthoritativeCandidatesWhenServerReturnsThem()
+    public void FileSymbolQueryRanksLocalAuthoritativeCandidates()
+    {
+        var path = Path.GetFullPath("symbols.rocket");
+        var range = new SourceRange(0, 0, 0, 1);
+        using var search = new SymbolSearchViewModel(
+        [
+            new SymbolSearchItem("PlayerController", "", "Class", path, range),
+            new SymbolSearchItem("Other", "", "Class", path, range),
+        ]);
+
+        search.Query = "plctrl";
+
+        Assert.AreEqual("PlayerController", search.Items[0].Name);
+        Assert.AreEqual(1, search.Items.Count);
+    }
+
+    [TestMethod]
+    public async Task WorkspaceQueryPreservesServerRankingDespiteDisplayPathLength()
     {
         var path = Path.GetFullPath("symbols.rocket");
         var range = new SourceRange(0, 0, 0, 1);
         using var search = new SymbolSearchViewModel((_, _) => Task.FromResult<IReadOnlyList<SymbolSearchItem>>(
         [
-            new SymbolSearchItem("PlayerController", "", "Class", path, range),
-            new SymbolSearchItem("Other", "", "Class", path, range),
+            new SymbolSearchItem("Player", "a/very/long/nested/workspace/path/symbols.rocket", "Class", path, range, SnapshotGeneration: 1),
+            new SymbolSearchItem("PlayerController", "x.rocket", "Class", path, range, SnapshotGeneration: 1),
         ]));
 
-        search.Query = "plctrl";
-        await WaitUntilAsync(() => search.Items.Count > 0);
+        search.Query = "Player";
+        await WaitUntilAsync(() => search.Items.Count == 2);
 
-        Assert.AreEqual("PlayerController", search.Items[0].Name);
-        Assert.AreEqual(1, search.Items.Count);
+        Assert.AreEqual("Player", search.Items[0].Name);
+        Assert.AreEqual("PlayerController", search.Items[1].Name);
     }
 
     [TestMethod]

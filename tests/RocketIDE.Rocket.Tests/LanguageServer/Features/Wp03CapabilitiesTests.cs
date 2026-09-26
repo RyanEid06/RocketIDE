@@ -37,4 +37,16 @@ public sealed class Wp03CapabilitiesTests
         Assert.IsFalse(result.SupportsWorkspaceSymbols);
         Assert.IsFalse(result.SupportsFoldingRanges);
     }
+
+    [TestMethod]
+    public void Parse_RequiresExplicitBoundedFuzzySearchContract()
+    {
+        using var valid = JsonDocument.Parse("""
+        {"workspaceSymbolProvider":true,"experimental":{"rocketWorkspaceSymbolSearch":{"version":1,"maxResults":200,"generation":"rocket/projectStatus"}}}
+        """);
+        using var legacy = JsonDocument.Parse("""{"workspaceSymbolProvider":true}""");
+
+        Assert.IsTrue(RocketLanguageServerCapabilities.Parse(valid.RootElement).SupportsAuthoritativeWorkspaceSymbolSearch);
+        Assert.IsFalse(RocketLanguageServerCapabilities.Parse(legacy.RootElement).SupportsAuthoritativeWorkspaceSymbolSearch);
+    }
 }

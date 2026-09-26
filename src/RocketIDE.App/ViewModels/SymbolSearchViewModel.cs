@@ -15,7 +15,8 @@ public sealed record SymbolSearchItem(
     string KindText,
     string Path,
     SourceRange Range,
-    int Score = 0);
+    int Score = 0,
+    long? SnapshotGeneration = null);
 
 public sealed class SymbolSearchViewModel : INotifyPropertyChanged, IDisposable
 {
@@ -115,7 +116,8 @@ public sealed class SymbolSearchViewModel : INotifyPropertyChanged, IDisposable
             detail,
             SymbolKindNames.GetName(symbol.Kind),
             symbol.Path,
-            new SourceRange(symbol.Range.Start.Line, symbol.Range.Start.Character, symbol.Range.End.Line, symbol.Range.End.Character));
+            new SourceRange(symbol.Range.Start.Line, symbol.Range.Start.Character, symbol.Range.End.Line, symbol.Range.End.Character),
+            SnapshotGeneration: symbol.SnapshotGeneration);
     }
 
     private void ApplyLocalFilter()
@@ -145,15 +147,9 @@ public sealed class SymbolSearchViewModel : INotifyPropertyChanged, IDisposable
             var results = await _remoteSearch!(Query.Trim(), cancellation.Token);
             cancellation.Token.ThrowIfCancellationRequested();
             if (serial != Volatile.Read(ref _searchSerial)) return;
-            var query = Query.Trim();
-            var ranked = results
-                .Select(item => item with { Score = query.Length == 0 ? 0 : FuzzyMatcher.Score(query, $"{item.Name} {item.Detail} {item.KindText}") })
-                .Where(item => query.Length == 0 || item.Score != int.MinValue)
-                .OrderByDescending(item => item.Score)
-                .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
-                .Take(MaxDisplayedResults)
-                .ToArray();
-            ReplaceItems(ranked);
+            // The server ranks the complete authoritative index before bounding its
+            // response. Display paths must not reorder or filter that selection.
+            ReplaceItems(results.Take(MaxDisplayedResults));
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {

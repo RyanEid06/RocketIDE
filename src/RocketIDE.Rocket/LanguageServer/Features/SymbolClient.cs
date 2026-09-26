@@ -18,7 +18,8 @@ public sealed record RocketWorkspaceSymbol(
     string? ContainerName,
     int Kind,
     string Path,
-    LspRange Range);
+    LspRange Range,
+    long SnapshotGeneration);
 
 public sealed class SymbolClient(IRocketLanguageClient client)
 {
@@ -89,21 +90,20 @@ public sealed class SymbolClient(IRocketLanguageClient client)
     {
         if (response.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
         {
-            return [];
+            throw new LspProtocolException("workspace/symbol returned no result array.");
         }
         if (response.ValueKind != JsonValueKind.Array)
         {
             throw new LspProtocolException("workspace/symbol returned an invalid result shape.");
         }
 
-        // A full response at the local safety bound may already have been truncated by
-        // the server. Do not rank it as though it were the complete candidate set.
-        if (response.GetArrayLength() >= 1024)
+        if (response.GetArrayLength() > 200)
         {
-            throw new LspProtocolException("workspace/symbol returned at least 1024 symbols; search is incomplete. Narrow the query or use a server with bounded fuzzy search.");
+            throw new LspProtocolException("workspace/symbol exceeded the advertised 200-result bound.");
         }
 
         var result = new List<RocketWorkspaceSymbol>();
+        long? generation = null;
         foreach (var item in response.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.Object)
@@ -114,6 +114,18 @@ public sealed class SymbolClient(IRocketLanguageClient client)
             var name = RequiredString(item, "name", "workspace symbol");
             var kind = RequiredPositiveInt(item, "kind", "workspace symbol");
             var container = OptionalString(item, "containerName");
+            if (!item.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Object ||
+                !data.TryGetProperty("rocketGeneration", out var generationValue) ||
+                generationValue.ValueKind != JsonValueKind.Number ||
+                !generationValue.TryGetInt64(out var snapshotGeneration) || snapshotGeneration <= 0)
+            {
+                throw new LspProtocolException("workspace symbol is missing its snapshot generation.");
+            }
+            if (generation is not null && generation != snapshotGeneration)
+            {
+                throw new LspProtocolException("workspace symbols contain mixed snapshot generations.");
+            }
+            generation = snapshotGeneration;
             if (!item.TryGetProperty("location", out var location) || location.ValueKind != JsonValueKind.Object)
             {
                 throw new LspProtocolException("workspace symbol is missing location.");
@@ -129,7 +141,8 @@ public sealed class SymbolClient(IRocketLanguageClient client)
                 container,
                 kind,
                 NavigationClient.ParseFileUri(uri.GetString()!, "workspace symbol"),
-                LspFeatureParsing.ParseRange(rangeElement, "workspace symbol")));
+                LspFeatureParsing.ParseRange(rangeElement, "workspace symbol"),
+                snapshotGeneration));
         }
         return result;
     }

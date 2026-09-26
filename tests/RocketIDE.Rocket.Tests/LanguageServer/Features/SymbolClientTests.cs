@@ -86,4 +86,33 @@ public sealed class SymbolClientTests
 
         Assert.ThrowsExactly<LspProtocolException>(() => SymbolClient.ParseWorkspaceSymbols(json.RootElement));
     }
+
+    [TestMethod]
+    public void ParseWorkspaceSymbols_RequiresConsistentSnapshotGeneration()
+    {
+        using var absent = JsonDocument.Parse("null");
+        Assert.ThrowsExactly<LspProtocolException>(() => SymbolClient.ParseWorkspaceSymbols(absent.RootElement));
+        var path = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "workspace.rocket"));
+        var uri = new Uri(path).AbsoluteUri;
+        using var valid = JsonDocument.Parse(JsonSerializer.Serialize(new[]
+        {
+            new { name = "PlayerController", kind = 23, data = new { rocketGeneration = 7 },
+                location = new { uri, range = new { start = new { line = 0, character = 0 }, end = new { line = 0, character = 16 } } } },
+        }));
+
+        var result = SymbolClient.ParseWorkspaceSymbols(valid.RootElement);
+        Assert.AreEqual(7L, result[0].SnapshotGeneration);
+
+        using var missing = JsonDocument.Parse("""[{"name":"Missing","kind":23,"location":{"uri":"file:///missing.rocket","range":{"start":{"line":0,"character":0},"end":{"line":0,"character":1}}}}]""");
+        Assert.ThrowsExactly<LspProtocolException>(() => SymbolClient.ParseWorkspaceSymbols(missing.RootElement));
+
+        using var mixed = JsonDocument.Parse(JsonSerializer.Serialize(new[]
+        {
+            new { name = "First", kind = 23, data = new { rocketGeneration = 7 },
+                location = new { uri, range = new { start = new { line = 0, character = 0 }, end = new { line = 0, character = 1 } } } },
+            new { name = "Second", kind = 23, data = new { rocketGeneration = 8 },
+                location = new { uri, range = new { start = new { line = 1, character = 0 }, end = new { line = 1, character = 1 } } } },
+        }));
+        Assert.ThrowsExactly<LspProtocolException>(() => SymbolClient.ParseWorkspaceSymbols(mixed.RootElement));
+    }
 }

@@ -25,7 +25,8 @@ public sealed record RocketLanguageServerCapabilities(
     bool SupportsDocumentFormatting = false,
     bool SupportsDocumentSymbols = false,
     bool SupportsWorkspaceSymbols = false,
-    bool SupportsFoldingRanges = false)
+    bool SupportsFoldingRanges = false,
+    bool SupportsAuthoritativeWorkspaceSymbolSearch = false)
 {
     public static RocketLanguageServerCapabilities None { get; } = new(
         false,
@@ -92,6 +93,15 @@ public sealed record RocketLanguageServerCapabilities(
         var supportsDocumentSymbols = IsBooleanOrOptionsProvider(capabilities, "documentSymbolProvider", out _);
         var supportsWorkspaceSymbols = IsBooleanOrOptionsProvider(capabilities, "workspaceSymbolProvider", out _);
         var supportsFoldingRanges = IsBooleanOrOptionsProvider(capabilities, "foldingRangeProvider", out _);
+        var supportsAuthoritativeWorkspaceSymbolSearch = supportsWorkspaceSymbols &&
+            capabilities.TryGetProperty("experimental", out var experimental) &&
+            experimental.ValueKind == JsonValueKind.Object &&
+            experimental.TryGetProperty("rocketWorkspaceSymbolSearch", out var search) &&
+            search.ValueKind == JsonValueKind.Object &&
+            search.TryGetProperty("version", out var version) && version.ValueKind == JsonValueKind.Number && version.TryGetInt32(out var searchVersion) && searchVersion == 1 &&
+            search.TryGetProperty("maxResults", out var maxResults) && maxResults.ValueKind == JsonValueKind.Number && maxResults.TryGetInt32(out var limit) && limit == 200 &&
+            search.TryGetProperty("generation", out var generation) && generation.ValueKind == JsonValueKind.String &&
+            generation.GetString() == "rocket/projectStatus";
 
         return new RocketLanguageServerCapabilities(
             supportsCompletion,
@@ -111,7 +121,8 @@ public sealed record RocketLanguageServerCapabilities(
             supportsFormatting,
             supportsDocumentSymbols,
             supportsWorkspaceSymbols,
-            supportsFoldingRanges);
+            supportsFoldingRanges,
+            supportsAuthoritativeWorkspaceSymbolSearch);
     }
 
     private static bool IsBooleanOrOptionsProvider(JsonElement parent, string propertyName, out JsonElement value)

@@ -211,6 +211,10 @@ public sealed class RocketSessionCoordinator : IAsyncDisposable, IRocketEditorFe
             {
                 return null;
             }
+            if (!candidate.Capabilities.SupportsAuthoritativeWorkspaceSymbolSearch)
+            {
+                throw new InvalidOperationException("Workspace symbol search requires rocket-lsp with bounded fuzzy search support.");
+            }
             client = candidate;
         }
         finally

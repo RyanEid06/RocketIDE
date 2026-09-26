@@ -292,6 +292,15 @@ public partial class MainWindow
                 SetLspStatus("LSP: workspace symbols changed; search again");
                 return;
             }
+            var status = await _rocketSession.RequestProjectStatusAsync(cancellationToken);
+            if (!selected.SnapshotGeneration.HasValue || !status.IsSupported ||
+                status.Status?.Generation != selected.SnapshotGeneration.Value ||
+                _rocketSession.SessionGeneration != generation ||
+                !string.Equals(_viewModel.Explorer.Workspace?.Path, workspace, StringComparison.OrdinalIgnoreCase))
+            {
+                SetLspStatus("LSP: workspace symbols changed; search again");
+                return;
+            }
             await _wp03NavigationHistory.NavigateAsync(selected.Path, selected.Range, cancellationToken);
         }
     }
