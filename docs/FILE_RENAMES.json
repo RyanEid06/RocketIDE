@@ -1,0 +1,108 @@
+{
+  "date": "2026-09-27",
+  "purpose": "Resolve original evidence paths after descriptive naming cleanup. Historical manifests and raw captures retain their original bytes.",
+  "directory_moves": [
+    {
+      "from": "docs/wp06-2026-09-27",
+      "to": "docs/debugger-validation-2026-09-27"
+    },
+    {
+      "from": "docs/wp07-2026-09-27",
+      "to": "docs/release-1.0.0"
+    },
+    {
+      "from": "docs/superpowers/plans",
+      "to": "docs/implementation-plans"
+    },
+    {
+      "from": "docs/superpowers/specs",
+      "to": "docs/designs"
+    },
+    {
+      "from": "tests/RocketIDE.App.Tests/Wp03",
+      "to": "tests/RocketIDE.App.Tests/Navigation"
+    }
+  ],
+  "filename_moves": [
+    {
+      "from": "FINAL-WP02-WP05-INTEGRATION-EVIDENCE.md",
+      "to": "EDITOR_INTEGRATION_VALIDATION.md"
+    },
+    {
+      "from": "FINAL-WP02-EVIDENCE.md",
+      "to": "LIFECYCLE_VALIDATION.md"
+    },
+    {
+      "from": "WP11-WP17-CODE-ONLY-FOLLOWUPS.md",
+      "to": "ACCEPTANCE_HISTORY.md"
+    },
+    {
+      "from": "ROCKETIDE_FINAL_ROADMAP_IMPLEMENTATION.md",
+      "to": "RELEASE_ROADMAP.md"
+    },
+    {
+      "from": "DEBUGGER_FEASIBILITY.md",
+      "to": "DEBUGGER_ARCHITECTURE.md"
+    },
+    {
+      "from": "2026-09-14-rocketide-wp11-wp17.md",
+      "to": "2026-09-14-productivity-reliability-distribution.md"
+    },
+    {
+      "from": "2026-09-14-wp17-native-debugger.md",
+      "to": "2026-09-14-native-debugger.md"
+    },
+    {
+      "from": "2026-09-14-wp17-native-debugger-design.md",
+      "to": "2026-09-14-native-debugger-design.md"
+    },
+    {
+      "from": "WP06_REPORT.md",
+      "to": "DEBUGGER_VALIDATION_REPORT.md"
+    },
+    {
+      "from": "wp06-full-verify-final.log",
+      "to": "debugger-verification-final.log"
+    },
+    {
+      "from": "wp06-full-verify-first.log",
+      "to": "debugger-verification-initial.log"
+    },
+    {
+      "from": "wp06-full-verify-reviewed.log",
+      "to": "debugger-verification-reviewed.log"
+    },
+    {
+      "from": "wp07-final-verify-network.log",
+      "to": "release-verification.log"
+    },
+    {
+      "from": "wp07-target-regression-green.log",
+      "to": "target-information-regression-passing.log"
+    },
+    {
+      "from": "wp07-target-regression-red.log",
+      "to": "target-information-regression-failing.log"
+    },
+    {
+      "from": "verify-wp05-snippets.ps1",
+      "to": "verify-bundled-snippets.ps1"
+    },
+    {
+      "from": "MainWindow.Wp03.cs",
+      "to": "MainWindow.Navigation.cs"
+    },
+    {
+      "from": "MainWindow.Wp04.cs",
+      "to": "MainWindow.EditorProductivity.cs"
+    },
+    {
+      "from": "DocumentChangeSchedulerWp04Tests.cs",
+      "to": "DocumentChangeSchedulerSavePipelineTests.cs"
+    },
+    {
+      "from": "Wp03CapabilitiesTests.cs",
+      "to": "SymbolAndFoldingCapabilitiesTests.cs"
+    }
+  ]
+}

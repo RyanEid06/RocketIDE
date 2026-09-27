@@ -138,7 +138,7 @@ public sealed class WorkspaceEditValidatorTests
     {
         public TempDirectory()
         {
-            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"rocketide-wp09-{Guid.NewGuid():N}");
+            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"rocketide-workspace-edit-{Guid.NewGuid():N}");
             Directory.CreateDirectory(Path);
         }
         public string Path { get; }

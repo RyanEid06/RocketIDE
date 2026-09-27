@@ -7,9 +7,9 @@ The authoritative source grammar for this phase is the Rocket VS Code grammar sn
 - `references/rocket-current/editors/vscode/syntaxes/rocket.tmLanguage.json`
 - `references/rocket-current/editors/vscode/language-configuration.json`
 
-AvalonEdit does not consume TextMate JSON directly, so IDE-WP04 ports the same lexical categories into an AvalonEdit XSHD definition owned by `RocketSyntaxHighlighting`. The port covers comments, quoted strings, escapes, numeric literals, declarations, control/storage keywords, primitive/common Rocket types, boolean constants, capitalized type-like identifiers, operators, and punctuation.
+AvalonEdit does not consume TextMate JSON directly, so The editor ports the same lexical categories into an AvalonEdit XSHD definition owned by `RocketSyntaxHighlighting`. The port covers comments, quoted strings, escapes, numeric literals, declarations, control/storage keywords, primitive/common Rocket types, boolean constants, capitalized type-like identifiers, operators, and punctuation.
 
-This layer must never grow into a Rocket parser or semantic analyzer. It may color and locally assist typing, but it must not decide whether code is valid, resolve symbols, infer types, or manufacture diagnostics. Those behaviors remain owned by `rocket-lsp.exe` in later work packages.
+This layer must never grow into a Rocket parser or semantic analyzer. It may color and locally assist typing, but it must not decide whether code is valid, resolve symbols, infer types, or manufacture diagnostics. Those behaviors remain owned by `rocket-lsp.exe` at runtime.
 
 Editor-local ergonomics apply only to `.rocket` documents and follow Rocket's current language configuration:
 

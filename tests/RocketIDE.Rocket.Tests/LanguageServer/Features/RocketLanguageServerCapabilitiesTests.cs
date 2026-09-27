@@ -60,7 +60,7 @@ public sealed class RocketLanguageServerCapabilitiesTests
 
 
     [TestMethod]
-    public void Parse_ReadsWp09BooleanAndOptionsCapabilitiesIncludingPrepareRename()
+    public void Parse_ReadsSemanticEditingBooleanAndOptionsCapabilitiesIncludingPrepareRename()
     {
         using var document = JsonDocument.Parse("""
         {
@@ -83,7 +83,7 @@ public sealed class RocketLanguageServerCapabilitiesTests
     }
 
     [TestMethod]
-    public void Parse_Wp09ProvidersRejectMalformedNonBooleanNonOptionsShapes()
+    public void Parse_SemanticEditingProvidersRejectMalformedNonBooleanNonOptionsShapes()
     {
         using var document = JsonDocument.Parse("""
         {

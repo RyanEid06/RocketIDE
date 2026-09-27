@@ -2,7 +2,7 @@
 
 This directory is a read-only design snapshot copied from the Rocket repository version supplied when the RocketIDE plan was created on 2026-09-10.
 
-Purpose: give RocketIDE implementers direct access to the current language-server/compiler/editor contracts without guessing.
+Purpose: give RocketIDE implementers access to the language-server/compiler/editor contracts as captured on that date without guessing.
 
 Do not modify these files to change RocketIDE behavior. If Rocket evolves, refresh the snapshot from the authoritative Rocket repository and review integration changes deliberately.
 

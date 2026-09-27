@@ -1,5 +1,8 @@
 # RocketIDE final implementation audit
 
+> Historical record: results, branch names, pending statements and commands below describe this document's original checkpoint. The work was subsequently integrated and released. See [current documentation](./README.md) and [release acceptance](./release-1.0.0/ACCEPTANCE_REPORT.md) for today's status.
+
+
 Date: 2026-09-14
 Baseline audited: merged `main` at `bf30f98` (`RocketIDE-main (9).zip`)
 
@@ -27,7 +30,7 @@ Before this cleanup, merged `main` passed Windows `scripts/verify.ps1` with **34
 
 ## Still intentionally pending
 
-No GUI/manual evidence is invented by this audit. The remaining Codex/manual acceptance matrix is maintained in `docs/WP11-WP17-CODE-ONLY-FOLLOWUPS.md`, including the real tiny-Rocket WP17 breakpoint/stepping/threads/stack/locals/output/package smoke.
+No GUI/manual evidence is invented by this audit. The remaining Codex/manual acceptance matrix is maintained in `docs/ACCEPTANCE_HISTORY.md`, including the real tiny-Rocket WP17 breakpoint/stepping/threads/stack/locals/output/package smoke.
 
 ## Required verification for this audit patch
 

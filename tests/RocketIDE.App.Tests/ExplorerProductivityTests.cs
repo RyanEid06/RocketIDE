@@ -120,7 +120,7 @@ public sealed class ExplorerProductivityTests
     {
         public TempDirectory()
         {
-            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"rocketide-wp04-explorer-{Guid.NewGuid():N}");
+            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"rocketide-explorer-{Guid.NewGuid():N}");
             Directory.CreateDirectory(Path);
         }
 

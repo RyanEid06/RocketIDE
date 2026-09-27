@@ -60,9 +60,9 @@ public partial class MainWindow : Window
         DataContext = _viewModel;
         InitializeSplitEditing();
         InitializeRocketIntegration();
-        InitializeWp03();
+        InitializeNavigationFeatures();
         InitializeReliability();
-        InitializeWp04();
+        InitializeEditorProductivity();
     }
 
     public IEditorContext EditorContext => _editorIntegration;
@@ -118,7 +118,7 @@ public partial class MainWindow : Window
 
         try
         {
-            var dialog = CreateWp04QuickOpenDialog(workspace.Path);
+            var dialog = CreateEditorProductivityQuickOpenDialog(workspace.Path);
             if (dialog.ShowDialog() == true && dialog.SelectedPath is not null)
             {
                 _ = await EditorNavigation.OpenOrRevealAsync(
@@ -866,7 +866,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (await TryDispatchWp03GestureAsync(e))
+        if (await TryDispatchNavigationFeaturesGestureAsync(e))
         {
             return;
         }

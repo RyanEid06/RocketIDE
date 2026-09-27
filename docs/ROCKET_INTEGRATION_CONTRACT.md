@@ -1,6 +1,6 @@
 # Rocket Integration Contract for RocketIDE
 
-This is a concise integration checklist derived from the current Rocket repository snapshot under `references/rocket-current/`. When this file disagrees with the copied Rocket docs, the copied Rocket docs and actual tool behavior win. When the Rocket repository evolves, refresh this snapshot and update the IDE integration deliberately.
+This contract describes the RocketIDE 1.0.0 adapter boundaries. The reference files under `references/rocket-current/` are a dated 2026-09-10 design snapshot, not a live copy of Rocket. Negotiated capabilities, validated tool behavior and the tested adapters govern runtime behavior. Refresh external references only as a separately reviewed integration change.
 
 ## Language server
 
@@ -150,11 +150,11 @@ rocketc profile
 rocketc benchmark
 ```
 
-Exact flags must be verified against the active Rocket version before UI command construction is finalized.
+Exact flags must match the supported active Rocket version. Target Information invokes rocketc target without a positional package/file argument; optional verbosity and explicit target selection are retained. Other advanced commands preserve their command-specific target inputs. The [Target Information regression repair](release-1.0.0/TARGET_REPAIR.md) records the verified contract.
 
 ## Native debug artifacts
 
-WP17 uses Rocket's existing native debug contract; RocketIDE does not modify it. For an executable target, RocketIDE requests an unoptimized structured build:
+The native debugger uses Rocket's existing native debug contract; RocketIDE does not modify it. For an executable target, RocketIDE requests an unoptimized structured build:
 
 ```text
 rocketc build <target> --debug --message-format=json

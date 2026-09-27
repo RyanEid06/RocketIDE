@@ -1,5 +1,8 @@
 # BUG-001–BUG-004 repair checkpoint — 2026-09-27
 
+> Historical record: results, branch names, pending statements and commands below describe this document's original checkpoint. The work was subsequently integrated and released. See [current documentation](../README.md) and [release acceptance](../release-1.0.0/ACCEPTANCE_REPORT.md) for today's status.
+
+
 All four repaired behaviors passed direct GUI replay in the newly packaged app. The RocketIDE full gate passed **487/487 tests**, zero warnings/errors, publish, and debugger asset guards. This is a local bug-repair checkpoint; historical deferred acceptance and release certification remain incomplete. WP06 was not started.
 
 ## Source and dependency identities

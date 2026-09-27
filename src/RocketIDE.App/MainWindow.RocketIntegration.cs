@@ -26,7 +26,7 @@ public partial class MainWindow
     private RocketSessionCoordinator _rocketSession = null!;
     private WorkspaceEditTransactionService _workspaceEdits = null!;
     private DocumentChangeScheduler? _documentChangeScheduler;
-    private CancellationTokenSource? _wp09RequestCancellation;
+    private CancellationTokenSource? _semanticRequestCancellation;
 
     public IRocketEditorFeatureService RocketEditorFeatures => _rocketSession;
 
@@ -223,7 +223,7 @@ public partial class MainWindow
         {
             if (e.PropertyName == nameof(DocumentTabViewModel.Version))
             {
-                _wp09RequestCancellation?.Cancel();
+                _semanticRequestCancellation?.Cancel();
                 _documentChangeScheduler?.Schedule(ToSessionDocument(tab));
             }
         }
@@ -257,7 +257,7 @@ public partial class MainWindow
 
     private async Task ShutdownRocketIntegrationAsync(CancellationToken cancellationToken)
     {
-        CancelWp09Request();
+        CancelSemanticEditingRequest();
         ShutdownRocketCommands();
         try
         {
@@ -292,7 +292,7 @@ public partial class MainWindow
 
     private async void EditorHost_RocketCommandRequested(object? sender, RocketEditorCommandRequestedEventArgs e)
     {
-        using var cancellation = BeginWp09Request();
+        using var cancellation = BeginSemanticEditingRequest();
         try
         {
             switch (e.Command)
@@ -317,14 +317,14 @@ public partial class MainWindow
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
         }
-        catch (Exception exception) when (IsExpectedWp09Exception(exception))
+        catch (Exception exception) when (IsExpectedSemanticEditingException(exception))
         {
             AppendRocketOutput($"Rocket editor command failed: {exception.Message}");
             SetLspStatus("LSP: action failed");
         }
         finally
         {
-            Interlocked.CompareExchange(ref _wp09RequestCancellation, null, cancellation);
+            Interlocked.CompareExchange(ref _semanticRequestCancellation, null, cancellation);
         }
     }
 
@@ -449,7 +449,7 @@ public partial class MainWindow
                             _ => "LSP: code action unsupported",
                         });
                     }
-                    catch (Exception exception) when (IsExpectedWp09Exception(exception))
+                    catch (Exception exception) when (IsExpectedSemanticEditingException(exception))
                     {
                         AppendRocketOutput($"Rocket code action failed: {exception.Message}");
                         SetLspStatus("LSP: quick fix failed");
@@ -532,7 +532,7 @@ public partial class MainWindow
         {
             await NavigateToRocketLocationAsync(new RocketLocation(e.Item.FilePath, e.Item.Range));
         }
-        catch (Exception exception) when (IsExpectedWp09Exception(exception))
+        catch (Exception exception) when (IsExpectedSemanticEditingException(exception))
         {
             AppendRocketOutput($"Rocket reference navigation failed: {exception.Message}");
             SetLspStatus("LSP: navigation failed");
@@ -559,7 +559,7 @@ public partial class MainWindow
             return;
         }
 
-        await _wp03NavigationHistory.NavigateAsync(location.Path, new SourceRange(
+        await _navigationNavigationHistory.NavigateAsync(location.Path, new SourceRange(
             location.Range.Start.Line,
             location.Range.Start.Character,
             location.Range.End.Line,
@@ -590,10 +590,10 @@ public partial class MainWindow
         }
     }
 
-    private CancellationTokenSource BeginWp09Request()
+    private CancellationTokenSource BeginSemanticEditingRequest()
     {
         var cancellation = new CancellationTokenSource();
-        var previous = Interlocked.Exchange(ref _wp09RequestCancellation, cancellation);
+        var previous = Interlocked.Exchange(ref _semanticRequestCancellation, cancellation);
         if (previous is not null)
         {
             previous.Cancel();
@@ -602,9 +602,9 @@ public partial class MainWindow
         return cancellation;
     }
 
-    private void CancelWp09Request()
+    private void CancelSemanticEditingRequest()
     {
-        var cancellation = Interlocked.Exchange(ref _wp09RequestCancellation, null);
+        var cancellation = Interlocked.Exchange(ref _semanticRequestCancellation, null);
         cancellation?.Cancel();
         cancellation?.Dispose();
     }
@@ -636,7 +636,7 @@ public partial class MainWindow
             diagnostic.Message,
             diagnostic.Data);
 
-    private static bool IsExpectedWp09Exception(Exception exception) =>
+    private static bool IsExpectedSemanticEditingException(Exception exception) =>
         exception is IOException or UnauthorizedAccessException or InvalidOperationException or LspProtocolException or
             JsonRpcResponseException or WorkspaceEditValidationException or WorkspaceEditCommitException;
 
@@ -662,7 +662,7 @@ public partial class MainWindow
                 if (status is not null)
                 {
                     SetLspStatus($"LSP: online · {status.Files} files · {status.ElapsedMilliseconds} ms");
-                    QueueWp03ProjectStatusRefresh();
+                    QueueNavigationFeaturesProjectStatusRefresh();
                 }
             }
             catch (JsonException exception)

@@ -464,7 +464,7 @@ public sealed class RocketSessionCoordinatorTests
 
 
     [TestMethod]
-    public async Task Wp09FeatureRequests_UseAdvertisedCapabilitiesAndSynchronizedDocument()
+    public async Task SemanticEditingFeatureRequests_UseAdvertisedCapabilitiesAndSynchronizedDocument()
     {
         using var temp = new TempDirectory();
         var source = Path.Combine(temp.Path, "main.rocket");

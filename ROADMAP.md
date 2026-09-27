@@ -1,12 +1,16 @@
-# RocketIDE Roadmap
+# RocketIDE roadmap
 
-> **Historical baseline:** IDE-WP00 through IDE-WP17 below record the completed
-> foundation cycle. New final-cycle work is governed by
-> [`docs/ROCKETIDE_FINAL_ROADMAP_IMPLEMENTATION.md`](docs/ROCKETIDE_FINAL_ROADMAP_IMPLEMENTATION.md).
-> Do not reuse the historical WP numbers for new work, and do not change a
-> historical status without new evidence.
+## Current release status — 2026-09-27
 
-> Execute work packages in dependency order. Checklist items use (`- [ ]`) tracking. Do not skip acceptance gates, and update the progress ledger only after verification evidence exists.
+RocketIDE **1.0.0** is published as a Windows x64 portable package. The developer main branch contains all verified release fixes; consumer contains the minimal frozen app. The final acceptance matrix records **34 passed, 13 waived/accepted, zero failed and zero open not-run rows**. Waived checks were accepted by the owner and are not represented as executed passes.
+
+The automated gate passed **514/514 tests**, and packaged-app and public-download evidence is recorded in [release acceptance](docs/release-1.0.0/ACCEPTANCE_REPORT.md). See [distribution](docs/DISTRIBUTION.md), [branch layout](docs/BRANCH_LAYOUT.md) and the [completed release roadmap](docs/RELEASE_ROADMAP.md).
+
+No new feature package is scheduled. Further work requires an observed need and explicit scope. An installer wizard, other IDE operating systems and advanced debugger expressions are not part of the frozen 1.0.0 package.
+
+## Historical foundation plan
+
+The foundation milestones, original completion dates, deferred statuses and checklists below record the earlier development cycle. Later release acceptance supersedes their old pending/deferred statements; consult the current matrix above rather than treating these historical entries as open tasks. Historical upstream observations are not claims about the latest Rocket repository.
 
 **Goal:** Build a fast, reliable, Windows-only desktop IDE dedicated to Rocket, with multi-file editing, compiler-accurate live errors and fixes, project navigation, build/run/test/output workflows, and large-file-safe behavior.
 

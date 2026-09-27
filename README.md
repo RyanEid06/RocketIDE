@@ -6,9 +6,9 @@ The goal is not to clone Visual Studio or VS Code. RocketIDE aims to provide a f
 
 ## Project status
 
-RocketIDE 1.0.0 for Windows x64 is published as a portable package. FINAL-WP07 is closed with **34 acceptance checks passed and 13 explicitly waived/accepted**. The full local verification gate passed **514/514 tests**; package replay and public download verification are recorded in the [acceptance report](docs/wp07-2026-09-27/ACCEPTANCE_REPORT.md).
+RocketIDE 1.0.0 for Windows x64 is published as a portable package. Release 1.0.0 is closed with **34 acceptance checks passed and 13 explicitly waived/accepted**. The full local verification gate passed **514/514 tests**; package replay and public download verification are recorded in the [acceptance report](docs/release-1.0.0/ACCEPTANCE_REPORT.md).
 
-- `main` contains the full developer source, tests, documentation and all fixes through FINAL-WP07, including the Target Information CLI adapter regression fix.
+- `main` contains the full developer source, tests, documentation and all fixes through Release 1.0.0, including the Target Information CLI adapter regression fix.
 - [`consumer`](https://github.com/RyanEid06/RocketIDE/tree/consumer) contains only the released app folder, a short README, release metadata, checksums and required Git attributes.
 - [Download RocketIDE 1.0.0](https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-win-x64-1.0.0.zip). Extract the entire ZIP and open RocketIDE.exe; this release has no installer wizard.
 
@@ -19,7 +19,7 @@ The source and consumer release tags preserve the frozen 1.0.0 identities. Subse
 1. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for mandatory engineering and verification rules.
 2. Read [`docs/ROCKET_IDE_DESIGN_SPEC.md`](docs/ROCKET_IDE_DESIGN_SPEC.md) for the product architecture and scope.
 3. Read [`docs/ROCKET_INTEGRATION_CONTRACT.md`](docs/ROCKET_INTEGRATION_CONTRACT.md) before touching Rocket compiler or language-server integration.
-4. Follow [`ROADMAP.md`](ROADMAP.md) in dependency order and update its progress ledger only after verification evidence exists.
+4. Read [the documentation index](docs/README.md) and [`ROADMAP.md`](ROADMAP.md) for completed scope, accepted limitations and future-work boundaries.
 
 ## Technology
 
@@ -43,10 +43,10 @@ Workspace-local Rocket binaries are treated as untrusted project content. If dev
 
 ## Development workflow
 
-For each work package:
+For each approved maintenance change:
 
 1. Start from the latest verified repository state.
-2. Implement only the current WP and the smallest prerequisite fixes it genuinely requires.
+2. Implement only the approved change and its necessary prerequisites.
 3. Add or update focused tests for behavioral changes.
 4. Run the relevant focused tests.
 5. Run `scripts/verify.ps1` on Windows.
@@ -71,5 +71,5 @@ RocketIDE/
   src/RocketIDE.Debugger/ native debugger transport, protocol, session state
   tests/                  project-aligned automated tests, including debugger tests
   CONTRIBUTING.md         engineering rules
-  ROADMAP.md              implementation WPs and progress ledger
+  ROADMAP.md              current release status and historical progress ledger
 ```

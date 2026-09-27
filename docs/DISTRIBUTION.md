@@ -2,7 +2,13 @@
 
 The portable release is a self-contained **multi-file** `win-x64` publish. A recipient does not need to install the .NET runtime, Visual Studio, or WinDbg. A compatible Rocket SDK must still be configured unless a separately verified Rocket SDK bundle is supplied.
 
-WP17 intentionally requires a multi-file application directory: Microsoft DbgX hosts the native debugger engine in the bundled architecture-specific `EngHost.exe` child process. Do not republish RocketIDE as a single self-extracting executable unless that debugger-host contract is revalidated.
+The native debugger requires a multi-file application directory: Microsoft DbgX hosts the native debugger engine in the bundled architecture-specific `EngHost.exe` child process. Do not republish RocketIDE as a single self-extracting executable unless that debugger-host contract is revalidated.
+
+## Published version
+
+[Download RocketIDE 1.0.0](https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-win-x64-1.0.0.zip) for Windows x64. SHA-256: a5e1966a322ec19e391a775ef1909fec32a51b36b3869215a0117fc24fcb174c. The package is portable and unsigned; no installer wizard is included. Linux and macOS packages on the website are for the separate Rocket language SDK.
+
+The frozen source tag is rocketide-v1.0.0; the corresponding consumer tag is rocketide-v1.0.0-consumer. main continues to hold developer maintenance. Building current main creates a new build and does not reproduce the frozen package byte-for-byte. Do not overwrite the published release as part of source/documentation maintenance.
 
 ## Build a package
 
@@ -24,7 +30,7 @@ dotnet restore .\src\RocketIDE.App\RocketIDE.App.csproj -r win-x64
 
 RocketIDE stores Rocket SDK settings per user. The package does not copy a random development checkout into the release. External SDK mode remains the default and is configured from **Tools > Rocket SDK Settings**.
 
-The Microsoft DbgX/DbgEng native debugger engine **is** part of the RocketIDE portable package because WP17 requires it at runtime. Keep the extracted application directory together; moving only `RocketIDE.exe` will break debugging. The Rocket SDK is still separate.
+The Microsoft DbgX/DbgEng native debugger engine **is** part of the RocketIDE portable package because the native debugger requires it at runtime. Keep the extracted application directory together; moving only `RocketIDE.exe` will break debugging. The Rocket SDK is still separate.
 
 ## Install, update, and remove
 
