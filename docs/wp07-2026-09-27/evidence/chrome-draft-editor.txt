@@ -1,0 +1,308 @@
+Window: "Edit release · RyanEid06/Rocket-RocketIDE - Google Chrome", App: chrome.exe.
+	0 window Edit release · RyanEid06/Rocket-RocketIDE - Google Chrome Secondary Actions: Raise
+		1 pane (disabled)
+		2 region Edit release · RyanEid06/Rocket-RocketIDE - Google Chrome - rori the
+			3 region
+				4 region
+					5 region
+						6 button Minimize ID: view_1
+						385 button Maximize ID: view_2
+						8 button Close ID: view_4
+					9 region
+						10 region
+							11 tool bar ID: view_1000
+								12 button Back ID: view_1001
+								13 button (disabled) Forward ID: view_1002
+								14 button Reload ID: view_1003
+								15 group
+									16 button View site information ID: view_1011
+									17 edit (settable, string) Address and search bar Description: Ask Google or type a URL Value: github.com/RyanEid06/Rocket-RocketIDE/releases/edit/untagged-185b08db6b074b837803 ID: view_1012
+									18 region
+										19 button Install GitHub
+										20 button Bookmark this tab
+								21 region
+									22 button Extensions ID: view_1006
+								23 region
+								24 button rori the ID: view_1018
+								25 button Chrome ID: view_1007
+						26 region
+							27 region
+								28 region
+								394 document Edit release · RyanEid06/Rocket-RocketIDE Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases/edit/untagged-185b08db6b074b837803 ID: RootWebArea
+									492 group
+										395 link Skip to content Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases/edit/untagged-185b08db6b074b837803#start-of-content
+										493 group
+										494 group
+										495 group
+											396 header Global navigation menu
+												397 button Open menu
+												398 link Homepage ( g then d ) Value: https://github.com/
+												399 navigation Breadcrumbs
+													400 list
+														401 list item RyanEid06
+															402 link RyanEid06 Value: https://github.com/RyanEid06
+														403 list item Rocket-RocketIDE
+															404 link Rocket-RocketIDE Value: https://github.com/RyanEid06/Rocket-RocketIDE
+															405 button Switch repository ( alt shift r )
+												406 button Open quick search dialog, type / to search ( forward slash )
+												407 link Chat with Copilot Value: https://github.com/copilot
+												408 button Open Copilot…
+												409 button Create new...
+												410 link All issues Value: https://github.com/issues
+												411 link All pull requests Value: https://github.com/pulls
+												412 link All repositories Value: https://github.com/repos
+												413 link You have no unread notifications ( g then n ) Value: https://github.com/notifications
+												414 button Open user navigation menu
+													415 graphic Ryan-Eid
+												416 heading Repository navigation
+												417 navigation Repository
+													418 list
+														419 list item Code
+															420 link Code Value: https://github.com/RyanEid06/Rocket-RocketIDE
+														421 list item Issues
+															422 link Issues Value: https://github.com/RyanEid06/Rocket-RocketIDE/issues
+														423 list item Pull requests
+															424 link Pull requests Value: https://github.com/RyanEid06/Rocket-RocketIDE/pulls
+														425 list item Agents
+															426 link Agents Value: https://github.com/RyanEid06/Rocket-RocketIDE/agents?author=RyanEid06
+														427 list item Actions
+															428 link Actions Value: https://github.com/RyanEid06/Rocket-RocketIDE/actions
+														429 list item Projects
+															430 link Projects Value: https://github.com/RyanEid06/Rocket-RocketIDE/projects
+														431 list item Wiki
+															432 link Wiki Value: https://github.com/RyanEid06/Rocket-RocketIDE/wiki
+														577 list item Security and quality
+															578 link Security and quality Value: https://github.com/RyanEid06/Rocket-RocketIDE/security
+													439 button More items
+														440 text More
+														441 text items
+										442 main ID: js-repo-pjax-container
+											496 group ID: repo-content-turbo-frame
+												504 link Releases Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases
+												505 heading Edit Rocket & RocketIDE v3.0.0 Release
+												506 details
+													507 button Discard draft
+												508 text This is a draft and won’t be seen by the public unless it is published
+												579 group
+													509 button Tag: v3.0.0 ID: ref-picker-releases-tag
+														510 text Tag
+														511 text :
+														512 text v3.0.0
+												583 details
+													584 button Target: main
+														585 text Target:
+														586 text 
+														587 text main
+												513 group
+													588 status
+														589 text Excellent! This tag will be created from the target when you publish this release.
+												517 heading Release title
+												518 edit (settable, string) Enter release title Description: Title Value: Rocket & RocketIDE v3.0.0 Release ID: release_name
+												519 heading Release notes
+												520 text Select a previous tag to create generated release notes
+												590 group
+													591 button Previous tag: Auto ID: ref-picker-releases-previous-tag
+														592 text Previous tag
+														593 text :
+														594 text Auto
+												521 button Generate release notes ID: generate-notes-btn
+												522 text Release description
+												523 group
+													524 tab Add a comment
+														525 tab item (selectable) Write ID: write_tab_previewable-comment-form-component-58e0c4f0-a1a5-4ca1-89e0-52f803848505
+														526 tab item (selectable) Preview ID: preview_tab_previewable-comment-form-component-58e0c4f0-a1a5-4ca1-89e0-52f803848505
+													527 tool bar
+														528 button Heading ID: action-bar-24519cc7-d6bf-49ca-9e6a-fe6de7fb5488
+														529 button Bold ID: action-bar-81e02e32-2fb7-41f3-a342-f84ba24190ae
+														530 button Italic ID: action-bar-60becf99-9ca7-4e22-a93c-aacd792e8cee
+														531 button Quote ID: action-bar-c4f5170a-f922-49eb-a5a3-6b37c3583596
+														532 button Code ID: action-bar-bea7b02f-891b-44f0-8a58-ba38ccb51553
+														533 button Link ID: action-bar-25f3eb97-2bc7-4424-813a-12ce6fbb91a8
+														534 button Numbered list ID: action-bar-b30be43f-bc02-4d41-8775-7c47a927816a
+														535 button Unordered list ID: action-bar-0ec230f4-0d54-4620-875c-d4391b876d7c
+														536 button Task list ID: action-bar-3fa4939a-3173-4e6d-bff3-09be6e328635
+														580 group
+															581 group
+																582 button Menu ID: action-bar-e83800f7-b47f-4b2c-abef-0be57bbbaec5-button
+													541 tab panel Write
+														542 group
+															543 edit (settable, string) Release description Description:  ID: release_body
+														544 group
+														545 link Markdown is supported Value: https://docs.github.com/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax
+														546 button Paste, drop, or click to add files
+												547 list
+												548 button Attach binaries by dropping them here or selecting them
+												549 alert
+												550 group Release label
+													551 text Release label
+													552 radio button (selectable, settable, string) None
+													553 radio button (selectable, settable, string) Pre-release
+													554 text Label release as non-production ready
+												555 separator
+												556 button Publish release
+												557 button Save draft
+												558 text Tagging suggestions
+												559 text It’s common practice to prefix your version names with the letter
+												560 text v
+												561 text . Some good tag names might be
+												562 text v1.0.0
+												563 text or
+												564 text v2.3.4
+												565 text .
+												566 text If the tag isn’t meant for production use, add a pre-release version after the version name. Some good pre-release versions might be
+												567 text v0.2.0-alpha
+												568 text or
+												569 text v5.9-beta.3
+												570 text .
+												571 text Semantic versioning
+												572 text If you’re new to releasing software, we highly recommend to
+												573 link learn more about semantic versioning. Value: http://semver.org/
+												574 text A newly published release will automatically be labeled as the latest release for this repository.
+												575 text If 'Set as the latest release' is unchecked, the latest release will be determined by higher semantic version and creation date.
+												576 link Learn more about release settings. Value: https://docs.github.com/repositories/releasing-projects-on-github/managing-releases-in-a-repository
+										465 content information
+											466 heading Footer
+											467 link GitHub Homepage Value: https://github.com/
+											468 text © 2026 GitHub, Inc.
+											469 navigation Footer
+												470 heading Footer navigation ID: sr-footer-heading
+												471 list Footer navigation
+													472 list item Terms
+														473 link Terms Value: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+													474 list item Privacy
+														475 link Privacy Value: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+													476 list item Security
+														477 link Security Value: https://github.com/security
+													478 list item Status
+														479 link Status Value: https://www.githubstatus.com/
+													480 list item Community
+														481 link Community Value: https://github.community/
+													482 list item Docs
+														483 link Docs Value: https://docs.github.com/
+													484 list item Contact
+														485 link Contact Value: https://support.github.com/?tags=dotcom-footer
+													486 list item Manage cookies
+														487 button Manage cookies
+													488 list item Do not share my personal information
+														489 button Do not share my personal information
+										490 group ID: js-global-screen-reader-notice
+										491 group ID: js-global-screen-reader-notice-assertive
+							362 region
+						363 region
+							364 region
+								365 button Tab search
+							366 region ID: view_21
+								367 tab
+									368 tab item (selectable) Debug SpendWise Issues ID: view_20
+									370 tab item (selectable) RyanEid06/Rocket: Best and Fastest Coding language ID: view_20
+									372 tab item (selectable) RyanEid06/RocketIDE ID: view_20
+									374 tab item (selectable) Edit release · RyanEid06/Rocket-RocketIDE ID: view_20
+										375 button Close
+									376 tab item (selectable) Workflow runs · RyanEid06/SpendWise ID: view_20
+								378 region
+							379 button New Tab
+							380 region
+							381 region
+								382 button Open Gemini in Chrome
+								383 region
+						384 region
+
+Document text: ```
+￼
+Skip to content
+￼
+￼
+￼
+￼
+RyanEid06
+￼
+Rocket-RocketIDE
+￼
+￼
+￼
+Open Copilot…
+￼
+￼
+￼
+￼
+￼
+￼
+￼
+Repository navigation
+Code
+Issues
+Pull requests
+Agents
+Actions
+Projects
+Wiki
+Security and quality
+More
+items
+￼
+￼
+Releases
+Edit Rocket & RocketIDE v3.0.0 Release
+Discard draft
+This is a draft and won’t be seen by the public unless it is published
+Tag:v3.0.0
+Target: main
+￼
+Excellent! This tag will be created from the target when you publish this release.
+Release title
+Rocket & RocketIDE v3.0.0 Release
+Release notes
+Select a previous tag to create generated release notes
+Previous tag:Auto
+Generate release notes
+Release description
+Write
+Preview
+￼
+￼
+￼
+￼
+￼
+￼
+￼
+￼
+￼
+￼
+￼
+￼
+Markdown is supported
+Paste, drop, or click to add files
+￼
+ Attach binaries by dropping them here or selecting them.
+￼
+￼
+Release label
+￼
+￼
+Label release as non-production ready
+￼
+Publish releaseSave draft
+Tagging suggestions
+It’s common practice to prefix your version names with the letter v. Some good tag names might be v1.0.0or v2.3.4.
+If the tag isn’t meant for production use, add a pre-release version after the version name. Some good pre-release versions might be v0.2.0-alpha or v5.9-beta.3.
+Semantic versioning
+If you’re new to releasing software, we highly recommend to learn more about semantic versioning.
+A newly published release will automatically be labeled as the latest release for this repository.
+If 'Set as the latest release' is unchecked, the latest release will be determined by higher semantic version and creation date. Learn more about release settings.
+Footer
+GitHub Homepage
+© 2026 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+Manage cookies
+Do not share my personal information
+￼
+￼
+￼
+```

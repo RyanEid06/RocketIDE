@@ -1,0 +1,153 @@
+Window: "Releases · RyanEid06/Rocket-RocketIDE - Google Chrome", App: chrome.exe.
+	0 window Releases · RyanEid06/Rocket-RocketIDE - Google Chrome Secondary Actions: Raise
+		1 pane (disabled)
+		2 region Releases · RyanEid06/Rocket-RocketIDE - Google Chrome - rori the
+			3 region
+				4 region
+					5 region
+						6 button Minimize ID: view_1
+						385 button Maximize ID: view_2
+						8 button Close ID: view_4
+					9 region
+						10 region
+							11 tool bar ID: view_1000
+								12 button Back ID: view_1001
+								13 button (disabled) Forward ID: view_1002
+								14 button Reload ID: view_1003
+								15 group
+									16 button View site information ID: view_1011
+									17 edit (settable, string) Address and search bar Description: Ask Google or type a URL Value: github.com/RyanEid06/Rocket-RocketIDE/releases ID: view_1012
+									18 region
+										19 button Install GitHub
+										20 button Bookmark this tab
+								21 region
+									22 button Extensions ID: view_1006
+								23 region
+								24 button rori the ID: view_1018
+								25 button Chrome ID: view_1007
+						26 region
+							27 region
+								28 region
+								394 document Releases · RyanEid06/Rocket-RocketIDE Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases ID: RootWebArea
+									492 group
+										395 link Skip to content Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases#start-of-content
+										493 group
+										494 group
+										495 group
+											396 header Global navigation menu
+												397 button Open menu
+												398 link Homepage ( g then d ) Value: https://github.com/
+												399 navigation Breadcrumbs
+													400 list
+														401 list item RyanEid06
+															402 link RyanEid06 Value: https://github.com/RyanEid06
+														403 list item Rocket-RocketIDE
+															404 link Rocket-RocketIDE Value: https://github.com/RyanEid06/Rocket-RocketIDE
+															405 button Switch repository ( alt shift r )
+												406 button Open quick search dialog, type / to search ( forward slash )
+												407 link Chat with Copilot Value: https://github.com/copilot
+												408 button Open Copilot…
+												409 button Create new...
+												410 link All issues Value: https://github.com/issues
+												411 link All pull requests Value: https://github.com/pulls
+												412 link All repositories Value: https://github.com/repos
+												413 link You have no unread notifications ( g then n ) Value: https://github.com/notifications
+												414 button Open user navigation menu
+													415 graphic Ryan-Eid
+												416 heading Repository navigation
+												417 navigation Repository
+													418 list
+														419 list item Code
+															420 link Code Value: https://github.com/RyanEid06/Rocket-RocketIDE
+														421 list item Issues
+															422 link Issues Value: https://github.com/RyanEid06/Rocket-RocketIDE/issues
+														423 list item Pull requests
+															424 link Pull requests Value: https://github.com/RyanEid06/Rocket-RocketIDE/pulls
+														425 list item Agents
+															426 link Agents Value: https://github.com/RyanEid06/Rocket-RocketIDE/agents?author=RyanEid06
+														427 list item Actions
+															428 link Actions Value: https://github.com/RyanEid06/Rocket-RocketIDE/actions
+														429 list item Projects
+															430 link Projects Value: https://github.com/RyanEid06/Rocket-RocketIDE/projects
+														431 list item Wiki
+															432 link Wiki Value: https://github.com/RyanEid06/Rocket-RocketIDE/wiki
+													439 button More items
+														440 text More
+														441 text items
+										442 main ID: js-repo-pjax-container
+											496 group ID: repo-content-turbo-frame
+												443 heading Releases: RyanEid06/Rocket-RocketIDE
+												444 navigation Releases and Tags
+													445 link Releases Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases
+													446 link Tags Value: https://github.com/RyanEid06/Rocket-RocketIDE/tags
+												447 link Draft a new release Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases/new
+												448 edit (settable, string) Find a release Description: Find a release ID: release-filter
+												449 heading Release list
+												450 navigation Release list navigation
+													451 list
+														452 list item Rocket & RocketIDE v3.0.0 Release
+															453 link Rocket & RocketIDE v3.0.0 Release Description: Rocket & RocketIDE v3.0.0 Release Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases#release-untagged-185b08db6b074b837803 ID: item-717017e5-2f3b-4768-9e70-6aaf13314c00
+												454 region Rocket & RocketIDE v3.0.0 Release ID: release-untagged-185b08db6b074b837803
+													455 heading Rocket & RocketIDE v3.0.0 Release ID: hd-451d2d5c
+													456 link Rocket & RocketIDE v3.0.0 Release Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases/tag/untagged-185b08db6b074b837803
+													457 text Draft
+													458 link Edit: Rocket & RocketIDE v3.0.0 Release Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases/edit/untagged-185b08db6b074b837803 ID: icon-button-3b0f3549-ad6f-47fc-a31c-6aad53a64e5e
+													459 button Delete: Rocket & RocketIDE v3.0.0 Release ID: dialog-show-delete-release-d8db912f-dialog
+													460 graphic @RyanEid06
+													461 text 
+													462 link RyanEid06 Value: https://github.com/RyanEid06
+													463 text drafted this
+													497 group Sep 24, 2026, 7:25 PM GMT+3 Description: Sep 24, 2026, 7:25 PM GMT+3
+														498 text 3 days ago
+										465 content information
+											466 heading Footer
+											467 link GitHub Homepage Value: https://github.com/
+											468 text © 2026 GitHub, Inc.
+											469 navigation Footer
+												470 heading Footer navigation ID: sr-footer-heading
+												471 list Footer navigation
+													472 list item Terms
+														473 link Terms Value: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+													474 list item Privacy
+														475 link Privacy Value: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+													476 list item Security
+														477 link Security Value: https://github.com/security
+													478 list item Status
+														479 link Status Value: https://www.githubstatus.com/
+													480 list item Community
+														481 link Community Value: https://github.community/
+													482 list item Docs
+														483 link Docs Value: https://docs.github.com/
+													484 list item Contact
+														485 link Contact Value: https://support.github.com/?tags=dotcom-footer
+													486 list item Manage cookies
+														487 button Manage cookies
+													488 list item Do not share my personal information
+														489 button Do not share my personal information
+										490 group ID: js-global-screen-reader-notice
+										491 group ID: js-global-screen-reader-notice-assertive
+							362 region
+						363 region
+							364 region
+								365 button Tab search
+							366 region ID: view_21
+								367 tab
+									368 tab item (selectable) Debug SpendWise Issues ID: view_20
+									370 tab item (selectable) RyanEid06/Rocket: Best and Fastest Coding language ID: view_20
+									372 tab item (selectable) RyanEid06/RocketIDE ID: view_20
+									374 tab item (selectable) Releases · RyanEid06/Rocket-RocketIDE ID: view_20
+										375 button Close
+									376 tab item (selectable) Workflow runs · RyanEid06/SpendWise ID: view_20
+								378 region
+							379 button New Tab
+							380 region
+							381 region
+								382 button Open Gemini in Chrome
+								383 region
+						384 region
+
+Selected text: ```
+github.com/RyanEid06/Rocket-RocketIDE/releases
+```
+
+Note: Pay special attention to the content selected by the user. If the user asks a question or refers to the content they are looking at on-screen, they might be referring to the selected content (but they might be referring to something else that's visible, too).

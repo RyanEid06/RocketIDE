@@ -1,0 +1,220 @@
+[
+  {
+    "filename": "rocket-3.0.0-windows-x64.zip",
+    "size": 334626372,
+    "sha256": "42bae12625717a776dac358d9177a01d8dd91762d4e6ed91384fc46d34e45de7",
+    "provenance": {
+      "archive_format": "deterministic-zip-2",
+      "bootstrap_proof_sha256": "6b23d97e82cd07d1efff8ac64e320625aacac3963a19cc28a2d0359fc4ee9cce",
+      "bundled_runtime_libraries": [],
+      "channel": "local",
+      "compiler_sha256": "c00a2ed8c637337c069e093765f6505c9939321a30cb89c3ee3649fa7bc201f9",
+      "configuration": "Release",
+      "game_runtime_libraries": [
+        "rocket_raylib_adapter.lib",
+        "raylib.lib"
+      ],
+      "llvm_tools": [
+        "clang.exe",
+        "llvm-lib.exe",
+        "lld-link.exe",
+        "llvm-dwarfdump.exe",
+        "llvm-objdump.exe"
+      ],
+      "llvm_version": "22.1.6",
+      "runtime_abi": 1,
+      "runtime_sha256": "70fb8588730ccede83e22ff5d8553010a46fa1468c1c9e5b7728e1de55f7ccfd",
+      "schema": "rocket-release-provenance-2",
+      "signed": false,
+      "signing_note": "repository completion does not require an official signing certificate",
+      "source_commit": "1f6ba76f16f3246095d5d573c28d825d8b9367e3",
+      "source_commit_epoch": 1790495052,
+      "stage0_sha256": "5b0f2cb5c4d81508aa5bcb2d44c9d1c6a515a8e802d480e873df8b008a8799f1",
+      "target": "windows-x64",
+      "triple": "x86_64-pc-windows-msvc",
+      "version": "3.0.0",
+      "working_tree": "clean"
+    },
+    "report": {
+      "archive": "D:\\a\\Rocket\\Rocket\\out\\phase19\\package\\rocket-3.0.0-windows-x64.zip",
+      "archive_reproducible": true,
+      "archive_sha256": "42bae12625717a776dac358d9177a01d8dd91762d4e6ed91384fc46d34e45de7",
+      "configuration": "Release",
+      "package": "D:\\a\\Rocket\\Rocket\\out\\phase19\\package\\rocket-3.0.0-windows-x64",
+      "package_files": 1005,
+      "passed": true,
+      "relocation_passed": true,
+      "schema": "rocket-package-report-2",
+      "seconds": 438.182,
+      "target": "windows-x64",
+      "version": "3.0.0"
+    }
+  },
+  {
+    "filename": "rocket-3.0.0-linux-x64.tar.xz",
+    "size": 566384160,
+    "sha256": "1a716073f2941d7d4c63d25687a542d65164cafd24aba299e2b9880a615ad0fc",
+    "provenance": {
+      "archive_format": "deterministic-tar-xz-2",
+      "bootstrap_proof_sha256": "279c4c3a7be956fc59d82298d653ab8865a58356b1e7fef95c5639899eb438e2",
+      "bundled_runtime_libraries": [],
+      "channel": "local",
+      "compiler_sha256": "39e15862f56d2cd6410979944fc95a8790c1eb4455634a4ec2f6bd2f16ad68d1",
+      "configuration": "Release",
+      "game_runtime_libraries": [
+        "librocket_raylib_adapter.a",
+        "libraylib.a"
+      ],
+      "llvm_tools": [
+        "clang",
+        "llvm-ar",
+        "ld.lld",
+        "lld",
+        "llvm-dwarfdump",
+        "llvm-objdump"
+      ],
+      "llvm_version": "22.1.6",
+      "runtime_abi": 1,
+      "runtime_sha256": "988198fcf97409f576998c5815621f9f18388926e3f9efe4ed1ae94325549071",
+      "schema": "rocket-release-provenance-2",
+      "signed": false,
+      "signing_note": "repository completion does not require an official signing certificate",
+      "source_commit": "1f6ba76f16f3246095d5d573c28d825d8b9367e3",
+      "source_commit_epoch": 1790495052,
+      "stage0_sha256": "d618291d8076aa07ae4efe1acdf93e8c734240a44d4d757c2f8a859b8dab0568",
+      "target": "linux-x64",
+      "triple": "x86_64-unknown-linux-gnu",
+      "version": "3.0.0",
+      "working_tree": "clean"
+    },
+    "report": {
+      "archive": "/home/runner/work/Rocket/Rocket/out/phase19/package/rocket-3.0.0-linux-x64.tar.xz",
+      "archive_reproducible": true,
+      "archive_sha256": "1a716073f2941d7d4c63d25687a542d65164cafd24aba299e2b9880a615ad0fc",
+      "configuration": "Release",
+      "package": "/home/runner/work/Rocket/Rocket/out/phase19/package/rocket-3.0.0-linux-x64",
+      "package_files": 563,
+      "passed": true,
+      "relocation_passed": true,
+      "schema": "rocket-package-report-2",
+      "seconds": 2653.05,
+      "target": "linux-x64",
+      "version": "3.0.0"
+    }
+  },
+  {
+    "filename": "rocket-3.0.0-linux-arm64.tar.xz",
+    "size": 523782984,
+    "sha256": "1db0eadfb0e592b36442e2993a8939baa5e04dd99dab7bc32737093e4a261c3e",
+    "provenance": {
+      "archive_format": "deterministic-tar-xz-2",
+      "bootstrap_proof_sha256": "7a400cb7f13e6903e074fb8c4215c997a3eaaa81f2946b9cab4fc7725b56cd55",
+      "bundled_runtime_libraries": [],
+      "channel": "local",
+      "compiler_sha256": "4beee09377b42e9ece0c825b9ef9c648019e22d11996f0ff60d723ecd5922bde",
+      "configuration": "Release",
+      "game_runtime_libraries": [
+        "librocket_raylib_adapter.a",
+        "libraylib.a"
+      ],
+      "llvm_tools": [
+        "clang",
+        "llvm-ar",
+        "ld.lld",
+        "lld",
+        "llvm-dwarfdump",
+        "llvm-objdump"
+      ],
+      "llvm_version": "22.1.6",
+      "runtime_abi": 1,
+      "runtime_sha256": "fedd1cf9e8140631b794238a903c2038fd0a9caeec426d3cc769ca8cba08a875",
+      "schema": "rocket-release-provenance-2",
+      "signed": false,
+      "signing_note": "repository completion does not require an official signing certificate",
+      "source_commit": "1f6ba76f16f3246095d5d573c28d825d8b9367e3",
+      "source_commit_epoch": 1790495052,
+      "stage0_sha256": "e337ae5f9cd7890e8d0dbad6fe9699b72305da6ed665a15b7b9dffcdb16abd1f",
+      "target": "linux-arm64",
+      "triple": "aarch64-unknown-linux-gnu",
+      "version": "3.0.0",
+      "working_tree": "clean"
+    },
+    "report": {
+      "archive": "/home/runner/work/Rocket/Rocket/out/phase19/package/rocket-3.0.0-linux-arm64.tar.xz",
+      "archive_reproducible": true,
+      "archive_sha256": "1db0eadfb0e592b36442e2993a8939baa5e04dd99dab7bc32737093e4a261c3e",
+      "configuration": "Release",
+      "package": "/home/runner/work/Rocket/Rocket/out/phase19/package/rocket-3.0.0-linux-arm64",
+      "package_files": 547,
+      "passed": true,
+      "relocation_passed": true,
+      "schema": "rocket-package-report-2",
+      "seconds": 2869.348,
+      "target": "linux-arm64",
+      "version": "3.0.0"
+    }
+  },
+  {
+    "filename": "rocket-3.0.0-macos-arm64.tar.xz",
+    "size": 267294132,
+    "sha256": "96192c6fda0a479c31d3bd4e1d4da67f400912f3faa30f60abc1cd7d1102dfa7",
+    "provenance": {
+      "archive_format": "deterministic-tar-xz-2",
+      "bootstrap_proof_sha256": "b4888d5f9b379c3a7910a7ff82cecb2a13342e6c816be4c9b08d23edefc75c76",
+      "bundled_runtime_libraries": [
+        "libcrypto.3.dylib",
+        "libcrypto.dylib",
+        "libicudata.78.3.dylib",
+        "libicudata.78.dylib",
+        "libicudata.dylib",
+        "libicuuc.78.3.dylib",
+        "libicuuc.78.dylib",
+        "libicuuc.dylib",
+        "libssl.3.dylib",
+        "libssl.dylib"
+      ],
+      "channel": "local",
+      "compiler_sha256": "eee4479c0af835dcc0bbf34b58fe316b0664f6cd5238de7c5e4be6b8bc2decc3",
+      "configuration": "Release",
+      "game_runtime_libraries": [
+        "librocket_raylib_adapter.a",
+        "libraylib.a"
+      ],
+      "llvm_tools": [
+        "clang",
+        "llvm-ar",
+        "ld64.lld",
+        "lld",
+        "llvm-dwarfdump",
+        "llvm-objdump"
+      ],
+      "llvm_version": "22.1.6",
+      "runtime_abi": 1,
+      "runtime_sha256": "33319de7269f0f3c6e23f38270d9a0712fecd7407cb68220e65a580226bec091",
+      "schema": "rocket-release-provenance-2",
+      "signed": false,
+      "signing_note": "repository completion does not require an official signing certificate",
+      "source_commit": "1f6ba76f16f3246095d5d573c28d825d8b9367e3",
+      "source_commit_epoch": 1790495052,
+      "stage0_sha256": "19b2e78ffe5d8be3d17c7f70c267bcaebd9e8f87b0c046c29f72ede9a76bb793",
+      "target": "macos-arm64",
+      "triple": "arm64-apple-macosx",
+      "version": "3.0.0",
+      "working_tree": "clean"
+    },
+    "report": {
+      "archive": "/Users/runner/work/Rocket/Rocket/out/phase19/package/rocket-3.0.0-macos-arm64.tar.xz",
+      "archive_reproducible": true,
+      "archive_sha256": "96192c6fda0a479c31d3bd4e1d4da67f400912f3faa30f60abc1cd7d1102dfa7",
+      "configuration": "Release",
+      "package": "/Users/runner/work/Rocket/Rocket/out/phase19/package/rocket-3.0.0-macos-arm64",
+      "package_files": 506,
+      "passed": true,
+      "relocation_passed": true,
+      "schema": "rocket-package-report-2",
+      "seconds": 2266.216,
+      "target": "macos-arm64",
+      "version": "3.0.0"
+    }
+  }
+]

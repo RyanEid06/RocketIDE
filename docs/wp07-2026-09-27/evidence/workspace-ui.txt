@@ -1,0 +1,189 @@
+Window: "main.rocket — RocketIDE", App: RocketIDE.exe.
+	0 window main.rocket — RocketIDE Secondary Actions: Raise
+		96 title bar (settable, string) Value: main.rocket — RocketIDE
+			97 menu bar System ID: MenuBar
+				98 menu item System
+			99 button Minimize
+			100 button Maximize
+			101 button Close
+		102 menu
+			103 menu item File
+				104 text _File
+			105 menu item Edit
+				106 text _Edit
+			107 menu item Selection
+				108 text _Selection
+			109 menu item View
+				110 text _View
+			111 menu item Navigate
+				112 text _Navigate
+			113 menu item Build
+				483 text _Build
+			115 menu item Run
+				116 text _Run
+			117 menu item Debug
+				118 text _Debug
+			119 menu item Tools
+				252 text _Tools
+			121 menu item Help
+				122 text _Help
+		123 button New file button Description: New file
+			124 text New
+		125 button Open file button Description: Open file
+			126 text Open
+		127 button Open folder button Description: Open folder
+			128 text Folder
+		129 button Save active file button Description: Save active file
+			130 text Save
+		131 button Build Description: Build active Rocket target
+			132 text Build
+		133 button Run Description: Run active Rocket executable target
+			134 text Run
+		135 button Start or continue Rocket debugging button Description: Start or continue Rocket debugging (F5)
+			136 text Debug
+		137 button (disabled) Pause Rocket debugging button Description: Pause Rocket debugging
+			138 text (disabled) Pause
+		139 button (disabled) Stop Rocket debugging button Description: Stop Rocket debugging (Shift+F5)
+			140 text (disabled) Stop Debug
+		141 button (disabled) Stop Rocket compiler or program button Description: Stop active Rocket compiler/program process tree
+			142 text (disabled) Stop
+		143 button Test Description: Test active Rocket target
+			144 text Test
+		145 status bar
+			146 text Rocket SDK: rocketc 3.0.0
+				147 text Rocket SDK: rocketc 3.0.0
+			148 separator (disabled)
+			149 text LSP: online · 3 files · 1 ms
+				150 text LSP: online · 3 files · 1 ms
+			151 separator (disabled)
+			152 text Target: fixture
+				153 text Target: fixture
+			154 separator (disabled)
+			155 text Ln 1, Col 1
+				156 text Ln 1, Col 1
+			157 separator (disabled)
+			158 text UTF-8
+				159 text UTF-8
+		160 button Refresh workspace Description: Refresh workspace
+			161 text ↻
+		162 text EXPLORER
+		163 tree view ID: ExplorerTree
+			598 tree view item (selectable) RocketIDE.App.ViewModels.Explorer.ExplorerNodeViewModel
+				599 button ID: Expander
+				600 text fixture
+				601 tree view item (selectable) RocketIDE.App.ViewModels.Explorer.ExplorerNodeViewModel
+					602 button ID: Expander
+					603 text src
+				604 tree view item (selectable) RocketIDE.App.ViewModels.Explorer.ExplorerNodeViewModel
+					605 button ID: Expander
+					606 text tests
+				607 tree view item (selectable) RocketIDE.App.ViewModels.Explorer.ExplorerNodeViewModel
+					608 text rocket.lock
+				609 tree view item (selectable) RocketIDE.App.ViewModels.Explorer.ExplorerNodeViewModel
+					610 text rocket.toml
+		169 thumb ID: ExplorerSplitter
+		170 custom ID: PrimaryEditorGroupHost
+			171 tab ID: Tabs
+				172 tab item (selectable) RocketIDE.App.ViewModels.EditorViewViewModel
+					173 text symbols.rocket
+					174 button Close editor view button Description: Close view
+						175 text ×
+					176 custom
+						177 document (settable, string) Value: extern fn Sleep(milliseconds: Int) -> Unit fn main() -> Int: var batch = 0 while ba < 1000: var line = 0 while line < 100: print("bounded output smoke") line = line + 1 unsafe: Sleep(50) batch = batch + 1 return 0 ID: Editor
+							178 document (settable, string) Value: extern fn Sleep(milliseconds: Int) -> Unit fn main() -> Int: var batch = 0 while ba < 1000: var line = 0 while line < 100: print("bounded output smoke") line = line + 1 unsafe: Sleep(50) batch = batch + 1 return 0
+								179 list view
+									180 dataitem ICSharpCode.AvalonEdit.Editing.LineNumberMargin
+									181 dataitem System.Windows.Shapes.Line
+									182 dataitem ICSharpCode.AvalonEdit.Folding.FoldingMargin
+							183 scroll bar (settable, float) Value: 0 ID: VerticalScrollBar
+								184 button ID: DecreaseButton
+								185 thumb
+								186 button ID: IncreaseButton
+		187 thumb ID: EditorGroupSplitter
+		188 custom ID: SecondaryEditorGroupHost
+			189 tab ID: Tabs
+				190 tab item (selectable) RocketIDE.App.ViewModels.EditorViewViewModel
+					191 text symbols.rocket
+					192 button Close editor view button Description: Close view
+						193 text ×
+				387 tab item (selectable) RocketIDE.App.ViewModels.EditorViewViewModel
+					388 text main.rocket
+					389 button Close editor view button Description: Close view
+						390 text ×
+					194 custom
+						195 document (settable, string) Value: import std.collections struct Player: name: String score: Int fn doubled(value: Int) -> Int: return value * 2 fn fibonacci(value: Int) -> Int: if value < 2: return value return fibonacci(value - 1) + fibonacci(value - 2) fn main() -> Int: let scores = [7, 11, 24] var total = 0 for index in 0..3: total = total + scores[index] let player = Player("Rocket pilot", total) print(player.name) print(collections.length(scores)) print(player.score) print(doubled(player.score)) print(fibonacci(10)) print("YoWassupCookie") return 0 ID: Editor
+							196 document (settable, string) Value: import std.collections struct Player: name: String score: Int fn doubled(value: Int) -> Int: return value * 2 fn fibonacci(value: Int) -> Int: if value < 2: return value return fibonacci(value - 1) + fibonacci(value - 2) fn main() -> Int: let scores = [7, 11, 24] var total = 0 for index in 0..3: total = total + scores[index] let player = Player("Rocket pilot", total) print(player.name) print(collections.length(scores)) print(player.score) print(doubled(player.score)) print(fibonacci(10)) print("YoWassupCookie") return 0
+								197 list view
+									198 dataitem ICSharpCode.AvalonEdit.Editing.LineNumberMargin
+									199 dataitem System.Windows.Shapes.Line
+									391 dataitem ICSharpCode.AvalonEdit.Folding.FoldingMargin
+							201 scroll bar (settable, float) Value: 0 ID: VerticalScrollBar
+								202 button ID: DecreaseButton
+								203 thumb
+								204 button ID: IncreaseButton
+		205 thumb ID: BottomPanelSplitter
+		206 tab ID: BottomTabs
+			207 tab item (selectable) PROBLEMS (4)
+				208 text PROBLEMS (4)
+			209 tab item (selectable) REFERENCES (0)
+				210 text REFERENCES (0)
+			211 tab item (selectable) OUTPUT
+				212 text OUTPUT
+				465 text Rocket compiler, program, debugger, environment, and language-server output
+				466 button Clear
+					467 text Clear
+				468 list view ID: OutputList
+					471 list item (selectable) PASSED tests/smoke_test.rocket (exit 0)
+						611 text PASSED tests/smoke_test.rocket (exit 0)
+					473 list item (selectable) 1 passed; 0 failed; 0 expected failure(s); 1 selected
+						612 text 1 passed; 0 failed; 0 expected failure(s); 1 selected
+					475 list item (selectable) Rocket Test exited with code 0.
+						613 text Rocket Test exited with code 0.
+					477 list item (selectable) === Rocket Check: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-final-evidence\fixture ===
+						614 text === Rocket Check: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-final-evidence\fixture ===
+					479 list item (selectable) check succeeded
+						615 text check succeeded
+					481 list item (selectable) Rocket Check exited with code 0.
+						616 text Rocket Check exited with code 0.
+					617 list item (selectable) rocket-lsp initialized: rocket-lsp 1.0.0
+						618 text rocket-lsp initialized: rocket-lsp 1.0.0
+					619 list item (selectable) rocket-lsp path: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\w\out\build\windows-release\rocket-lsp.exe
+						620 text rocket-lsp path: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\w\out\build\windows-release\rocket-lsp.exe
+			221 tab item (selectable) TESTS (1)
+				222 text TESTS (1)
+			223 tab item (selectable) SEARCH
+				224 text SEARCH
+			225 tab item (selectable) DEBUG
+				226 text DEBUG
+
+Document text: ```
+import std.collections
+
+struct Player:
+    name: String
+    score: Int
+
+fn doubled(value: Int) -> Int:
+    return value * 2
+
+fn fibonacci(value: Int) -> Int:
+    if value < 2:
+        return value
+    return fibonacci(value - 1) + fibonacci(value - 2)
+
+fn main() -> Int:
+    let scores = [7, 11, 24]
+    var total = 0
+
+    for index in 0..3:
+        total = total + scores[index]
+
+    let player = Player("Rocket pilot", total)
+    print(player.name)
+    print(collections.length(scores))
+    print(player.score)
+    print(doubled(player.score))
+    print(fibonacci(10))
+    print("YoWassupCookie")
+    return 0
+```

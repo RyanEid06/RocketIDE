@@ -1,0 +1,255 @@
+Window: "Release Rocket 3.0.0 and RocketIDE 1.0.0 · RyanEid06/Rocket-RocketIDE - Google Chrome", App: chrome.exe.
+	0 window Release Rocket 3.0.0 and RocketIDE 1.0.0 · RyanEid06/Rocket-RocketIDE - Google Chrome Secondary Actions: Raise
+		597 pane (disabled)
+		598 region Release Rocket 3.0.0 and RocketIDE 1.0.0 · RyanEid06/Rocket-RocketIDE - Google Chrome - rori the
+			599 region
+				600 region
+					601 region
+						602 button Minimize ID: view_1
+						603 button Maximize ID: view_2
+						604 button Close ID: view_4
+					605 region
+						606 region
+							607 tool bar ID: view_1000
+								608 button Back ID: view_1001
+								609 button (disabled) Forward ID: view_1002
+								610 button Reload ID: view_1003
+								611 group
+									612 button View site information ID: view_1011
+									613 edit (settable, string) Address and search bar Description: Ask Google or type a URL Value: github.com/RyanEid06/Rocket-RocketIDE/releases/tag/v3.0.0 ID: view_1012
+									614 region
+										1150 button Install GitHub
+										1031 button Bookmark this tab
+								615 region
+									616 button Extensions ID: view_1006
+								617 region
+								618 button rori the ID: view_1018
+								619 button Chrome ID: view_1007
+						620 region
+							621 region
+								622 region
+								1282 document Release Rocket 3.0.0 and RocketIDE 1.0.0 · RyanEid06/Rocket-RocketIDE Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases/tag/v3.0.0 ID: RootWebArea
+									1327 group
+										1283 link Skip to content Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases/tag/v3.0.0#start-of-content
+										1406 group
+										1328 group
+										1329 group
+											1284 header Global navigation menu
+												1285 button Open menu
+												1286 link Homepage ( g then d ) Value: https://github.com/
+												1287 navigation Breadcrumbs
+													1288 list
+														1289 list item RyanEid06
+															1290 link RyanEid06 Value: https://github.com/RyanEid06
+														1291 list item Rocket-RocketIDE
+															1292 link Rocket-RocketIDE Value: https://github.com/RyanEid06/Rocket-RocketIDE
+															1293 button Switch repository ( alt shift r )
+												1294 button Open quick search dialog, type / to search ( forward slash )
+												1295 link Chat with Copilot Value: https://github.com/copilot
+												1296 button Open Copilot…
+												1297 button Create new...
+												1298 link All issues Value: https://github.com/issues
+												1299 link All pull requests Value: https://github.com/pulls
+												1300 link All repositories Value: https://github.com/repos
+												1301 link You have no unread notifications ( g then n ) Value: https://github.com/notifications
+												1302 button Open user navigation menu
+													1303 graphic Ryan-Eid
+												1304 heading Repository navigation
+												1305 navigation Repository
+													1306 list
+														1307 list item Code
+															1308 link Code Value: https://github.com/RyanEid06/Rocket-RocketIDE
+														1309 list item Issues
+															1310 link Issues Value: https://github.com/RyanEid06/Rocket-RocketIDE/issues
+														1311 list item Pull requests
+															1312 link Pull requests Value: https://github.com/RyanEid06/Rocket-RocketIDE/pulls
+														1313 list item Agents
+															1314 link Agents Value: https://github.com/RyanEid06/Rocket-RocketIDE/agents?author=RyanEid06
+														1315 list item Actions
+															1316 link Actions Value: https://github.com/RyanEid06/Rocket-RocketIDE/actions
+														1317 list item Projects
+															1318 link Projects Value: https://github.com/RyanEid06/Rocket-RocketIDE/projects
+														1319 list item Wiki
+															1320 link Wiki Value: https://github.com/RyanEid06/Rocket-RocketIDE/wiki
+														1321 list item Security and quality
+															1322 link Security and quality Value: https://github.com/RyanEid06/Rocket-RocketIDE/security
+													1330 button More items
+														1331 text More
+														1332 text items
+										1333 main ID: js-repo-pjax-container
+											1334 group ID: repo-content-turbo-frame
+												1335 navigation Breadcrumb
+													1336 list
+														1337 list item Releases
+															1338 link Releases Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases
+														1339 list item v3.0.0
+															1340 link v3.0.0 Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases/tag/v3.0.0
+												1341 heading Rocket 3.0.0 and RocketIDE 1.0.0
+												1342 link Latest Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases/latest
+												1343 group ID: select-panel-3e832cc3-fb42-4920-845b-984b083b507e
+													1344 button Compare ID: select-panel-3e832cc3-fb42-4920-845b-984b083b507e-button
+												1345 link Edit: Rocket 3.0.0 and RocketIDE 1.0.0 Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases/edit/v3.0.0 ID: icon-button-4465088b-dd04-4687-9f3c-6d5b8159963d
+												1346 button Delete: Rocket 3.0.0 and RocketIDE 1.0.0 ID: dialog-show-delete-release-d81eab6b-dialog
+												1347 graphic @RyanEid06
+												1348 text 
+												1349 link RyanEid06 Value: https://github.com/RyanEid06
+												1350 text released this
+												1351 group Sep 27, 2026, 9:42 PM GMT+3 Description: Sep 27, 2026, 9:42 PM GMT+3
+													1352 text now
+												1353 link Tag v3.0.0 Value: https://github.com/RyanEid06/Rocket-RocketIDE/tree/v3.0.0
+													1354 graphic Tag
+												1355 link Commit 4a6f9bc Value: https://github.com/RyanEid06/Rocket-RocketIDE/commit/4a6f9bc175dbdadc59365e5a156c808373945f8d
+													1356 graphic Commit
+												1357 heading Rocket 3.0.0 and RocketIDE 1.0.0
+												1358 text Download the archive for your platform below. Keep every file in the extracted folder.
+												1359 heading RocketIDE for Windows x64
+												1360 text Extract RocketIDE-win-x64-1.0.0.zip and open RocketIDE.exe. The package includes the .NET runtime and native debugger; a separate .NET installation is not required. Install the Windows Rocket SDK, then select its bin/rocketc.exe and bin/rocket-lsp.exe in Tools > Rocket SDK Settings.
+												1361 heading Rocket language SDK
+												1362 text Native packages are available for Windows x64, Linux x64, Linux ARM64, and macOS Apple Silicon ARM64. The compiler is rocketc.exe on Windows and rocketc on Linux/macOS. Each SDK includes the language server, libraries, toolchain and PACKAGE.md setup instructions. macOS requires Xcode Command Line Tools. There is no Intel macOS SDK or Linux/macOS RocketIDE build in this release.
+												1363 heading Verification and provenance
+												1364 text RocketIDE source: f54a7b2cd72dabaa5a327b61685bf53bbe81d5d2, version 1.0.0. The Target Information adapter fix has four regression cases; the full local verification gate passed 514/514, with an exact-source successful Windows CI run and packaged-app replay. Remaining acceptance checks were explicitly accepted/waived by the owner on 2026-09-27; they are not represented as executed passes. Full evidence and limitations are in the developer branch release report.
+												1365 text Rocket SDK source: 1f6ba76f16f3246095d5d573c28d825d8b9367e3, version 3.0.0. Native CI run 36304020122 passed on all four hosts, including package relocation and archive reproducibility. Packages are unsigned. ROCKET-SDK-PROVENANCE.json records their original build identities.
+												1366 text Developer branch:
+												1367 link https://github.com/RyanEid06/RocketIDE/tree/codex/rocketide-final-wp07 Value: https://github.com/RyanEid06/RocketIDE/tree/codex/rocketide-final-wp07
+												1368 text Consumer branch:
+												1369 link https://github.com/RyanEid06/RocketIDE/tree/codex/rocketide-consumer-1.0.0 Value: https://github.com/RyanEid06/RocketIDE/tree/codex/rocketide-consumer-1.0.0
+												1370 text Website:
+												1371 link https://ryaneid06.github.io/Rocket-RocketIDE/ Value: https://ryaneid06.github.io/Rocket-RocketIDE/
+												1372 text SHA-256 checksums are supplied in SHA256SUMS.txt and displayed on the website.
+												1373 details
+													1374 button Assets 10
+													1375 text Loading
+												1376 group
+													1377 details
+														1378 disclosure triangle Add or remove reactions ID: reaction-add-reaction-button-tooltip-anchor-64b30370
+										1379 content information
+											1380 heading Footer
+											1381 link GitHub Homepage Value: https://github.com/
+											1382 text © 2026 GitHub, Inc.
+											1383 navigation Footer
+												1384 heading Footer navigation ID: sr-footer-heading
+												1385 list Footer navigation
+													1386 list item Terms
+														1387 link Terms Value: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+													1388 list item Privacy
+														1389 link Privacy Value: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+													1390 list item Security
+														1391 link Security Value: https://github.com/security
+													1392 list item Status
+														1393 link Status Value: https://www.githubstatus.com/
+													1394 list item Community
+														1395 link Community Value: https://github.community/
+													1396 list item Docs
+														1397 link Docs Value: https://docs.github.com/
+													1398 list item Contact
+														1399 link Contact Value: https://support.github.com/?tags=dotcom-footer
+													1400 list item Manage cookies
+														1401 button Manage cookies
+													1402 list item Do not share my personal information
+														1403 button Do not share my personal information
+										1404 group ID: js-global-screen-reader-notice
+										1405 group ID: js-global-screen-reader-notice-assertive
+							631 region
+						632 region
+							633 region
+								634 button Tab search
+							635 region ID: view_21
+								636 tab
+									637 tab item (selectable) Debug SpendWise Issues ID: view_20
+									638 tab item (selectable) RyanEid06/Rocket: Best and Fastest Coding language ID: view_20
+									639 tab item (selectable) RyanEid06/RocketIDE ID: view_20
+									640 tab item (selectable) Edit release · RyanEid06/Rocket-RocketIDE ID: view_20
+									641 tab item (selectable) Workflow runs · RyanEid06/SpendWise ID: view_20
+									642 tab item (selectable) Release Rocket 3.0.0 and RocketIDE 1.0.0 · RyanEid06/Rocket-RocketIDE ID: view_20
+										643 button Close
+								644 region
+							645 button New Tab
+							646 region
+							647 region
+								648 button Open Gemini in Chrome
+								649 region
+						650 region
+
+Document text: ```
+￼
+Skip to content
+￼
+￼
+￼
+￼
+RyanEid06
+￼
+Rocket-RocketIDE
+￼
+￼
+￼
+Open Copilot…
+￼
+￼
+￼
+￼
+￼
+￼
+￼
+Repository navigation
+Code
+Issues
+Pull requests
+Agents
+Actions
+Projects
+Wiki
+Security and quality
+More
+items
+￼
+￼
+Releases
+￼
+v3.0.0
+Rocket 3.0.0 and RocketIDE 1.0.0
+Latest
+Compare
+￼
+￼
+￼ 
+RyanEid06 released this now
+￼
+v3.0.0
+￼
+4a6f9bc
+Rocket 3.0.0 and RocketIDE 1.0.0
+Download the archive for your platform below. Keep every file in the extracted folder.
+RocketIDE for Windows x64
+Extract RocketIDE-win-x64-1.0.0.zip and open RocketIDE.exe. The package includes the .NET runtime and native debugger; a separate .NET installation is not required. Install the Windows Rocket SDK, then select its bin/rocketc.exe and bin/rocket-lsp.exe in Tools > Rocket SDK Settings.
+Rocket language SDK
+Native packages are available for Windows x64, Linux x64, Linux ARM64, and macOS Apple Silicon ARM64. The compiler is rocketc.exe on Windows and rocketc on Linux/macOS. Each SDK includes the language server, libraries, toolchain and PACKAGE.md setup instructions. macOS requires Xcode Command Line Tools. There is no Intel macOS SDK or Linux/macOS RocketIDE build in this release.
+Verification and provenance
+RocketIDE source: f54a7b2cd72dabaa5a327b61685bf53bbe81d5d2, version 1.0.0. The Target Information adapter fix has four regression cases; the full local verification gate passed 514/514, with an exact-source successful Windows CI run and packaged-app replay. Remaining acceptance checks were explicitly accepted/waived by the owner on 2026-09-27; they are not represented as executed passes. Full evidence and limitations are in the developer branch release report.
+Rocket SDK source: 1f6ba76f16f3246095d5d573c28d825d8b9367e3, version 3.0.0. Native CI run 36304020122 passed on all four hosts, including package relocation and archive reproducibility. Packages are unsigned. ROCKET-SDK-PROVENANCE.json records their original build identities.
+Developer branch: https://github.com/RyanEid06/RocketIDE/tree/codex/rocketide-final-wp07
+Consumer branch: https://github.com/RyanEid06/RocketIDE/tree/codex/rocketide-consumer-1.0.0
+Website: https://ryaneid06.github.io/Rocket-RocketIDE/
+SHA-256 checksums are supplied in SHA256SUMS.txt and displayed on the website.
+Assets
+10
+Loading
+Add or remove reactions
+￼
+Footer
+GitHub Homepage
+© 2026 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+Manage cookies
+Do not share my personal information
+￼
+￼
+￼
+```

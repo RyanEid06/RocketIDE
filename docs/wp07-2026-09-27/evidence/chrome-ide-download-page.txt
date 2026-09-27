@@ -1,0 +1,112 @@
+Window: "Rocket & RocketIDE — Official Language & Development Environment - Google Chrome", App: chrome.exe.
+	0 window Rocket & RocketIDE — Official Language & Development Environment - Google Chrome Secondary Actions: Raise
+		597 pane (disabled)
+		598 region Rocket & RocketIDE — Official Language & Development Environment - Google Chrome - rori the
+			599 region
+				600 region
+					601 region
+						602 button Minimize ID: view_1
+						603 button Maximize ID: view_2
+						604 button Close ID: view_4
+					605 region
+						606 region
+							607 tool bar ID: view_1000
+								608 button Back ID: view_1001
+								609 button (disabled) Forward ID: view_1002
+								610 button Reload ID: view_1003
+								611 group
+									612 button View site information ID: view_1011
+									613 edit (settable, string) Address and search bar Description: Ask Google or type a URL Value: ryaneid06.github.io/Rocket-RocketIDE/ ID: view_1012
+									614 region
+										693 button Bookmark this tab
+								615 region
+									616 button Extensions ID: view_1006
+								617 region
+								618 button rori the ID: view_1018
+								619 button Chrome ID: view_1007
+						620 region
+							621 region
+								622 region
+								694 document Rocket & RocketIDE — Official Language & Development Environment Value: https://ryaneid06.github.io/Rocket-RocketIDE/ ID: RootWebArea
+									695 group
+										696 group ID: root
+											697 header
+												698 button RocketIDE Official Logo Rocket
+													699 graphic RocketIDE Official Logo
+												700 navigation
+													701 button Overview
+													702 button Try Rocket
+													703 button RocketIDE
+													704 button Rocket Language
+												705 button Download IDE
+											706 main
+												995 button Overview
+												996 text Desktop Studio
+												997 heading Download RocketIDE
+												998 text RocketIDE 1.0.0 for Windows x64. Includes the .NET runtime and native debugger.
+												999 text Windows
+												1000 text ·
+												1001 text Portable Archive
+												1002 text 132.0 MiB
+												1003 heading RocketIDE 1.0.0 Portable
+												1004 text Extract the complete archive and open RocketIDE.exe. Includes the .NET runtime and debugger. Download the Rocket SDK separately.
+												1005 text RocketIDE-win-x64-1.0.0.zip
+												1006 text SHA-256:
+												1007 text a5e1966a322ec19e391a
+												1008 text ...
+												1009 button Copy
+												1010 link Download RocketIDE-win-x64-1.0.0.zip Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-win-x64-1.0.0.zip
+												1011 text Fast direct CDN from GitHub
+												1012 link View Releases Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases
+												1013 text Extract the complete ZIP, then open
+												1014 text RocketIDE.exe
+												1015 text inside the extracted folder. Keep all included files together.
+												1016 text Download the Windows Rocket SDK separately. In Tools > Rocket SDK Settings, select its
+												1017 text bin/rocketc.exe
+												1018 text and
+												1019 text bin/rocket-lsp.exe
+												1020 text .
+												1021 text RocketIDE uses Windows WPF. Linux and macOS users can download the Rocket language SDK below and use their preferred editor.
+												1022 text Need the command-line compiler too?
+												1023 button Download Rocket Language SDK
+											980 footer
+												981 button RocketIDE Official Logo Rocket & RocketIDE
+													982 graphic RocketIDE Official Logo
+												983 button Overview
+												984 button Try Online
+												985 button RocketIDE Studio
+												986 button Language Toolchain
+												987 text |
+												988 button Software License
+												989 button Privacy Notice
+												990 text © 2026 Rocket & RocketIDE Project Contributors. All rights reserved.
+												991 button MIT / Apache 2.0
+												992 text ·
+												993 button Terms of Service
+												994 text THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+							631 region
+						632 region
+							633 region
+								634 button Tab search
+							635 region ID: view_21
+								636 tab
+									637 tab item (selectable) Debug SpendWise Issues ID: view_20
+									638 tab item (selectable) RyanEid06/Rocket: Best and Fastest Coding language ID: view_20
+									639 tab item (selectable) RyanEid06/RocketIDE ID: view_20
+									640 tab item (selectable) Edit release · RyanEid06/Rocket-RocketIDE ID: view_20
+									641 tab item (selectable) Workflow runs · RyanEid06/SpendWise ID: view_20
+									642 tab item (selectable) Rocket & RocketIDE — Official Language & Development Environment ID: view_20
+										643 button Close
+								644 region
+							645 button New Tab
+							646 region
+							647 region
+								648 button Open Gemini in Chrome
+								649 region
+						650 region
+
+Selected text: ```
+ryaneid06.github.io/Rocket-RocketIDE/
+```
+
+Note: Pay special attention to the content selected by the user. If the user asks a question or refers to the content they are looking at on-screen, they might be referring to the selected content (but they might be referring to something else that's visible, too).

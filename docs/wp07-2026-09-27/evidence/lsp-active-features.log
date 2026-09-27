@@ -1,0 +1,3 @@
+initialize: 67 ms; symbol=True; folding=True
+LSP smoke failed: InvalidOperationException: The server did not advertise the expected symbol-search and folding capabilities.
+rocket-lsp stop: 17 ms

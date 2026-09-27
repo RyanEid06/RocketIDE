@@ -1,0 +1,178 @@
+Window: "Rocket & RocketIDE — Official Language & Development Environment - Google Chrome", App: chrome.exe.
+	0 window Rocket & RocketIDE — Official Language & Development Environment - Google Chrome Secondary Actions: Raise
+		597 pane (disabled)
+		598 region Rocket & RocketIDE — Official Language & Development Environment - Google Chrome - rori the
+			599 region
+				600 region
+					601 region
+						602 button Minimize ID: view_1
+						603 button Maximize ID: view_2
+						604 button Close ID: view_4
+					605 region
+						606 region
+							607 tool bar ID: view_1000
+								608 button Back ID: view_1001
+								609 button (disabled) Forward ID: view_1002
+								610 button Reload ID: view_1003
+								611 group
+									612 button View site information ID: view_1011
+									613 edit (settable, string) Address and search bar Description: Ask Google or type a URL Value: ryaneid06.github.io/Rocket-RocketIDE/ ID: view_1012
+									614 region
+										1416 button Bookmark this tab
+								615 region
+									616 button Extensions ID: view_1006
+								617 region
+								618 button rori the ID: view_1018
+								619 button Chrome ID: view_1007
+						620 region
+							621 region
+								622 region
+								1417 document Rocket & RocketIDE — Official Language & Development Environment Value: https://ryaneid06.github.io/Rocket-RocketIDE/ ID: RootWebArea
+									1418 group
+										1419 group ID: root
+											1420 header
+												1421 button RocketIDE Official Logo Rocket
+													1422 graphic RocketIDE Official Logo
+												1423 navigation
+													1424 button Overview
+													1425 button Try Rocket
+													1426 button RocketIDE
+													1427 button Rocket Language
+												1428 button Download IDE
+											1429 main
+												1718 button Overview
+												1719 text Language Compiler & Toolchain
+												1720 heading Download Rocket Toolchain
+												1721 text Rocket 3.0.0 compiler (
+												1722 text rocketc
+												1723 text ), standard libraries, and Language Server Protocol engine.
+												1724 button All OS
+												1725 button Windows
+												1726 button Linux
+												1727 button macOS
+												1728 text Windows
+												1729 text ·
+												1730 text windows-x64
+												1731 text 319.1 MiB
+												1732 heading Rocket 3.0.0 SDK (windows-x64)
+												1733 text Native compiler (rocketc), language server, standard library, and toolchain. Extract the complete SDK; follow PACKAGE.md for setup.
+												1734 text rocket-3.0.0-windows-x64.zip
+												1735 text SHA-256:
+												1736 text 42bae12625717a776dac
+												1737 text ...
+												1738 button Copy
+												1739 link Download rocket-3.0.0-windows-x64.zip Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/rocket-3.0.0-windows-x64.zip
+												1740 text Fast direct CDN from GitHub
+												1741 link View Releases Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases
+												1742 text Linux
+												1743 text ·
+												1744 text linux-x64
+												1745 text 540.1 MiB
+												1746 heading Rocket 3.0.0 SDK (linux-x64)
+												1747 text Native compiler (rocketc), language server, standard library, and toolchain. Extract the complete SDK; follow PACKAGE.md for setup.
+												1748 text rocket-3.0.0-linux-x64.tar.xz
+												1749 text SHA-256:
+												1750 text 1a716073f2941d7d4c63
+												1751 text ...
+												1752 button Copy
+												1753 link Download rocket-3.0.0-linux-x64.tar.xz Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/rocket-3.0.0-linux-x64.tar.xz
+												1754 text Fast direct CDN from GitHub
+												1755 link View Releases Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases
+												1756 text Linux
+												1757 text ·
+												1758 text linux-arm64
+												1759 text 499.5 MiB
+												1760 heading Rocket 3.0.0 SDK (linux-arm64)
+												1761 text Native compiler (rocketc), language server, standard library, and toolchain. Extract the complete SDK; follow PACKAGE.md for setup.
+												1762 text rocket-3.0.0-linux-arm64.tar.xz
+												1763 text SHA-256:
+												1764 text 1db0eadfb0e592b36442
+												1765 text ...
+												1766 button Copy
+												1767 link Download rocket-3.0.0-linux-arm64.tar.xz Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/rocket-3.0.0-linux-arm64.tar.xz
+												1768 text Fast direct CDN from GitHub
+												1769 link View Releases Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases
+												1770 text Macos
+												1771 text ·
+												1772 text Apple Silicon ARM64
+												1773 text 254.9 MiB
+												1774 heading Rocket 3.0.0 SDK (macos-arm64)
+												1775 text Native compiler (rocketc), language server, standard library, and toolchain. Extract the complete SDK; follow PACKAGE.md for setup.
+												1776 text rocket-3.0.0-macos-arm64.tar.xz
+												1777 text SHA-256:
+												1778 text 96192c6fda0a479c31d3
+												1779 text ...
+												1780 button Copy
+												1781 link Download rocket-3.0.0-macos-arm64.tar.xz Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/rocket-3.0.0-macos-arm64.tar.xz
+												1782 text Fast direct CDN from GitHub
+												1783 link View Releases Value: https://github.com/RyanEid06/Rocket-RocketIDE/releases
+												1784 text Extract the complete SDK and add its
+												1785 text bin
+												1786 text directory to PATH. Windows uses
+												1787 text rocketc.exe
+												1788 text ; Linux and macOS use
+												1789 text rocketc
+												1790 text . Each archive includes the matching language server, libraries and package instructions.
+												1791 text Linux packages target x64 or ARM64 and were validated on Ubuntu 24.04. The macOS package is for Apple Silicon (ARM64), validated on macOS 14; an Intel macOS package is not available.
+												1792 text On macOS, install Xcode Command Line Tools with
+												1793 text xcode-select --install
+												1794 text and follow the SDK's PACKAGE.md. On Linux, follow PACKAGE.md for native system prerequisites.
+												1795 heading rocketc Command Reference
+												1796 text RUN SOURCE FILE DIRECTLY
+												1797 text rocketc run hello.rocket
+												1798 button
+												1799 text BUILD NATIVE BINARY WITH DEBUG SYMBOLS
+												1800 text rocketc build hello.rocket --debug
+												1801 button
+												1802 text CREATE NEW PACKAGE PROJECT
+												1803 text rocketc new my-project
+												1804 button
+												1805 text RUN AUTOMATED UNIT TESTS
+												1806 text rocketc test my-project
+												1807 button
+												1808 text EMIT LLVM INTERMEDIATE REPRESENTATION
+												1809 text rocketc emit-ir hello.rocket
+												1810 button
+												1811 text Looking for the visual desktop IDE?
+												1812 button Download RocketIDE
+											1703 footer
+												1704 button RocketIDE Official Logo Rocket & RocketIDE
+													1705 graphic RocketIDE Official Logo
+												1706 button Overview
+												1707 button Try Online
+												1708 button RocketIDE Studio
+												1709 button Language Toolchain
+												1710 text |
+												1711 button Software License
+												1712 button Privacy Notice
+												1713 text © 2026 Rocket & RocketIDE Project Contributors. All rights reserved.
+												1714 button MIT / Apache 2.0
+												1715 text ·
+												1716 button Terms of Service
+												1717 text THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+							631 region
+						632 region
+							633 region
+								634 button Tab search
+							635 region ID: view_21
+								636 tab
+									637 tab item (selectable) Debug SpendWise Issues ID: view_20
+									638 tab item (selectable) RyanEid06/Rocket: Best and Fastest Coding language ID: view_20
+									639 tab item (selectable) RyanEid06/RocketIDE ID: view_20
+									640 tab item (selectable) Edit release · RyanEid06/Rocket-RocketIDE ID: view_20
+									641 tab item (selectable) Workflow runs · RyanEid06/SpendWise ID: view_20
+									642 tab item (selectable) Rocket & RocketIDE — Official Language & Development Environment ID: view_20
+										643 button Close
+								644 region
+							645 button New Tab
+							646 region
+							647 region
+								648 button Open Gemini in Chrome
+								649 region
+						650 region
+
+Selected text: ```
+ryaneid06.github.io/Rocket-RocketIDE/
+```
+
+Note: Pay special attention to the content selected by the user. If the user asks a question or refers to the content they are looking at on-screen, they might be referring to the selected content (but they might be referring to something else that's visible, too).

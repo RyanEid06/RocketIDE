@@ -1,0 +1,188 @@
+Window: "symbols.rocket — RocketIDE", App: RocketIDE.exe.
+	0 window symbols.rocket — RocketIDE Secondary Actions: Raise
+		228 window Secondary Actions: Raise
+			229 menu item Validate Rocket Environment
+				230 text Validate Rocket _Environment
+			231 menu item Rocket SDK Settings...
+				232 text Rocket SDK _Settings...
+			233 separator (disabled)
+			234 menu item New Rocket Project...
+				235 text _New Rocket Project...
+			236 menu item Resolve Dependencies
+				237 text _Resolve Dependencies
+			238 menu item Dependency Tree
+				239 text Dependency _Tree
+			240 menu item Audit Dependencies
+				241 text _Audit Dependencies
+			242 menu item Target Information
+				243 text _Target Information
+			244 menu item Format Target/Workspace
+				245 text Format _Target/Workspace
+			246 menu item Coverage
+				247 text _Coverage
+			248 menu item Profile
+				249 text _Profile
+			250 menu item Benchmark
+				251 text _Benchmark
+		96 title bar (settable, string) Value: symbols.rocket — RocketIDE
+			97 menu bar System ID: MenuBar
+				98 menu item System
+			99 button Minimize
+			100 button Maximize
+			101 button Close
+		102 menu
+			103 menu item File
+				104 text _File
+			105 menu item Edit
+				106 text _Edit
+			107 menu item Selection
+				108 text _Selection
+			109 menu item View
+				110 text _View
+			111 menu item Navigate
+				112 text _Navigate
+			113 menu item Build
+				114 text _Build
+			115 menu item Run
+				116 text _Run
+			117 menu item Debug
+				118 text _Debug
+			119 menu item Tools
+				252 text _Tools
+			121 menu item Help
+				122 text _Help
+		123 button New file button Description: New file
+			124 text New
+		125 button Open file button Description: Open file
+			126 text Open
+		127 button Open folder button Description: Open folder
+			128 text Folder
+		129 button Save active file button Description: Save active file
+			130 text Save
+		131 button (disabled) Build Description: Build active Rocket target
+			132 text (disabled) Build
+		133 button (disabled) Run Description: Run active Rocket executable target
+			134 text (disabled) Run
+		135 button (disabled) Start or continue Rocket debugging button Description: Start or continue Rocket debugging (F5)
+			136 text (disabled) Debug
+		137 button (disabled) Pause Rocket debugging button Description: Pause Rocket debugging
+			138 text (disabled) Pause
+		139 button (disabled) Stop Rocket debugging button Description: Stop Rocket debugging (Shift+F5)
+			140 text (disabled) Stop Debug
+		141 button Stop Rocket compiler or program button Description: Stop active Rocket compiler/program process tree
+			142 text Stop
+		143 button (disabled) Test Description: Test active Rocket target
+			144 text (disabled) Test
+		145 status bar
+			146 text Rocket SDK: rocketc 3.0.0
+				147 text Rocket SDK: rocketc 3.0.0
+			148 separator (disabled)
+			149 text LSP: project · 1 files · 2 symbols
+				150 text LSP: project · 1 files · 2 symbols
+			151 separator (disabled)
+			152 text Target: symbols.rocket (standalone)
+				153 text Target: symbols.rocket (standalone)
+			154 separator (disabled)
+			155 text Ln 6, Col 4
+				156 text Ln 6, Col 4
+			157 separator (disabled)
+			158 text UTF-8
+				159 text UTF-8
+		160 button Refresh workspace Description: Refresh workspace
+			161 text ↻
+		162 text EXPLORER
+		163 tree view ID: ExplorerTree
+			164 tree view item (selectable) RocketIDE.App.ViewModels.Explorer.ExplorerNodeViewModel
+				165 button ID: Expander
+				166 text lsp-smoke-workspace
+				167 tree view item (selectable) RocketIDE.App.ViewModels.Explorer.ExplorerNodeViewModel
+					168 text symbols.rocket
+		169 thumb ID: ExplorerSplitter
+		170 custom ID: PrimaryEditorGroupHost
+			171 tab ID: Tabs
+				172 tab item (selectable) RocketIDE.App.ViewModels.EditorViewViewModel
+					173 text symbols.rocket
+					174 button Close editor view button Description: Close view
+						175 text ×
+					176 custom
+						177 document (settable, string) Value: extern fn Sleep(milliseconds: Int) -> Unit fn main() -> Int: var batch = 0 while ba < 1000: var line = 0 while line < 100: print("bounded output smoke") line = line + 1 unsafe: Sleep(50) batch = batch + 1 return 0 ID: Editor
+							178 document (settable, string) Value: extern fn Sleep(milliseconds: Int) -> Unit fn main() -> Int: var batch = 0 while ba < 1000: var line = 0 while line < 100: print("bounded output smoke") line = line + 1 unsafe: Sleep(50) batch = batch + 1 return 0
+								179 list view
+									180 dataitem ICSharpCode.AvalonEdit.Editing.LineNumberMargin
+									181 dataitem System.Windows.Shapes.Line
+									182 dataitem ICSharpCode.AvalonEdit.Folding.FoldingMargin
+							183 scroll bar (settable, float) Value: 0 ID: VerticalScrollBar
+								184 button ID: DecreaseButton
+								185 thumb
+								186 button ID: IncreaseButton
+		187 thumb ID: EditorGroupSplitter
+		188 custom ID: SecondaryEditorGroupHost
+			189 tab ID: Tabs
+				190 tab item (selectable) RocketIDE.App.ViewModels.EditorViewViewModel
+					191 text symbols.rocket
+					192 button Close editor view button Description: Close view
+						193 text ×
+					194 custom
+						195 document (settable, string) Value: extern fn Sleep(milliseconds: Int) -> Unit fn main() -> Int: var batch = 0 while ba < 1000: var line = 0 while line < 100: print("bounded output smoke") line = line + 1 unsafe: Sleep(50) batch = batch + 1 return 0 ID: Editor
+							196 document (settable, string) Value: extern fn Sleep(milliseconds: Int) -> Unit fn main() -> Int: var batch = 0 while ba < 1000: var line = 0 while line < 100: print("bounded output smoke") line = line + 1 unsafe: Sleep(50) batch = batch + 1 return 0
+								197 list view
+									198 dataitem ICSharpCode.AvalonEdit.Editing.LineNumberMargin
+									199 dataitem System.Windows.Shapes.Line
+									200 dataitem ICSharpCode.AvalonEdit.Folding.FoldingMargin
+							201 scroll bar (settable, float) Value: 0 ID: VerticalScrollBar
+								202 button ID: DecreaseButton
+								203 thumb
+								204 button ID: IncreaseButton
+		205 thumb ID: BottomPanelSplitter
+		206 tab ID: BottomTabs
+			207 tab item (selectable) PROBLEMS (4)
+				208 text PROBLEMS (4)
+			209 tab item (selectable) REFERENCES (0)
+				210 text REFERENCES (0)
+			211 tab item (selectable) OUTPUT
+				212 text OUTPUT
+				213 text Rocket compiler, program, debugger, environment, and language-server output
+				214 button Clear
+					215 text Clear
+				216 list view ID: OutputList
+					217 list item (selectable) rocket-lsp initialized: rocket-lsp 1.0.0
+						253 text rocket-lsp initialized: rocket-lsp 1.0.0
+					219 list item (selectable) rocket-lsp path: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\w\out\build\windows-release\rocket-lsp.exe
+						254 text rocket-lsp path: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\w\out\build\windows-release\rocket-lsp.exe
+					255 list item (selectable) === Rocket Target: C:\Users\Administrator\Desktop\Projects\RocketIDE\artifacts\lsp-smoke-workspace\symbols.rocket ===
+						256 text === Rocket Target: C:\Users\Administrator\Desktop\Projects\RocketIDE\artifacts\lsp-smoke-workspace\symbols.rocket ===
+					257 list item (selectable) host: windows-x64
+						258 text host: windows-x64
+					259 list item (selectable) target: windows-x64
+						260 text target: windows-x64
+					261 list item (selectable) triple: x86_64-pc-windows-msvc
+						262 text triple: x86_64-pc-windows-msvc
+					263 list item (selectable) os: windows
+						264 text os: windows
+					265 list item (selectable) environment: msvc
+						266 text environment: msvc
+					267 list item (selectable) pointer-width: 64
+						268 text pointer-width: 64
+					269 list item (selectable) endianness: little
+						270 text endianness: little
+					271 list item (selectable) features: threads,dynamic-libraries,codeview,sse2
+						272 text features: threads,dynamic-libraries,codeview,sse2
+					273 list item (selectable) native: true
+						274 text native: true
+					275 list item (selectable) cross-supported: true
+						276 text cross-supported: true
+					277 list item (selectable) Rocket Target exited with code 0.
+						278 text Rocket Target exited with code 0.
+			221 tab item (selectable) TESTS
+				222 text TESTS
+			223 tab item (selectable) SEARCH
+				224 text SEARCH
+			225 tab item (selectable) DEBUG
+				226 text DEBUG
+
+Selected text: ```
+
+   
+```
+
+Note: Pay special attention to the content selected by the user. If the user asks a question or refers to the content they are looking at on-screen, they might be referring to the selected content (but they might be referring to something else that's visible, too).

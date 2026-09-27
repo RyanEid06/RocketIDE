@@ -1,0 +1,57 @@
+CAPABILITIES={"codeActionProvider":{"codeActionKinds":["quickfix","source.fixAll.rocket","source.format.rocket"],"resolveProvider":false},"completionProvider":{"resolveProvider":false,"triggerCharacters":["."]},"definitionProvider":true,"documentSymbolProvider":true,"foldingRangeProvider":true,"hoverProvider":true,"positionEncoding":"utf-16","referencesProvider":true,"renameProvider":{"prepareProvider":true},"semanticTokensProvider":{"full":{"delta":true},"legend":{"tokenModifiers":["declaration","definition","readonly","static","deprecated","abstract","async","modification","documentation","defaultLibrary"],"tokenTypes":["namespace","type","struct","enum","interface","typeParameter","parameter","variable","property","function","method","keyword","string","number","comment","decorator"]},"range":false},"signatureHelpProvider":{"retriggerCharacters":[","],"triggerCharacters":["(",","]},"textDocumentSync":{"change":2,"openClose":true,"save":{"includeText":true}},"workspace":{"workspaceFolders":{"changeNotifications":true,"supported":true}},"workspaceSymbolProvider":true}
+[
+  {
+    "cycle": 0,
+    "initMs": 66,
+    "edits": 100,
+    "minMs": 0,
+    "maxMs": 7,
+    "p95Ms": 0,
+    "memBefore": 16150528,
+    "memAfter": 16150528,
+    "cpuMs": 62.5,
+    "semanticTokenCount": 85,
+    "formatReply": "JSON-RPC error -32601: method not found: textDocument/formatting",
+    "incompleteSignature": "{\u0022activeParameter\u0022:0,\u0022activeSignature\u0022:0,\u0022signatures\u0022:[]}",
+    "cancelled": true,
+    "settled": 10,
+    "stopMs": 4
+  },
+  {
+    "cycle": 1,
+    "initMs": 18,
+    "edits": 100,
+    "minMs": 0,
+    "maxMs": 1,
+    "p95Ms": 0,
+    "memBefore": 16166912,
+    "memAfter": 16166912,
+    "cpuMs": 31.25,
+    "semanticTokenCount": 85,
+    "formatReply": "JSON-RPC error -32601: method not found: textDocument/formatting",
+    "incompleteSignature": "{\u0022activeParameter\u0022:0,\u0022activeSignature\u0022:0,\u0022signatures\u0022:[]}",
+    "cancelled": true,
+    "settled": 10,
+    "stopMs": 4
+  },
+  {
+    "cycle": 2,
+    "initMs": 16,
+    "edits": 100,
+    "minMs": 0,
+    "maxMs": 1,
+    "p95Ms": 0,
+    "memBefore": 16158720,
+    "memAfter": 16158720,
+    "cpuMs": 46.875,
+    "semanticTokenCount": 85,
+    "formatReply": "JSON-RPC error -32601: method not found: textDocument/formatting",
+    "incompleteSignature": "{\u0022activeParameter\u0022:0,\u0022activeSignature\u0022:0,\u0022signatures\u0022:[]}",
+    "cancelled": true,
+    "settled": 10,
+    "stopMs": 2
+  },
+  {
+    "missingLspRejected": true
+  }
+]

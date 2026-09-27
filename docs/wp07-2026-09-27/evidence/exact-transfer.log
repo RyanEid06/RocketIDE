@@ -1,0 +1,182 @@
+transfer	Set up job	﻿2026-09-27T18:37:25.0579659Z Current runner version: '2.337.0'
+transfer	Set up job	2026-09-27T18:37:25.0629003Z ##[group]Runner Image Provisioner
+transfer	Set up job	2026-09-27T18:37:25.0629820Z Hosted Compute Agent
+transfer	Set up job	2026-09-27T18:37:25.0630346Z Version: 20260828.587
+transfer	Set up job	2026-09-27T18:37:25.0630913Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+transfer	Set up job	2026-09-27T18:37:25.0631616Z Build Date: 2026-08-28T16:44:25Z
+transfer	Set up job	2026-09-27T18:37:25.0632232Z Worker ID: {8c01e64e-6212-4862-b664-6ce24911e9b6}
+transfer	Set up job	2026-09-27T18:37:25.0632882Z Azure Region: westus2
+transfer	Set up job	2026-09-27T18:37:25.0633402Z ##[endgroup]
+transfer	Set up job	2026-09-27T18:37:25.0634810Z ##[group]Operating System
+transfer	Set up job	2026-09-27T18:37:25.0635471Z Microsoft Windows Server 2025
+transfer	Set up job	2026-09-27T18:37:25.0636022Z 10.0.26100
+transfer	Set up job	2026-09-27T18:37:25.0636501Z Datacenter
+transfer	Set up job	2026-09-27T18:37:25.0636984Z ##[endgroup]
+transfer	Set up job	2026-09-27T18:37:25.0637467Z ##[group]Runner Image
+transfer	Set up job	2026-09-27T18:37:25.0638026Z Image: windows-2025-vs2026
+transfer	Set up job	2026-09-27T18:37:25.0638560Z Version: 20260922.246.2
+transfer	Set up job	2026-09-27T18:37:25.0639621Z Included Software: https://github.com/actions/runner-images/blob/win25-vs2026/20260922.246/images/windows/Windows2025-VS2026-Readme.md
+transfer	Set up job	2026-09-27T18:37:25.0641597Z Image Release: https://github.com/actions/runner-images/releases/tag/win25-vs2026%2F20260922.246
+transfer	Set up job	2026-09-27T18:37:25.0642512Z ##[endgroup]
+transfer	Set up job	2026-09-27T18:37:25.0643627Z ##[group]GITHUB_TOKEN Permissions
+transfer	Set up job	2026-09-27T18:37:25.0645461Z Actions: read
+transfer	Set up job	2026-09-27T18:37:25.0646019Z Contents: write
+transfer	Set up job	2026-09-27T18:37:25.0646560Z Metadata: read
+transfer	Set up job	2026-09-27T18:37:25.0647217Z ##[endgroup]
+transfer	Set up job	2026-09-27T18:37:25.0649665Z Secret source: Actions
+transfer	Set up job	2026-09-27T18:37:25.0650543Z Cache mode: write
+transfer	Set up job	2026-09-27T18:37:25.0651197Z Prepare workflow directory
+transfer	Set up job	2026-09-27T18:37:25.0990354Z Prepare all required actions
+transfer	Set up job	2026-09-27T18:37:25.1052569Z Getting action download info
+transfer	Set up job	2026-09-27T18:37:25.4257410Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+transfer	Set up job	2026-09-27T18:37:25.5596864Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+transfer	Set up job	2026-09-27T18:37:25.9074957Z Complete job name: transfer
+transfer	Run actions/checkout@v4	﻿2026-09-27T18:37:26.0529550Z ##[group]Run actions/checkout@v4
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0530668Z with:
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0531105Z   fetch-depth: 0
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0531582Z   repository: RyanEid06/RocketIDE
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0535653Z   token: ***
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0536160Z   ssh-strict: true
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0536610Z   ssh-user: git
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0537059Z   persist-credentials: true
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0537556Z   clean: true
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0538003Z   sparse-checkout-cone-mode: true
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0538529Z   fetch-tags: false
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0538971Z   show-progress: true
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0539423Z   lfs: false
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0539827Z   submodules: false
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0540292Z   set-safe-directory: true
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0540809Z   allow-unsafe-pr-checkout: false
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.0541551Z ##[endgroup]
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.2125142Z Syncing repository: RyanEid06/RocketIDE
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.2127015Z ##[group]Getting Git version info
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.2127758Z Working directory is 'D:\a\RocketIDE\RocketIDE'
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.3228498Z [command]"C:\Program Files\Git\bin\git.exe" version
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.6751065Z git version 2.55.0.windows.5
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.6801228Z ##[endgroup]
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.6821340Z Temporarily overriding HOME='D:\a\_temp\30571af6-aa8d-4aa0-a2dc-f22d50022719' before making global git config changes
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.6823500Z Adding repository directory to the temporary git global config as a safe directory
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.6832490Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\RocketIDE\RocketIDE
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.7467098Z Deleting the contents of 'D:\a\RocketIDE\RocketIDE'
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.7473290Z ##[group]Initializing the repository
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.7483283Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\RocketIDE\RocketIDE
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.8295069Z Initialized empty Git repository in D:/a/RocketIDE/RocketIDE/.git/
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.8342061Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/RyanEid06/RocketIDE
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.8921068Z ##[endgroup]
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.8922552Z ##[group]Disabling automatic garbage collection
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.8929468Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.9219815Z ##[endgroup]
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.9221706Z ##[group]Setting up auth
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.9231797Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+transfer	Run actions/checkout@v4	2026-09-27T18:37:26.9526344Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+transfer	Run actions/checkout@v4	2026-09-27T18:37:28.3135115Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+transfer	Run actions/checkout@v4	2026-09-27T18:37:28.3461748Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+transfer	Run actions/checkout@v4	2026-09-27T18:37:28.8545605Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+transfer	Run actions/checkout@v4	2026-09-27T18:37:28.8859868Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+transfer	Run actions/checkout@v4	2026-09-27T18:37:29.3971256Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+transfer	Run actions/checkout@v4	2026-09-27T18:37:29.4270666Z ##[endgroup]
+transfer	Run actions/checkout@v4	2026-09-27T18:37:29.4271278Z ##[group]Fetching the repository
+transfer	Run actions/checkout@v4	2026-09-27T18:37:29.4283850Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+transfer	Run actions/checkout@v4	2026-09-27T18:37:30.9685456Z From https://github.com/RyanEid06/RocketIDE
+transfer	Run actions/checkout@v4	2026-09-27T18:37:30.9689489Z  * [new branch]      codex/rocketide-final-wp06 -> origin/codex/rocketide-final-wp06
+transfer	Run actions/checkout@v4	2026-09-27T18:37:30.9690485Z  * [new branch]      codex/rocketide-final-wp07 -> origin/codex/rocketide-final-wp07
+transfer	Run actions/checkout@v4	2026-09-27T18:37:30.9691246Z  * [new branch]      main       -> origin/main
+transfer	Run actions/checkout@v4	2026-09-27T18:37:30.9741863Z [command]"C:\Program Files\Git\bin\git.exe" branch --list --remote origin/codex/rocketide-final-wp07
+transfer	Run actions/checkout@v4	2026-09-27T18:37:31.0092601Z   origin/codex/rocketide-final-wp07
+transfer	Run actions/checkout@v4	2026-09-27T18:37:31.0137960Z [command]"C:\Program Files\Git\bin\git.exe" rev-parse refs/remotes/origin/codex/rocketide-final-wp07
+transfer	Run actions/checkout@v4	2026-09-27T18:37:31.0401033Z 87b0815b2b9e85b60f0e11042d7d8f5ac84c3018
+transfer	Run actions/checkout@v4	2026-09-27T18:37:31.0433112Z ##[endgroup]
+transfer	Run actions/checkout@v4	2026-09-27T18:37:31.0433482Z ##[group]Determining the checkout info
+transfer	Run actions/checkout@v4	2026-09-27T18:37:31.0435327Z ##[endgroup]
+transfer	Run actions/checkout@v4	2026-09-27T18:37:31.0443564Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+transfer	Run actions/checkout@v4	2026-09-27T18:37:31.0852169Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+transfer	Run actions/checkout@v4	2026-09-27T18:37:31.1140026Z ##[group]Checking out the ref
+transfer	Run actions/checkout@v4	2026-09-27T18:37:31.1148924Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B codex/rocketide-final-wp07 refs/remotes/origin/codex/rocketide-final-wp07
+transfer	Run actions/checkout@v4	2026-09-27T18:37:31.4313406Z Switched to a new branch 'codex/rocketide-final-wp07'
+transfer	Run actions/checkout@v4	2026-09-27T18:37:31.4527977Z branch 'codex/rocketide-final-wp07' set up to track 'origin/codex/rocketide-final-wp07'.
+transfer	Run actions/checkout@v4	2026-09-27T18:37:31.4584288Z ##[endgroup]
+transfer	Run actions/checkout@v4	2026-09-27T18:37:31.5067197Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+transfer	Run actions/checkout@v4	2026-09-27T18:37:31.5337164Z 87b0815b2b9e85b60f0e11042d7d8f5ac84c3018
+transfer	Retrieve runtime from exact-source successful CI	﻿2026-09-27T18:37:31.5755711Z ##[group]Run $run = gh api repos/RyanEid06/RocketIDE/actions/runs/36337059578 | ConvertFrom-Json
+transfer	Retrieve runtime from exact-source successful CI	2026-09-27T18:37:31.5756575Z ^[[36;1m$run = gh api repos/RyanEid06/RocketIDE/actions/runs/36337059578 | ConvertFrom-Json^[[0m
+transfer	Retrieve runtime from exact-source successful CI	2026-09-27T18:37:31.5758122Z ^[[36;1mif ($run.conclusion -ne 'success' -or $run.head_sha -ne 'f54a7b2cd72dabaa5a327b61685bf53bbe81d5d2') { throw 'Wrong source CI' }^[[0m
+transfer	Retrieve runtime from exact-source successful CI	2026-09-27T18:37:31.5758931Z ^[[36;1mgh run download 36337059578 --repo RyanEid06/RocketIDE --name RocketIDE-win-x64 --dir transfer-stage^[[0m
+transfer	Retrieve runtime from exact-source successful CI	2026-09-27T18:37:31.5759511Z ^[[36;1mif ($LASTEXITCODE -ne 0) { throw 'CI download failed' }^[[0m
+transfer	Retrieve runtime from exact-source successful CI	2026-09-27T18:37:31.6413787Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+transfer	Retrieve runtime from exact-source successful CI	2026-09-27T18:37:31.6414225Z env:
+transfer	Retrieve runtime from exact-source successful CI	2026-09-27T18:37:31.6418193Z   GH_TOKEN: ***
+transfer	Retrieve runtime from exact-source successful CI	2026-09-27T18:37:31.6418420Z ##[endgroup]
+transfer	Reproduce exact verified ZIP	﻿2026-09-27T18:37:44.1678895Z ##[group]Run ./scripts/transfer-verified-package.ps1
+transfer	Reproduce exact verified ZIP	2026-09-27T18:37:44.1679388Z ^[[36;1m./scripts/transfer-verified-package.ps1^[[0m
+transfer	Reproduce exact verified ZIP	2026-09-27T18:37:44.1750154Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+transfer	Reproduce exact verified ZIP	2026-09-27T18:37:44.1808486Z ##[endgroup]
+transfer	Reproduce exact verified ZIP	2026-09-27T18:37:52.8586236Z Exact ZIP reproduced: a5e1966a322ec19e391a775ef1909fec32a51b36b3869215a0117fc24fcb174c; 834 files
+transfer	Restore exact consumer Git objects and push separate branch	﻿2026-09-27T18:37:52.9306623Z ##[group]Run python scripts/transfer-consumer-objects.py
+transfer	Restore exact consumer Git objects and push separate branch	2026-09-27T18:37:52.9307134Z ^[[36;1mpython scripts/transfer-consumer-objects.py^[[0m
+transfer	Restore exact consumer Git objects and push separate branch	2026-09-27T18:37:52.9307584Z ^[[36;1mif ($LASTEXITCODE -ne 0) { throw 'Consumer object validation failed' }^[[0m
+transfer	Restore exact consumer Git objects and push separate branch	2026-09-27T18:37:52.9308213Z ^[[36;1mgit push origin refs/heads/codex/rocketide-consumer-1.0.0:refs/heads/codex/rocketide-consumer-1.0.0^[[0m
+transfer	Restore exact consumer Git objects and push separate branch	2026-09-27T18:37:52.9308812Z ^[[36;1mif ($LASTEXITCODE -ne 0) { throw 'Consumer push failed' }^[[0m
+transfer	Restore exact consumer Git objects and push separate branch	2026-09-27T18:37:52.9379444Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+transfer	Restore exact consumer Git objects and push separate branch	2026-09-27T18:37:52.9379797Z ##[endgroup]
+transfer	Restore exact consumer Git objects and push separate branch	2026-09-27T18:38:27.0438054Z Restored exact consumer history: 6a7f538234e24cc1de4bb9bb6fea737e570d5324
+transfer	Restore exact consumer Git objects and push separate branch	2026-09-27T18:38:54.5409624Z remote: 
+transfer	Restore exact consumer Git objects and push separate branch	2026-09-27T18:38:54.5410517Z remote: Create a pull request for 'codex/rocketide-consumer-1.0.0' on GitHub by visiting:        
+transfer	Restore exact consumer Git objects and push separate branch	2026-09-27T18:38:54.5411390Z remote:      https://github.com/RyanEid06/RocketIDE/pull/new/codex/rocketide-consumer-1.0.0        
+transfer	Restore exact consumer Git objects and push separate branch	2026-09-27T18:38:54.5413936Z remote: 
+transfer	Restore exact consumer Git objects and push separate branch	2026-09-27T18:38:54.5437846Z To https://github.com/RyanEid06/RocketIDE
+transfer	Restore exact consumer Git objects and push separate branch	2026-09-27T18:38:54.5438636Z  * [new branch]      codex/rocketide-consumer-1.0.0 -> codex/rocketide-consumer-1.0.0
+transfer	Run actions/upload-artifact@v4	﻿2026-09-27T18:38:54.6682326Z ##[group]Run actions/upload-artifact@v4
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:54.6682674Z with:
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:54.6682871Z   name: exact-RocketIDE-1.0.0
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:54.6683130Z   path: RocketIDE-win-x64-1.0.0.zip
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:54.6683387Z   if-no-files-found: error
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:54.6683601Z   compression-level: 6
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:54.6683812Z   overwrite: false
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:54.6684008Z   include-hidden-files: false
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:54.6684228Z ##[endgroup]
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:54.8845687Z (node:9088) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:54.8846766Z (Use `node --trace-deprecation ...` to show where the warning was created)
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:54.8906615Z With the provided path, there will be 1 file uploaded
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:54.8913092Z Artifact name is valid!
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:54.8914863Z Root directory input is valid!
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:55.2702397Z Beginning upload of artifact content to blob storage
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:55.5541994Z (node:9088) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:56.7687448Z Uploaded bytes 8388608
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:56.8723472Z Uploaded bytes 16777216
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:57.1333362Z Uploaded bytes 25165824
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:57.1643859Z Uploaded bytes 33554432
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:57.2866678Z Uploaded bytes 41943040
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:57.4304136Z Uploaded bytes 50331648
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:57.4853258Z Uploaded bytes 58720256
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:57.8246148Z Uploaded bytes 67108864
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:58.1091485Z Uploaded bytes 75497472
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:58.3589669Z Uploaded bytes 83886080
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:58.6188583Z Uploaded bytes 92274688
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:58.8933368Z Uploaded bytes 100663296
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:59.1181021Z Uploaded bytes 109051904
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:59.4091957Z Uploaded bytes 117440512
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:59.7384964Z Uploaded bytes 125829120
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:38:59.9826777Z Uploaded bytes 134217728
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:39:00.1884867Z Uploaded bytes 137652835
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:39:00.2690192Z Finished uploading artifact content to blob storage!
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:39:00.2694513Z SHA256 digest of uploaded artifact zip is 2516c54f2c59fefd33b0061522dace3a79f22c7ee4e48b15ca0fac673aa56837
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:39:00.2697189Z Finalizing artifact upload
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:39:00.6447817Z Artifact exact-RocketIDE-1.0.0.zip successfully finalized. Artifact ID 10938194878
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:39:00.6449125Z Artifact exact-RocketIDE-1.0.0 has been successfully uploaded! Final size is 137652835 bytes. Artifact ID is 10938194878
+transfer	Run actions/upload-artifact@v4	2026-09-27T18:39:00.6462996Z Artifact download URL: https://github.com/RyanEid06/RocketIDE/actions/runs/36341325372/artifacts/10938194878
+transfer	Post Run actions/checkout@v4	﻿2026-09-27T18:39:00.6850768Z Post job cleanup.
+transfer	Post Run actions/checkout@v4	2026-09-27T18:39:00.8892759Z [command]"C:\Program Files\Git\bin\git.exe" version
+transfer	Post Run actions/checkout@v4	2026-09-27T18:39:00.9204525Z git version 2.55.0.windows.5
+transfer	Post Run actions/checkout@v4	2026-09-27T18:39:00.9286991Z Temporarily overriding HOME='D:\a\_temp\49197878-5ce7-46c2-aef6-ad5d7ef11ea2' before making global git config changes
+transfer	Post Run actions/checkout@v4	2026-09-27T18:39:00.9288331Z Adding repository directory to the temporary git global config as a safe directory
+transfer	Post Run actions/checkout@v4	2026-09-27T18:39:00.9299940Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\RocketIDE\RocketIDE
+transfer	Post Run actions/checkout@v4	2026-09-27T18:39:00.9639914Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+transfer	Post Run actions/checkout@v4	2026-09-27T18:39:00.9975753Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+transfer	Post Run actions/checkout@v4	2026-09-27T18:39:01.5524596Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+transfer	Post Run actions/checkout@v4	2026-09-27T18:39:01.5784984Z http.https://github.com/.extraheader
+transfer	Post Run actions/checkout@v4	2026-09-27T18:39:01.5831751Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+transfer	Post Run actions/checkout@v4	2026-09-27T18:39:01.6143629Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+transfer	Post Run actions/checkout@v4	2026-09-27T18:39:02.2004918Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+transfer	Post Run actions/checkout@v4	2026-09-27T18:39:02.2313536Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+transfer	Complete job	﻿2026-09-27T18:39:03.3792315Z Cleaning up orphan processes
+transfer	Complete job	2026-09-27T18:39:03.4311693Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

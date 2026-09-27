@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "compiler_sha256": "C00A2ED8C637337C069E093765F6505C9939321A30CB89C3EE3649FA7BC201F9",
+  "target_output": "host: windows-x64\r\ntarget: windows-x64\r\ntriple: x86_64-pc-windows-msvc\r\nos: windows\r\narchitecture: x64\r\nenvironment: msvc\r\npointer-width: 64\r\nendianness: little\r\nfeatures: threads,dynamic-libraries,codeview,sse2\r\nnative: true\r\ncross-supported: true",
+  "checked_utc": "2026-09-27T18:43:46.7737016Z",
+  "lsp_version": "rocket-lsp 1.0.0",
+  "lsp_sha256": "1BBB47FBAD0E75DFDD8AC12588A0EEF4F4F4F418E62D20E02B888E5A9474D00A",
+  "compiler_version": "rocketc 3.0.0",
+  "ide_exe_sha256": "2B3342F605BC35BFDB2B8561D1E54CCD43876723C5013090F9179FDE5E4403E0",
+  "ide_version": "1.0.0+f54a7b2cd72dabaa5a327b61685bf53bbe81d5d2"
+}

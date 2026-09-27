@@ -1,0 +1,47 @@
+[
+  {
+    "filename": "RocketIDE-win-x64-1.0.0.zip",
+    "size": 138389551,
+    "sha256": "a5e1966a322ec19e391a775ef1909fec32a51b36b3869215a0117fc24fcb174c",
+    "version": "1.0.0",
+    "target": "windows-x64",
+    "source_commit": "f54a7b2cd72dabaa5a327b61685bf53bbe81d5d2",
+    "url": "https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-win-x64-1.0.0.zip"
+  },
+  {
+    "filename": "rocket-3.0.0-windows-x64.zip",
+    "size": 334626372,
+    "sha256": "42bae12625717a776dac358d9177a01d8dd91762d4e6ed91384fc46d34e45de7",
+    "version": "3.0.0",
+    "target": "windows-x64",
+    "source_commit": "1f6ba76f16f3246095d5d573c28d825d8b9367e3",
+    "url": "https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/rocket-3.0.0-windows-x64.zip"
+  },
+  {
+    "filename": "rocket-3.0.0-linux-x64.tar.xz",
+    "size": 566384160,
+    "sha256": "1a716073f2941d7d4c63d25687a542d65164cafd24aba299e2b9880a615ad0fc",
+    "version": "3.0.0",
+    "target": "linux-x64",
+    "source_commit": "1f6ba76f16f3246095d5d573c28d825d8b9367e3",
+    "url": "https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/rocket-3.0.0-linux-x64.tar.xz"
+  },
+  {
+    "filename": "rocket-3.0.0-linux-arm64.tar.xz",
+    "size": 523782984,
+    "sha256": "1db0eadfb0e592b36442e2993a8939baa5e04dd99dab7bc32737093e4a261c3e",
+    "version": "3.0.0",
+    "target": "linux-arm64",
+    "source_commit": "1f6ba76f16f3246095d5d573c28d825d8b9367e3",
+    "url": "https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/rocket-3.0.0-linux-arm64.tar.xz"
+  },
+  {
+    "filename": "rocket-3.0.0-macos-arm64.tar.xz",
+    "size": 267294132,
+    "sha256": "96192c6fda0a479c31d3bd4e1d4da67f400912f3faa30f60abc1cd7d1102dfa7",
+    "version": "3.0.0",
+    "target": "macos-arm64",
+    "source_commit": "1f6ba76f16f3246095d5d573c28d825d8b9367e3",
+    "url": "https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/rocket-3.0.0-macos-arm64.tar.xz"
+  }
+]

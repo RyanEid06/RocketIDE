@@ -1,0 +1,330 @@
+Window: "symbols.rocket — RocketIDE", App: RocketIDE.exe.
+	0 window symbols.rocket — RocketIDE Secondary Actions: Raise
+		132 dialog Open Rocket project or folder Secondary Actions: Raise
+			133 pane
+				134 tool bar Command Module ID: FolderBandModuleInner
+					135 button &Help Description: Get help. ID: HelpButton
+					136 split button Details Description: Change your view. ID: ViewControl
+						137 button View Slider Description: More options ID: SplitMenuButton
+					138 button Organize Description: Organize this folder's contents. ID: {7DDC1264-7E4D-4F74-BBC0-D191987C8D0F}
+					139 button New folder Description: Create a new folder. ID: {E44616AD-6DF1-4B94-85A4-E465AE8A19DB}
+				140 pane Control Host ID: ProperTreeHost
+					141 tree Navigation Pane ID: 100
+						142 scroll bar (settable, float) Vertical Value: 0 ID: NonClientVerticalScrollBar
+							143 button Line up ID: UpButton
+							144 thumb Position ID: ScrollbarThumb
+							145 button Page down ID: DownPageButton
+							146 button Line down ID: DownButton
+						147 tree item (selectable, settable, string) Desktop Value: Desktop
+							148 tree item (selectable, settable, string) Home Value: Home
+							149 tree item (selectable, settable, string) Start of Quick Access - Desktop (pinned) Value: Start of Quick Access - Desktop (pinned)
+							150 tree item (selectable, settable, string) Downloads (pinned) Value: Downloads (pinned)
+							151 tree item (selectable, settable, string) Documents (pinned) Value: Documents (pinned)
+							152 tree item (selectable, settable, string) Pictures (pinned) Value: Pictures (pinned)
+							153 tree item (selectable, settable, string) Music (pinned) Value: Music (pinned)
+							154 tree item (selectable, settable, string) Videos (pinned) Value: Videos (pinned)
+							155 tree item (selectable, settable, string) Graph Value: Graph
+							156 tree item (selectable, settable, string) ISS Value: ISS
+							157 tree item (selectable, settable, string) Parallel Value: Parallel
+							158 tree item (selectable, settable, string) End of Quick Access - A17-stop Value: End of Quick Access - A17-stop
+							159 tree item (selectable, settable, string) HONOR X9d Value: HONOR X9d
+							160 tree item (selectable, settable, string) This PC Value: This PC
+							161 tree item (selectable, settable, string) Network Value: Network
+				162 pane Shell Folder View ID: listview
+					163 list Items View
+						164 scroll bar (settable, float) Horizontal Value: 0 ID: HorizontalScrollBar
+							165 button Column left ID: UpButton
+							166 thumb Position ID: ScrollbarThumb
+							167 button Page right ID: DownPageButton
+							168 button Column right ID: DownButton
+						169 header Header
+							170 split button Name ID: System.ItemNameDisplay
+								171 button Filter dropdown ID: DropDown
+							172 split button Date modified ID: System.DateModified
+								173 button Filter dropdown ID: DropDown
+							174 split button Type ID: System.ItemTypeText
+								175 button Filter dropdown ID: DropDown
+							176 split button Size ID: System.Size
+								177 button Filter dropdown ID: DropDown
+						178 list item (selectable, settable, string) .rocketc Value: .rocketc ID: 0
+							179 edit (settable, string) Name Value: .rocketc ID: System.ItemNameDisplay
+							180 edit Date modified Value: ‎9/‎27/‎2026 ‏‎4:55 PM ID: System.DateModified
+							181 edit Type Value: File folder ID: System.ItemTypeText
+							182 edit Size ID: System.Size
+						183 list item (selectable, settable, string) src Value: src ID: 1
+							184 edit (settable, string) Name Value: src ID: System.ItemNameDisplay
+							185 edit Date modified Value: ‎9/‎27/‎2026 ‏‎4:47 PM ID: System.DateModified
+							186 edit Type Value: File folder ID: System.ItemTypeText
+							187 edit Size ID: System.Size
+						188 list item (selectable, settable, string) tests Value: tests ID: 2
+							189 edit (settable, string) Name Value: tests ID: System.ItemNameDisplay
+							190 edit Date modified Value: ‎9/‎27/‎2026 ‏‎4:47 PM ID: System.DateModified
+							191 edit Type Value: File folder ID: System.ItemTypeText
+							192 edit Size ID: System.Size
+				193 tree Application Controls ID: AppControlsModuleInner
+			194 text Folder: ID: 1090
+			195 edit (settable, string) Folder: ID: 1152
+			196 button Select Folder ID: 1
+			197 button Cancel ID: 2
+			198 thumb (settable, float) Value: 0
+			199 pane ID: 40965
+				200 pane
+					201 tool bar Navigation buttons
+						202 button (disabled) Back (Alt + Left Arrow)
+						203 button (disabled) Forward (Alt + Right Arrow)
+						204 button (disabled) Recent locations
+				205 pane
+					206 tool bar Up band
+						207 button Up to "wp07-runtime-20260927" (Alt + Up Arrow)
+				208 pane ID: 41477
+					209 progress bar Loading Value: 0
+						210 pane
+							211 tool bar Address: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-runtime-20260927\consumer-project ID: 1001
+								212 split button All locations
+								213 split button ‎wp07-runtime-20260927
+								214 split button ‎consumer-project
+						215 tool bar Address band
+							216 button Previous Locations
+							217 button Refresh "consumer-project" (F5)
+				218 pane
+					219 pane
+						220 pane
+							221 edit (settable, string) Search Box Description: Search consumer-project ID: SearchEditBox
+							222 button Search ID: SearchBoxSearchButton
+			223 title bar (settable, string) Value: Open Rocket project or folder
+				224 menu bar System ID: MenuBar
+					225 menu item System
+				226 button Close
+		1 title bar (settable, string) Value: symbols.rocket — RocketIDE
+			2 menu bar System ID: MenuBar
+				3 menu item System
+			4 button Minimize
+			5 button Maximize
+			6 button Close
+		7 menu
+			8 menu item File
+				9 text _File
+			10 menu item Edit
+				11 text _Edit
+			12 menu item Selection
+				13 text _Selection
+			14 menu item View
+				15 text _View
+			16 menu item Navigate
+				17 text _Navigate
+			18 menu item Build
+				19 text _Build
+			20 menu item Run
+				21 text _Run
+			22 menu item Debug
+				23 text _Debug
+			24 menu item Tools
+				25 text _Tools
+			26 menu item Help
+				27 text _Help
+		28 button New file button Description: New file
+			29 text New
+		30 button Open file button Description: Open file
+			31 text Open
+		32 button Open folder button Description: Open folder
+			33 text Folder
+		34 button Save active file button Description: Save active file
+			35 text Save
+		36 button Build Description: Build active Rocket target
+			37 text Build
+		38 button Run Description: Run active Rocket executable target
+			39 text Run
+		40 button Start or continue Rocket debugging button Description: Start or continue Rocket debugging (F5)
+			41 text Debug
+		42 button (disabled) Pause Rocket debugging button Description: Pause Rocket debugging
+			43 text (disabled) Pause
+		44 button (disabled) Stop Rocket debugging button Description: Stop Rocket debugging (Shift+F5)
+			45 text (disabled) Stop Debug
+		46 button (disabled) Stop Rocket compiler or program button Description: Stop active Rocket compiler/program process tree
+			47 text (disabled) Stop
+		48 button Test Description: Test active Rocket target
+			49 text Test
+		50 status bar
+			51 text Rocket SDK: rocketc 3.0.0
+				52 text Rocket SDK: rocketc 3.0.0
+			53 separator (disabled)
+			54 text LSP: project · 1 files · 2 symbols
+				55 text LSP: project · 1 files · 2 symbols
+			56 separator (disabled)
+			57 text Target: symbols.rocket (standalone)
+				58 text Target: symbols.rocket (standalone)
+			59 separator (disabled)
+			60 text Ln 6, Col 4
+				61 text Ln 6, Col 4
+			62 separator (disabled)
+			63 text UTF-8
+				64 text UTF-8
+		65 button Refresh workspace Description: Refresh workspace
+			66 text ↻
+		67 text EXPLORER
+		68 tree view ID: ExplorerTree
+			69 tree view item (selectable) RocketIDE.App.ViewModels.Explorer.ExplorerNodeViewModel
+				70 button ID: Expander
+				71 text lsp-smoke-workspace
+				72 tree view item (selectable) RocketIDE.App.ViewModels.Explorer.ExplorerNodeViewModel
+					73 text symbols.rocket
+		74 thumb ID: ExplorerSplitter
+		75 custom ID: PrimaryEditorGroupHost
+			76 tab ID: Tabs
+				77 tab item (selectable) RocketIDE.App.ViewModels.EditorViewViewModel
+					78 text symbols.rocket
+					79 button Close editor view button Description: Close view
+						80 text ×
+					81 custom
+						82 document (settable, string) Value: extern fn Sleep(milliseconds: Int) -> Unit fn main() -> Int: var batch = 0 while ba < 1000: var line = 0 while line < 100: print("bounded output smoke") line = line + 1 unsafe: Sleep(50) batch = batch + 1 return 0 ID: Editor
+							83 document (settable, string) Value: extern fn Sleep(milliseconds: Int) -> Unit fn main() -> Int: var batch = 0 while ba < 1000: var line = 0 while line < 100: print("bounded output smoke") line = line + 1 unsafe: Sleep(50) batch = batch + 1 return 0
+								84 list view
+									85 dataitem ICSharpCode.AvalonEdit.Editing.LineNumberMargin
+									86 dataitem System.Windows.Shapes.Line
+									87 dataitem ICSharpCode.AvalonEdit.Folding.FoldingMargin
+							88 scroll bar (settable, float) Value: 0 ID: VerticalScrollBar
+								89 button ID: DecreaseButton
+								90 thumb
+								91 button ID: IncreaseButton
+		92 thumb ID: EditorGroupSplitter
+		93 custom ID: SecondaryEditorGroupHost
+			94 tab ID: Tabs
+				95 tab item (selectable) RocketIDE.App.ViewModels.EditorViewViewModel
+					96 text symbols.rocket
+					97 button Close editor view button Description: Close view
+						98 text ×
+					99 custom
+						100 document (settable, string) Value: extern fn Sleep(milliseconds: Int) -> Unit fn main() -> Int: var batch = 0 while ba < 1000: var line = 0 while line < 100: print("bounded output smoke") line = line + 1 unsafe: Sleep(50) batch = batch + 1 return 0 ID: Editor
+							101 document (settable, string) Value: extern fn Sleep(milliseconds: Int) -> Unit fn main() -> Int: var batch = 0 while ba < 1000: var line = 0 while line < 100: print("bounded output smoke") line = line + 1 unsafe: Sleep(50) batch = batch + 1 return 0
+								102 list view
+									103 dataitem ICSharpCode.AvalonEdit.Editing.LineNumberMargin
+									104 dataitem System.Windows.Shapes.Line
+									105 dataitem ICSharpCode.AvalonEdit.Folding.FoldingMargin
+							106 scroll bar (settable, float) Value: 0 ID: VerticalScrollBar
+								107 button ID: DecreaseButton
+								108 thumb
+								109 button ID: IncreaseButton
+		110 thumb ID: BottomPanelSplitter
+		111 tab ID: BottomTabs
+			112 tab item (selectable) PROBLEMS (4)
+				113 text PROBLEMS (4)
+			114 tab item (selectable) REFERENCES (0)
+				115 text REFERENCES (0)
+			116 tab item (selectable) OUTPUT
+				117 text OUTPUT
+				118 text Rocket compiler, program, debugger, environment, and language-server output
+				119 button Clear
+					120 text Clear
+				121 list view ID: OutputList
+					122 list item (selectable) rocket-lsp initialized: rocket-lsp 1.0.0
+						123 text rocket-lsp initialized: rocket-lsp 1.0.0
+					124 list item (selectable) rocket-lsp path: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\w\out\build\windows-release\rocket-lsp.exe
+						125 text rocket-lsp path: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\w\out\build\windows-release\rocket-lsp.exe
+			126 tab item (selectable) TESTS
+				127 text TESTS
+			128 tab item (selectable) SEARCH
+				129 text SEARCH
+			130 tab item (selectable) DEBUG
+				131 text DEBUG
+		132 dialog Open Rocket project or folder Secondary Actions: Raise
+			133 pane
+				134 tool bar Command Module ID: FolderBandModuleInner
+					135 button &Help Description: Get help. ID: HelpButton
+					136 split button Details Description: Change your view. ID: ViewControl
+						137 button View Slider Description: More options ID: SplitMenuButton
+					138 button Organize Description: Organize this folder's contents. ID: {7DDC1264-7E4D-4F74-BBC0-D191987C8D0F}
+					139 button New folder Description: Create a new folder. ID: {E44616AD-6DF1-4B94-85A4-E465AE8A19DB}
+				140 pane Control Host ID: ProperTreeHost
+					141 tree Navigation Pane ID: 100
+						142 scroll bar (settable, float) Vertical Value: 0 ID: NonClientVerticalScrollBar
+							143 button Line up ID: UpButton
+							144 thumb Position ID: ScrollbarThumb
+							145 button Page down ID: DownPageButton
+							146 button Line down ID: DownButton
+						147 tree item (selectable, settable, string) Desktop Value: Desktop
+							148 tree item (selectable, settable, string) Home Value: Home
+							149 tree item (selectable, settable, string) Start of Quick Access - Desktop (pinned) Value: Start of Quick Access - Desktop (pinned)
+							150 tree item (selectable, settable, string) Downloads (pinned) Value: Downloads (pinned)
+							151 tree item (selectable, settable, string) Documents (pinned) Value: Documents (pinned)
+							152 tree item (selectable, settable, string) Pictures (pinned) Value: Pictures (pinned)
+							153 tree item (selectable, settable, string) Music (pinned) Value: Music (pinned)
+							154 tree item (selectable, settable, string) Videos (pinned) Value: Videos (pinned)
+							155 tree item (selectable, settable, string) Graph Value: Graph
+							156 tree item (selectable, settable, string) ISS Value: ISS
+							157 tree item (selectable, settable, string) Parallel Value: Parallel
+							158 tree item (selectable, settable, string) End of Quick Access - A17-stop Value: End of Quick Access - A17-stop
+							159 tree item (selectable, settable, string) HONOR X9d Value: HONOR X9d
+							160 tree item (selectable, settable, string) This PC Value: This PC
+							161 tree item (selectable, settable, string) Network Value: Network
+				162 pane Shell Folder View ID: listview
+					163 list Items View
+						164 scroll bar (settable, float) Horizontal Value: 0 ID: HorizontalScrollBar
+							165 button Column left ID: UpButton
+							166 thumb Position ID: ScrollbarThumb
+							167 button Page right ID: DownPageButton
+							168 button Column right ID: DownButton
+						169 header Header
+							170 split button Name ID: System.ItemNameDisplay
+								171 button Filter dropdown ID: DropDown
+							172 split button Date modified ID: System.DateModified
+								173 button Filter dropdown ID: DropDown
+							174 split button Type ID: System.ItemTypeText
+								175 button Filter dropdown ID: DropDown
+							176 split button Size ID: System.Size
+								177 button Filter dropdown ID: DropDown
+						178 list item (selectable, settable, string) .rocketc Value: .rocketc ID: 0
+							179 edit (settable, string) Name Value: .rocketc ID: System.ItemNameDisplay
+							180 edit Date modified Value: ‎9/‎27/‎2026 ‏‎4:55 PM ID: System.DateModified
+							181 edit Type Value: File folder ID: System.ItemTypeText
+							182 edit Size ID: System.Size
+						183 list item (selectable, settable, string) src Value: src ID: 1
+							184 edit (settable, string) Name Value: src ID: System.ItemNameDisplay
+							185 edit Date modified Value: ‎9/‎27/‎2026 ‏‎4:47 PM ID: System.DateModified
+							186 edit Type Value: File folder ID: System.ItemTypeText
+							187 edit Size ID: System.Size
+						188 list item (selectable, settable, string) tests Value: tests ID: 2
+							189 edit (settable, string) Name Value: tests ID: System.ItemNameDisplay
+							190 edit Date modified Value: ‎9/‎27/‎2026 ‏‎4:47 PM ID: System.DateModified
+							191 edit Type Value: File folder ID: System.ItemTypeText
+							192 edit Size ID: System.Size
+				193 tree Application Controls ID: AppControlsModuleInner
+			194 text Folder: ID: 1090
+			195 edit (settable, string) Folder: ID: 1152
+			196 button Select Folder ID: 1
+			197 button Cancel ID: 2
+			198 thumb (settable, float) Value: 0
+			199 pane ID: 40965
+				200 pane
+					201 tool bar Navigation buttons
+						202 button (disabled) Back (Alt + Left Arrow)
+						203 button (disabled) Forward (Alt + Right Arrow)
+						204 button (disabled) Recent locations
+				205 pane
+					206 tool bar Up band
+						207 button Up to "wp07-runtime-20260927" (Alt + Up Arrow)
+				208 pane ID: 41477
+					209 progress bar Loading Value: 0
+						210 pane
+							211 tool bar Address: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-runtime-20260927\consumer-project ID: 1001
+								212 split button All locations
+								213 split button ‎wp07-runtime-20260927
+								214 split button ‎consumer-project
+						215 tool bar Address band
+							216 button Previous Locations
+							217 button Refresh "consumer-project" (F5)
+				218 pane
+					219 pane
+						220 pane
+							221 edit (settable, string) Search Box Description: Search consumer-project ID: SearchEditBox
+							222 button Search ID: SearchBoxSearchButton
+			223 title bar (settable, string) Value: Open Rocket project or folder
+				224 menu bar System ID: MenuBar
+					225 menu item System
+				226 button Close
+
+Selected text: ```
+
+   
+```
+
+Note: Pay special attention to the content selected by the user. If the user asks a question or refers to the content they are looking at on-screen, they might be referring to the selected content (but they might be referring to something else that's visible, too).
