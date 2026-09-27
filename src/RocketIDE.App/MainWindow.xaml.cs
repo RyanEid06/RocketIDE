@@ -756,7 +756,7 @@ public partial class MainWindow : Window
     private void About_Click(object sender, RoutedEventArgs e) =>
         MessageBox.Show(
             this,
-            $"RocketIDE {typeof(MainWindow).Assembly.GetName().Version}\nNative Windows IDE for the Rocket programming language.\n\nBuild: {typeof(MainWindow).Assembly.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown"}\n\nDevelopment follows ROADMAP.md and compiler/LSP behavior remains owned by Rocket.",
+            $"RocketIDE {typeof(MainWindow).Assembly.GetName().Version}\nNative Windows IDE for the Rocket programming language.\n\nBuild: {typeof(MainWindow).Assembly.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown"}\n\nRocket language services and compiler behavior are provided by the configured Rocket SDK.",
             "About RocketIDE",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
