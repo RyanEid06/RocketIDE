@@ -1,3 +1,0 @@
-fn main() -> Int:
-    print("WP06 repair replay")
-    return 0

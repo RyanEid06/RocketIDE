@@ -1,9 +1,0 @@
-struct Pair:
-    left: Int
-    right: Int
-
-fn main() -> Int:
-    let pair = Pair(10, 20)
-    let total = pair.left + pair.right
-    print(total)
-    return 0
