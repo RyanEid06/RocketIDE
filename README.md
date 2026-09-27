@@ -6,11 +6,12 @@ The goal is not to clone Visual Studio or VS Code. RocketIDE aims to provide a f
 
 ## Project status
 
-RocketIDE 1.0.0 for Windows x64 is published as a portable package. Release 1.0.0 is closed with **34 acceptance checks passed and 13 explicitly waived/accepted**. The full local verification gate passed **514/514 tests**; package replay and public download verification are recorded in the [acceptance report](docs/release-1.0.0/ACCEPTANCE_REPORT.md).
+RocketIDE 1.0.0 for Windows x64 is available as a per-user installer and as a portable package. Release 1.0.0 is closed with **34 acceptance checks passed and 13 explicitly waived/accepted**. The full local verification gate passed **514/514 tests**; package replay and public download verification are recorded in the [acceptance report](docs/release-1.0.0/ACCEPTANCE_REPORT.md).
 
 - `main` contains the full developer source, tests, documentation and all fixes through Release 1.0.0, including the Target Information CLI adapter regression fix.
 - [`consumer`](https://github.com/RyanEid06/RocketIDE/tree/consumer) contains only the released app folder, a short README, release metadata, checksums and required Git attributes.
-- [Download RocketIDE 1.0.0](https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-win-x64-1.0.0.zip). Extract the entire ZIP and open RocketIDE.exe; this release has no installer wizard.
+- [Download the Windows installer](https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-Setup-1.0.0.exe) or [Portable ZIP](https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-win-x64-1.0.0.zip). The installer follows Windows light/dark mode and offers a per-user folder, shortcuts, launch on Finish, and normal Windows uninstall support. The portable ZIP remains unchanged.
+- RocketIDE does not include the Rocket SDK. Install or configure a compatible SDK from **Tools > Rocket SDK Settings**.
 
 The source and consumer release tags preserve the frozen 1.0.0 identities. Subsequent branch organization and documentation updates do not change the published binaries. See [branch layout](docs/BRANCH_LAYOUT.md) for the current repository arrangement; earlier acceptance reports record the branch names at release time.
 
