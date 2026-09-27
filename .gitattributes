@@ -1,0 +1,2 @@
+# Preserve the exact bytes of the verified consumer package on every checkout.
+app/** -text
