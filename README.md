@@ -6,14 +6,13 @@ The goal is not to clone Visual Studio or VS Code. RocketIDE aims to provide a f
 
 ## Project status
 
-RocketIDE's current implementation roadmap is code-complete through IDE-WP17. Final release acceptance is still gated by the explicitly deferred manual/Codex smoke matrix in [`ROADMAP.md`](ROADMAP.md).
+RocketIDE 1.0.0 for Windows x64 is published as a portable package. FINAL-WP07 is closed with **34 acceptance checks passed and 13 explicitly waived/accepted**. The full local verification gate passed **514/514 tests**; package replay and public download verification are recorded in the [acceptance report](docs/wp07-2026-09-27/ACCEPTANCE_REPORT.md).
 
-- IDE-WP00 through IDE-WP08: **DONE** with their recorded Windows verification evidence.
-- IDE-WP09 through IDE-WP16: implementation and automated Windows verification are complete; the remaining interactive GUI/stress acceptance is intentionally deferred to the final Codex/manual pass.
-- IDE-WP17: the standalone native debugger is implemented with Microsoft's DbgX/DbgEng backend and Rocket's existing `--debug` PDB/source-map contract. The merged `main` state at `bf30f98` passed `scripts/verify.ps1` with **348/348 tests**, win-x64 publish, debugger DLL/`EngHost.exe` guards, and the current `windows-ci` package run.
-- The current implementation roadmap is code-complete through IDE-WP17. The only planned acceptance work left is the explicitly deferred GUI/live-Rocket smoke matrix recorded in [`ROADMAP.md`](ROADMAP.md) and [`docs/WP11-WP17-CODE-ONLY-FOLLOWUPS.md`](docs/WP11-WP17-CODE-ONLY-FOLLOWUPS.md).
+- `main` contains the full developer source, tests, documentation and all fixes through FINAL-WP07, including the Target Information CLI adapter regression fix.
+- [`consumer`](https://github.com/RyanEid06/RocketIDE/tree/consumer) contains only the released app folder, a short README, release metadata, checksums and required Git attributes.
+- [Download RocketIDE 1.0.0](https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-win-x64-1.0.0.zip). Extract the entire ZIP and open RocketIDE.exe; this release has no installer wizard.
 
-A work package is not considered complete because its UI looks finished. Focused tests, `scripts/verify.ps1`, and the Windows CI gate must pass before its status is changed to `DONE`.
+The source and consumer release tags preserve the frozen 1.0.0 identities. Subsequent branch organization and documentation updates do not change the published binaries. See [branch layout](docs/BRANCH_LAYOUT.md) for the current repository arrangement; earlier acceptance reports record the branch names at release time.
 
 ## Read this first
 
