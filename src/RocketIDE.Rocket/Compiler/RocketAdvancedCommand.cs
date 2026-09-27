@@ -59,9 +59,13 @@ public static class RocketCommandCatalog
         else
         {
             ArgumentNullException.ThrowIfNull(target);
-            var input = target.IsStandalone ? target.InputPath : target.WorkingDirectory;
             arguments.Add(CommandName(kind));
-            arguments.Add(Path.GetFullPath(input));
+            // Rocket 3 target accepts options only, unlike package/file commands.
+            if (kind != RocketAdvancedCommandKind.Target)
+            {
+                var input = target.IsStandalone ? target.InputPath : target.WorkingDirectory;
+                arguments.Add(Path.GetFullPath(input));
+            }
 
             if (kind == RocketAdvancedCommandKind.Resolve && options.Locked)
             {

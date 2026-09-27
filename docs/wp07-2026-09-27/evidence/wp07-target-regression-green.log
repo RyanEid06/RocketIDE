@@ -1,0 +1,7 @@
+  RocketIDE.Core -> C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-verification-376854e\src\RocketIDE.Core\bin\Release\net10.0\RocketIDE.Core.dll
+  RocketIDE.Rocket -> C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-verification-376854e\src\RocketIDE.Rocket\bin\Release\net10.0\RocketIDE.Rocket.dll
+  RocketIDE.Rocket.Tests -> C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-verification-376854e\tests\RocketIDE.Rocket.Tests\bin\Release\net10.0\RocketIDE.Rocket.Tests.dll
+Test run for C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-verification-376854e\tests\RocketIDE.Rocket.Tests\bin\Release\net10.0\RocketIDE.Rocket.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:     8, Skipped:     0, Total:     8, Duration: 40 ms - RocketIDE.Rocket.Tests.dll (net10.0)

@@ -7,6 +7,32 @@ namespace RocketIDE.Rocket.Tests.Compiler;
 public sealed class RocketAdvancedCommandTests
 {
     [TestMethod]
+    [DataRow(false, false)]
+    [DataRow(false, true)]
+    [DataRow(true, false)]
+    [DataRow(true, true)]
+    public void BuildTarget_OmitsPositionalInputForRocket3(bool standalone, bool verbose)
+    {
+        var target = PackageTarget() with
+        {
+            IsStandalone = standalone,
+            InputPath = Path.Combine(Path.GetTempPath(), "rocket project", "main.rocket"),
+        };
+
+        var command = RocketCommandCatalog.Build(
+            CompilerPath(), RocketAdvancedCommandKind.Target, target,
+            new RocketAdvancedCommandOptions(Verbose: verbose,
+                ExtraArguments: new[] { "--target", "windows-x64" }));
+
+        CollectionAssert.AreEqual(
+            verbose
+                ? new[] { "target", "--verbose", "--target", "windows-x64" }
+                : new[] { "target", "--target", "windows-x64" },
+            command.Request.Arguments.ToArray());
+        Assert.IsFalse(command.MayExecuteNativeCode);
+    }
+
+    [TestMethod]
     public void BuildResolve_AddsLockedAndOfflineFlagsAfterPackageTarget()
     {
         var target = PackageTarget();

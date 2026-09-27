@@ -1,0 +1,35 @@
+  RocketIDE.Core -> C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-verification-376854e\src\RocketIDE.Core\bin\Release\net10.0\RocketIDE.Core.dll
+  RocketIDE.Rocket -> C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-verification-376854e\src\RocketIDE.Rocket\bin\Release\net10.0\RocketIDE.Rocket.dll
+  RocketIDE.Rocket.Tests -> C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-verification-376854e\tests\RocketIDE.Rocket.Tests\bin\Release\net10.0\RocketIDE.Rocket.Tests.dll
+Test run for C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-verification-376854e\tests\RocketIDE.Rocket.Tests\bin\Release\net10.0\RocketIDE.Rocket.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed BuildTarget_OmitsPositionalInputForRocket3 (False,False) [18 ms]
+  Error Message:
+   CollectionAssert.AreEqual failed. Different number of elements.
+  Stack Trace:
+     at RocketIDE.Rocket.Tests.Compiler.RocketAdvancedCommandTests.BuildTarget_OmitsPositionalInputForRocket3(Boolean standalone, Boolean verbose) in C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-verification-376854e\tests\RocketIDE.Rocket.Tests\Compiler\RocketAdvancedCommandTests.cs:line 27
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)
+  Failed BuildTarget_OmitsPositionalInputForRocket3 (False,True) [1 ms]
+  Error Message:
+   CollectionAssert.AreEqual failed. Different number of elements.
+  Stack Trace:
+     at RocketIDE.Rocket.Tests.Compiler.RocketAdvancedCommandTests.BuildTarget_OmitsPositionalInputForRocket3(Boolean standalone, Boolean verbose) in C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-verification-376854e\tests\RocketIDE.Rocket.Tests\Compiler\RocketAdvancedCommandTests.cs:line 27
+   at InvokeStub_RocketAdvancedCommandTests.BuildTarget_OmitsPositionalInputForRocket3(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  Failed BuildTarget_OmitsPositionalInputForRocket3 (True,False) [1 ms]
+  Error Message:
+   CollectionAssert.AreEqual failed. Different number of elements.
+  Stack Trace:
+     at RocketIDE.Rocket.Tests.Compiler.RocketAdvancedCommandTests.BuildTarget_OmitsPositionalInputForRocket3(Boolean standalone, Boolean verbose) in C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-verification-376854e\tests\RocketIDE.Rocket.Tests\Compiler\RocketAdvancedCommandTests.cs:line 27
+   at InvokeStub_RocketAdvancedCommandTests.BuildTarget_OmitsPositionalInputForRocket3(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  Failed BuildTarget_OmitsPositionalInputForRocket3 (True,True) [1 ms]
+  Error Message:
+   CollectionAssert.AreEqual failed. Different number of elements.
+  Stack Trace:
+     at RocketIDE.Rocket.Tests.Compiler.RocketAdvancedCommandTests.BuildTarget_OmitsPositionalInputForRocket3(Boolean standalone, Boolean verbose) in C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp07-verification-376854e\tests\RocketIDE.Rocket.Tests\Compiler\RocketAdvancedCommandTests.cs:line 27
+   at InvokeStub_RocketAdvancedCommandTests.BuildTarget_OmitsPositionalInputForRocket3(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+
+Failed!  - Failed:     4, Passed:     0, Skipped:     0, Total:     4, Duration: 43 ms - RocketIDE.Rocket.Tests.dll (net10.0)
