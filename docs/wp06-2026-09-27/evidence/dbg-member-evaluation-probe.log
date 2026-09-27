@@ -1,0 +1,271 @@
+0.698s OUTPUT 
+************* Path validation summary **************
+Response                         Time (ms)     Location
+OK                                             C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\expression-proof\.rocketc\targets\windows-x64
+
+0.707s OUTPUT 
+************* Preparing the environment for Debugger Extensions Gallery repositories **************
+   ExtensionRepository : Implicit
+   UseExperimentalFeatureForNugetShare : true
+   AllowNugetExeUpdate : true
+   NonInteractiveNuget : true
+   AllowNugetMSCredentialProviderInstall : true
+   AllowParallelInitializationOfLocalRepositories : true
+
+   -- Configuring repositories
+
+0.707s OUTPUT       ----&gt; Repository : LocalInstalled, Enabled: true
+
+0.707s OUTPUT       ----&gt; Repository : UserExtensions, Enabled: true
+
+0.707s OUTPUT 
+&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; Preparing the environment for Debugger Extensions Gallery repositories completed, duration 0.000 seconds
+
+0.707s OUTPUT 
+************* Waiting for Debugger Extensions Gallery to Initialize **************
+
+0.720s OUTPUT 
+&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; Waiting for Debugger Extensions Gallery to Initialize completed, duration 0.032 seconds
+   ----&gt; Repository : LocalInstalled, Enabled: true, Packages count: 0
+
+0.720s OUTPUT    ----&gt; Repository : UserExtensions, Enabled: true, Packages count: 0
+
+0.720s OUTPUT 
+Microsoft (R) Windows Debugger Version 10.0.29617.1000 AMD64
+Copyright (c) Microsoft Corporation. All rights reserved.
+
+
+0.720s OUTPUT CommandLine: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\expression-proof\.rocketc\targets\windows-x64\main.exe
+Starting directory: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\expression-proof\.rocketc\targets\windows-x64
+
+0.769s OUTPUT Unable to add extension DLL: ntsdexts
+
+0.771s OUTPUT Unable to add extension DLL: uext
+
+0.772s OUTPUT Unable to add extension DLL: exts
+
+0.774s OUTPUT 
+************* Path validation summary **************
+
+0.774s OUTPUT Response                         Time (ms)     Location
+
+0.774s OUTPUT OK                                            
+0.774s OUTPUT  
+0.774s OUTPUT C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\expression-proof\.rocketc\targets\windows-x64
+0.774s OUTPUT 
+
+0.774s OUTPUT Symbol search path is: 
+0.774s OUTPUT C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\expression-proof\.rocketc\targets\windows-x64
+
+0.774s OUTPUT Executable search path is: 
+
+0.774s OUTPUT 
++------------------------------------------------------------------------+
+| This target supports Hardware-enforced Stack Protection. A HW based    |
+| "Shadow Stack" may be available to assist in debugging and analysis.   |
+| See aka.ms/userhsp for more info.                                      |
+|                                                                        |
+| <link cmd="dps @ssp">dps @ssp</link>                                                               |
+|                                                                        |
++------------------------------------------------------------------------+
+
+
+0.774s OUTPUT ModLoad: 00007ff6`d6980000 00007ff6`d6b79000   main.exe
+
+0.775s OUTPUT ModLoad: 00007ffd`8fca0000 00007ffd`8ff07000   ntdll.dll
+
+0.776s OUTPUT ModLoad: 00007ffd`8e700000 00007ffd`8e7cb000   C:\WINDOWS\System32\KERNEL32.DLL
+
+0.777s OUTPUT ModLoad: 00007ffd`8d240000 00007ffd`8d642000   C:\WINDOWS\System32\KERNELBASE.dll
+
+0.904s OUTPUT ModLoad: 00007ffd`86d20000 00007ffd`86dbf000   C:\WINDOWS\SYSTEM32\apphelp.dll
+
+0.907s OUTPUT (5548.5cd8): Break instruction exception - code 80000003 (first chance)
+
+0.948s OUTPUT ntdll!RtlGetReturnAddressHijackTarget+0x749
+0.948s OUTPUT :
+00007ffd`8fdc2239 cc              int     3
+
+0.952s OUTPUT 0:000&gt; .prefer_dml 0
+
+0.952s OUTPUT DML versions of commands off by default
+
+0.953s OUTPUT 0:000&gt; .noshell
+
+0.953s OUTPUT Shell commands disabled
+
+0.953s COMMAND .expr /s masm
+0.956s Current expression evaluator: MASM - Microsoft Assembler expressions
+
+0.956s COMMAND .lines -e
+0.956s Line number information will be loaded
+
+0.956s COMMAND l+t
+0.957s Source options are 1:
+     1/t - Step/trace by source line
+
+0.957s COMMAND ld main
+0.978s *** WARNING: Unable to verify checksum for main.exe
+Symbols loaded for main
+
+0.978s COMMAND bp `member.rocket:7`
+0.980s Ambiguous symbol error at '`member.rocket:7`'
+
+0.980s COMMAND g
+0.980s 
+0.980s COMMAND |
+0.982s OUTPUT ModLoad: 00007ffd`8bb30000 00007ffd`8bb4b000   C:\WINDOWS\SYSTEM32\kernel.appcore.dll
+
+0.982s OUTPUT ModLoad: 00007ffd`8f820000 00007ffd`8f8c9000   C:\WINDOWS\System32\msvcrt.dll
+
+0.987s OUTPUT ntdll!NtTerminateProcess+0x14:
+00007ffd`8fe01344 c3              ret
+
+0.987s .  0	id: 5548	exited	name: main.exe
+
+0.987s COMMAND dv /t
+0.987s Unable to enumerate locals, Win32 error 0n318
+Private symbols (symbols.pri) are required for locals.
+Type ".hh dbgerr005" for details.
+
+0.987s COMMAND ?? pair
+1.202s *************************************************************************
+***                                                                   ***
+***                                                                   ***
+***    Either you specified an unqualified symbol, or your debugger   ***
+***    doesn't have full symbol information.  Unqualified symbol      ***
+***    resolution is turned off by default. Please either specify a   ***
+***    fully qualified symbol module!symbolname, or enable resolution ***
+***    of unqualified symbols by typing ".symopt- 100". Note that     ***
+***    enabling unqualified symbol resolution with network symbol     ***
+***    server shares in the symbol path may cause the debugger to     ***
+***    appear to hang for long periods of time when an incorrect      ***
+***    symbol name is typed or the network symbol server is down.     ***
+***                                                                   ***
+***    For some commands to work properly, your symbol path           ***
+***    must point to .pdb files that have full type information.      ***
+***                                                                   ***
+***    Certain .pdb files (such as the public OS symbols) do not      ***
+***    contain the required information.  Contact the group that      ***
+***    provided you with these symbols if you need this command to    ***
+***    work.                                                          ***
+***                                                                   ***
+***    Type referenced: pair                                          ***
+***                                                                   ***
+*************************************************************************
+Couldn't resolve error at 'pair'
+
+1.202s COMMAND ?? pair.left
+1.384s *************************************************************************
+***                                                                   ***
+***                                                                   ***
+***    Either you specified an unqualified symbol, or your debugger   ***
+***    doesn't have full symbol information.  Unqualified symbol      ***
+***    resolution is turned off by default. Please either specify a   ***
+***    fully qualified symbol module!symbolname, or enable resolution ***
+***    of unqualified symbols by typing ".symopt- 100". Note that     ***
+***    enabling unqualified symbol resolution with network symbol     ***
+***    server shares in the symbol path may cause the debugger to     ***
+***    appear to hang for long periods of time when an incorrect      ***
+***    symbol name is typed or the network symbol server is down.     ***
+***                                                                   ***
+***    For some commands to work properly, your symbol path           ***
+***    must point to .pdb files that have full type information.      ***
+***                                                                   ***
+***    Certain .pdb files (such as the public OS symbols) do not      ***
+***    contain the required information.  Contact the group that      ***
+***    provided you with these symbols if you need this command to    ***
+***    work.                                                          ***
+***                                                                   ***
+***    Type referenced: pair                                          ***
+***                                                                   ***
+*************************************************************************
+Couldn't resolve error at 'pair.left'
+
+1.384s COMMAND ?? pair->left
+1.576s *************************************************************************
+***                                                                   ***
+***                                                                   ***
+***    Either you specified an unqualified symbol, or your debugger   ***
+***    doesn't have full symbol information.  Unqualified symbol      ***
+***    resolution is turned off by default. Please either specify a   ***
+***    fully qualified symbol module!symbolname, or enable resolution ***
+***    of unqualified symbols by typing ".symopt- 100". Note that     ***
+***    enabling unqualified symbol resolution with network symbol     ***
+***    server shares in the symbol path may cause the debugger to     ***
+***    appear to hang for long periods of time when an incorrect      ***
+***    symbol name is typed or the network symbol server is down.     ***
+***                                                                   ***
+***    For some commands to work properly, your symbol path           ***
+***    must point to .pdb files that have full type information.      ***
+***                                                                   ***
+***    Certain .pdb files (such as the public OS symbols) do not      ***
+***    contain the required information.  Contact the group that      ***
+***    provided you with these symbols if you need this command to    ***
+***    work.                                                          ***
+***                                                                   ***
+***    Type referenced: pair                                          ***
+***                                                                   ***
+*************************************************************************
+Couldn't resolve error at 'pair->left'
+
+1.576s COMMAND ?? total
+1.735s *************************************************************************
+***                                                                   ***
+***                                                                   ***
+***    Either you specified an unqualified symbol, or your debugger   ***
+***    doesn't have full symbol information.  Unqualified symbol      ***
+***    resolution is turned off by default. Please either specify a   ***
+***    fully qualified symbol module!symbolname, or enable resolution ***
+***    of unqualified symbols by typing ".symopt- 100". Note that     ***
+***    enabling unqualified symbol resolution with network symbol     ***
+***    server shares in the symbol path may cause the debugger to     ***
+***    appear to hang for long periods of time when an incorrect      ***
+***    symbol name is typed or the network symbol server is down.     ***
+***                                                                   ***
+***    For some commands to work properly, your symbol path           ***
+***    must point to .pdb files that have full type information.      ***
+***                                                                   ***
+***    Certain .pdb files (such as the public OS symbols) do not      ***
+***    contain the required information.  Contact the group that      ***
+***    provided you with these symbols if you need this command to    ***
+***    work.                                                          ***
+***                                                                   ***
+***    Type referenced: total                                         ***
+***                                                                   ***
+*************************************************************************
+Couldn't resolve error at 'total'
+
+1.735s COMMAND ?? missing
+1.884s *************************************************************************
+***                                                                   ***
+***                                                                   ***
+***    Either you specified an unqualified symbol, or your debugger   ***
+***    doesn't have full symbol information.  Unqualified symbol      ***
+***    resolution is turned off by default. Please either specify a   ***
+***    fully qualified symbol module!symbolname, or enable resolution ***
+***    of unqualified symbols by typing ".symopt- 100". Note that     ***
+***    enabling unqualified symbol resolution with network symbol     ***
+***    server shares in the symbol path may cause the debugger to     ***
+***    appear to hang for long periods of time when an incorrect      ***
+***    symbol name is typed or the network symbol server is down.     ***
+***                                                                   ***
+***    For some commands to work properly, your symbol path           ***
+***    must point to .pdb files that have full type information.      ***
+***                                                                   ***
+***    Certain .pdb files (such as the public OS symbols) do not      ***
+***    contain the required information.  Contact the group that      ***
+***    provided you with these symbols if you need this command to    ***
+***    work.                                                          ***
+***                                                                   ***
+***    Type referenced: missing                                       ***
+***                                                                   ***
+*************************************************************************
+Couldn't resolve error at 'missing'
+
+1.884s COMMAND ?? (
+1.885s Syntax error at '<EOL>'
+
+1.885s COMMAND bl
+1.885s 
+1.906s DISPOSE end

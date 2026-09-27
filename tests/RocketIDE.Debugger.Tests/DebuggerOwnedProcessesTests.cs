@@ -6,6 +6,34 @@ namespace RocketIDE.Debugger.Tests;
 public sealed class DebuggerOwnedProcessesTests
 {
     [TestMethod]
+    public async Task OldTransportCleanupCannotKillARestartedEngineHost()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"rocketide-engine-lease-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        var executable = Path.Combine(directory, "EngHost.exe");
+        File.Copy(Environment.GetEnvironmentVariable("ComSpec") ?? @"C:\Windows\System32\cmd.exe", executable);
+        System.Diagnostics.Process StartHost() => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = executable, Arguments = "/d /s /c ping 127.0.0.1 -n 30 >nul", UseShellExecute = false, CreateNoWindow = true,
+        })!;
+        try
+        {
+            var oldTransport = new DebuggerOwnedProcesses.EngineHostLease(Environment.ProcessId);
+            using var oldHost = StartHost();
+            oldTransport.Terminate();
+            await oldHost.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(2));
+            using var newHost = StartHost();
+            try
+            {
+                oldTransport.Terminate();
+                Assert.IsFalse(newHost.HasExited, "Delayed cleanup from the old transport must not acquire the new host.");
+            }
+            finally { if (!newHost.HasExited) newHost.Kill(entireProcessTree: true); await newHost.WaitForExitAsync(); }
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [TestMethod]
     public async Task KillEngineHosts_TerminatesOnlyOwnedWindowsChild()
     {
         var directory = Path.Combine(Path.GetTempPath(), $"rocketide-engine-host-{Guid.NewGuid():N}");

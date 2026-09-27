@@ -9,7 +9,11 @@ public sealed record RocketCommandContext(
     bool IsDebugging = false,
     bool IsDebuggerRunning = false,
     bool IsDebuggerStopped = false,
-    bool HasRocketDocument = false);
+    bool HasRocketDocument = false,
+    bool IsDebuggerTerminating = false,
+    bool IsDebuggerLaunching = false,
+    bool IsDebuggerInspecting = false,
+    bool HasDebugLaunch = false);
 
 public sealed record RocketCommandDefinition(
     string Id,
@@ -65,6 +69,8 @@ public sealed class RocketCommandRegistry
     public const string DebugStepOver = "debug.stepOver";
     public const string DebugStepInto = "debug.stepInto";
     public const string DebugStepOut = "debug.stepOut";
+    public const string DebugRestart = "debug.restart";
+    public const string DebugRunToCursor = "debug.runToCursor";
 
     private readonly IReadOnlyList<RocketCommandDefinition> _definitions =
     [
@@ -105,13 +111,15 @@ public sealed class RocketCommandRegistry
         new(Problems, "Show Problems", "Ctrl+Shift+M", _ => true, "View"),
         new(Output, "Show Output", "Ctrl+Shift+U", _ => true, "View"),
         new(DebugStartContinue, "Start/Continue Debugging", "F5", context =>
-            !context.IsBusy && context.HasTarget && context.CanRun && (!context.IsDebugging || context.IsDebuggerStopped), "Debug"),
+            !context.IsBusy && !context.IsDebuggerInspecting && (context.IsDebuggerStopped || (context.HasTarget && context.CanRun && !context.IsDebugging)), "Debug"),
         new(DebugPause, "Pause Debugging", "Pause", context => context.IsDebuggerRunning, "Debug"),
-        new(DebugStop, "Stop Debugging", "Shift+F5", context => context.IsDebugging, "Debug"),
-        new(DebugToggleBreakpoint, "Toggle Breakpoint", "F9", context => context.HasRocketDocument && !context.IsDebuggerRunning, "Debug"),
-        new(DebugStepOver, "Step Over", "F10", context => context.IsDebuggerStopped, "Debug"),
-        new(DebugStepInto, "Step Into", "F11", context => context.IsDebuggerStopped, "Debug"),
-        new(DebugStepOut, "Step Out", "Shift+F11", context => context.IsDebuggerStopped, "Debug"),
+        new(DebugStop, "Stop Debugging", "Shift+F5", context => context.IsDebugging && !context.IsDebuggerTerminating, "Debug"),
+        new(DebugToggleBreakpoint, "Toggle Breakpoint", "F9", context => context.HasRocketDocument && !context.IsBusy && !context.IsDebuggerInspecting && (!context.IsDebugging || context.IsDebuggerStopped), "Debug"),
+        new(DebugStepOver, "Step Over", "F10", context => context.IsDebuggerStopped && !context.IsDebuggerInspecting, "Debug"),
+        new(DebugStepInto, "Step Into", "F11", context => context.IsDebuggerStopped && !context.IsDebuggerInspecting, "Debug"),
+        new(DebugStepOut, "Step Out", "Shift+F11", context => context.IsDebuggerStopped && !context.IsDebuggerInspecting, "Debug"),
+        new(DebugRestart, "Restart Debugging", "Ctrl+Shift+F6", context => context.HasDebugLaunch && !context.IsBusy && !context.IsDebuggerLaunching && !context.IsDebuggerTerminating && !context.IsDebuggerInspecting, "Debug"),
+        new(DebugRunToCursor, "Run to Cursor", "Ctrl+F10", context => context.HasRocketDocument && context.IsDebuggerStopped && !context.IsDebuggerInspecting, "Debug"),
     ];
 
     public IReadOnlyList<RocketCommandDefinition> Definitions => _definitions;

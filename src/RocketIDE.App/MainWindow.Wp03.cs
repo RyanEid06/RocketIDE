@@ -111,6 +111,8 @@ public partial class MainWindow
         Register(RocketCommandRegistry.DebugStepOver, () => DebugStepOver_Click(this, new RoutedEventArgs()));
         Register(RocketCommandRegistry.DebugStepInto, () => DebugStepInto_Click(this, new RoutedEventArgs()));
         Register(RocketCommandRegistry.DebugStepOut, () => DebugStepOut_Click(this, new RoutedEventArgs()));
+        Register(RocketCommandRegistry.DebugRestart, () => DebugRestart_Click(this, new RoutedEventArgs()));
+        Register(RocketCommandRegistry.DebugRunToCursor, () => DebugRunToCursor_Click(this, new RoutedEventArgs()));
     }
 
     private async void RegisteredCommand_Click(object sender, RoutedEventArgs e)

@@ -1,0 +1,4 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  RocketIDE.Debugger -> C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\src\RocketIDE.Debugger\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.dll
+C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\DbgXLaunchConfigurationTests.cs(13,44): error CS0117: 'DbgXCommandTransport' does not contain a definition for 'CreateLaunchOptions' [C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\RocketIDE.Debugger.Tests.csproj]

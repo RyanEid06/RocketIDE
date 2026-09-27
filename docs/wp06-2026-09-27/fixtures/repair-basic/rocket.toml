@@ -1,0 +1,3 @@
+[package]
+name="wp06_repair_basic"
+entry="src/main.rocket"

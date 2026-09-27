@@ -1,0 +1,427 @@
+[
+  {
+    "Pair": 1,
+    "Id": "symbols",
+    "Count": 1,
+    "IncrementalGeneration": [
+      2
+    ],
+    "CleanGeneration": [
+      1
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 2,
+    "Id": "symbols",
+    "Count": 4,
+    "IncrementalGeneration": [
+      3
+    ],
+    "CleanGeneration": [
+      2
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 3,
+    "Id": "symbols",
+    "Count": 3,
+    "IncrementalGeneration": [
+      4
+    ],
+    "CleanGeneration": [
+      3
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 4,
+    "Id": "symbols",
+    "Count": 5,
+    "IncrementalGeneration": [
+      4
+    ],
+    "CleanGeneration": [
+      3
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 5,
+    "Id": "symbols",
+    "Count": 5,
+    "IncrementalGeneration": [
+      5
+    ],
+    "CleanGeneration": [
+      4
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 6,
+    "Id": "symbols",
+    "Count": 2,
+    "IncrementalGeneration": [
+      3
+    ],
+    "CleanGeneration": [
+      2
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 7,
+    "Id": "symbols",
+    "Count": 5,
+    "IncrementalGeneration": [
+      3
+    ],
+    "CleanGeneration": [
+      2
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 8,
+    "Id": "symbols",
+    "Count": 3,
+    "IncrementalGeneration": [
+      3
+    ],
+    "CleanGeneration": [
+      2
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 9,
+    "Id": "symbols",
+    "Count": 4,
+    "IncrementalGeneration": [
+      3
+    ],
+    "CleanGeneration": [
+      2
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 10,
+    "Id": "symbols",
+    "Count": 6,
+    "IncrementalGeneration": [
+      3
+    ],
+    "CleanGeneration": [
+      2
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 11,
+    "Id": "symbols",
+    "Count": 6,
+    "IncrementalGeneration": [
+      4
+    ],
+    "CleanGeneration": [
+      3
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 12,
+    "Id": "symbols",
+    "Count": 3,
+    "IncrementalGeneration": [
+      3
+    ],
+    "CleanGeneration": [
+      2
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 13,
+    "Id": "symbols",
+    "Count": 3,
+    "IncrementalGeneration": [
+      3
+    ],
+    "CleanGeneration": [
+      2
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 14,
+    "Id": "symbols",
+    "Count": 2,
+    "IncrementalGeneration": [
+      3
+    ],
+    "CleanGeneration": [
+      2
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 15,
+    "Id": "symbols",
+    "Count": 5,
+    "IncrementalGeneration": [
+      3
+    ],
+    "CleanGeneration": [
+      2
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 16,
+    "Id": "symbols",
+    "Count": 7,
+    "IncrementalGeneration": [
+      3
+    ],
+    "CleanGeneration": [
+      2
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 17,
+    "Id": "symbols",
+    "Count": 7,
+    "IncrementalGeneration": [
+      5
+    ],
+    "CleanGeneration": [
+      4
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 18,
+    "Id": "symbols",
+    "Count": 8,
+    "IncrementalGeneration": [
+      5
+    ],
+    "CleanGeneration": [
+      4
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 19,
+    "Id": "symbols",
+    "Count": 4,
+    "IncrementalGeneration": [
+      5
+    ],
+    "CleanGeneration": [
+      4
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 20,
+    "Id": "symbols",
+    "Count": 7,
+    "IncrementalGeneration": [
+      5
+    ],
+    "CleanGeneration": [
+      4
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 21,
+    "Id": "symbols",
+    "Count": 10,
+    "IncrementalGeneration": [
+      10
+    ],
+    "CleanGeneration": [
+      9
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 22,
+    "Id": "symbols",
+    "Count": 11,
+    "IncrementalGeneration": [
+      10
+    ],
+    "CleanGeneration": [
+      9
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 23,
+    "Id": "symbols",
+    "Count": 9,
+    "IncrementalGeneration": [
+      10
+    ],
+    "CleanGeneration": [
+      9
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 24,
+    "Id": "symbols",
+    "Count": 3,
+    "IncrementalGeneration": [
+      3
+    ],
+    "CleanGeneration": [
+      2
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 25,
+    "Id": "symbols",
+    "Count": 2,
+    "IncrementalGeneration": [
+      4
+    ],
+    "CleanGeneration": [
+      3
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 26,
+    "Id": "symbols",
+    "Count": 1,
+    "IncrementalGeneration": [
+      31
+    ],
+    "CleanGeneration": [
+      1
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 27,
+    "Id": "symbols",
+    "Count": 2,
+    "IncrementalGeneration": [
+      2
+    ],
+    "CleanGeneration": [
+      1
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 28,
+    "Id": "symbols",
+    "Count": 48,
+    "IncrementalGeneration": [
+      49
+    ],
+    "CleanGeneration": [
+      48
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 29,
+    "Id": "large-symbols",
+    "Count": 200,
+    "IncrementalGeneration": [
+      240
+    ],
+    "CleanGeneration": [
+      239
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 30,
+    "Id": "unopened-symbols",
+    "Count": 3,
+    "IncrementalGeneration": [
+      3
+    ],
+    "CleanGeneration": [
+      2
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 31,
+    "Id": "rootless-symbols",
+    "Count": 1,
+    "IncrementalGeneration": [
+      2
+    ],
+    "CleanGeneration": [
+      1
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 32,
+    "Id": "after-closes",
+    "Count": 0,
+    "IncrementalGeneration": [],
+    "CleanGeneration": [],
+    "RawEqual": true,
+    "OnlyGenerationDiffers": true
+  },
+  {
+    "Pair": 33,
+    "Id": "symbols",
+    "Count": 200,
+    "IncrementalGeneration": [
+      3
+    ],
+    "CleanGeneration": [
+      2
+    ],
+    "RawEqual": false,
+    "OnlyGenerationDiffers": true
+  }
+]

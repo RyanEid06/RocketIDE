@@ -1,0 +1,54 @@
+Void add_UserNotificationReceived(System.EventHandler`1[DbgX.UserNotificationEventArgs])
+Void remove_UserNotificationReceived(System.EventHandler`1[DbgX.UserNotificationEventArgs])
+Void add_UnexpectedEngineDisconnection(System.EventHandler`1[DbgX.Interfaces.Events.UnexpectedEngineDisconnectionEventArgs])
+Void remove_UnexpectedEngineDisconnection(System.EventHandler`1[DbgX.Interfaces.Events.UnexpectedEngineDisconnectionEventArgs])
+Void add_Refreshed(System.EventHandler`1[DbgX.Interfaces.Events.TargetRefreshEventArgs])
+Void remove_Refreshed(System.EventHandler`1[DbgX.Interfaces.Events.TargetRefreshEventArgs])
+Void add_Restarted(System.EventHandler`1[System.EventArgs])
+Void remove_Restarted(System.EventHandler`1[System.EventArgs])
+Void add_DmlOutput(System.EventHandler`1[DbgX.OutputEventArgs])
+Void remove_DmlOutput(System.EventHandler`1[DbgX.OutputEventArgs])
+Void add_StatusOutput(System.EventHandler`1[DbgX.OutputEventArgs])
+Void remove_StatusOutput(System.EventHandler`1[DbgX.OutputEventArgs])
+Void add_XmlOutput(System.EventHandler`1[DbgX.XmlEventArgs])
+Void remove_XmlOutput(System.EventHandler`1[DbgX.XmlEventArgs])
+Void add_LocalXmlOutput(System.EventHandler`1[DbgX.XmlEventArgs])
+Void remove_LocalXmlOutput(System.EventHandler`1[DbgX.XmlEventArgs])
+Void add_InputStarted(System.EventHandler`1[System.EventArgs])
+Void remove_InputStarted(System.EventHandler`1[System.EventArgs])
+Void add_InputEnded(System.EventHandler`1[System.EventArgs])
+Void remove_InputEnded(System.EventHandler`1[System.EventArgs])
+DbgX.DebuggingState get_DebuggingState()
+DbgX.LocalEngineThread get_LocalEngineThread()
+DbgX.Interfaces.Services.EngineArchitecture get_Architecture()
+System.Threading.Tasks.Task`1[T] SendRequestAsync[T](DbgX.Requests.EngineRequestWithResult`1[T], System.Threading.CancellationToken)
+System.Threading.Tasks.Task`1[T] SendLocalRequestAsync[T](DbgX.Requests.Local.LocalEngineRequestWithTask`1[T], System.Threading.CancellationToken)
+System.Threading.Tasks.Task`1[System.Boolean] SynchronizeState(UInt64, System.String)
+Void ForceStateResynchronization()
+Boolean IsShutdown()
+System.Threading.Tasks.Task`1[System.Boolean] ShutdownAsync(Int32)
+System.Threading.Tasks.Task DetachAsync()
+System.Threading.Tasks.Task`1[System.Boolean] StopDebuggingAsync(Int32)
+System.Threading.Tasks.Task DisconnectFromProcessServerAsync(DbgX.Interfaces.IDbgServerToken, Boolean)
+System.Threading.Tasks.Task CauseBreakAsync()
+System.Threading.Tasks.Task`1[System.Boolean] CycleInitialBreakStateAsync()
+Void CancelAllNonUserRequests()
+Void Dispose()
+System.Type GetType()
+System.String ToString()
+Boolean Equals(System.Object)
+Int32 GetHashCode()
+PROPERTY DbgX.DebuggingState DebuggingState
+PROPERTY DbgX.LocalEngineThread LocalEngineThread
+PROPERTY DbgX.Interfaces.Services.EngineArchitecture Architecture
+EVENT System.EventHandler`1[DbgX.UserNotificationEventArgs] UserNotificationReceived ARGS System.Object,DbgX.UserNotificationEventArgs
+EVENT System.EventHandler`1[DbgX.Interfaces.Events.UnexpectedEngineDisconnectionEventArgs] UnexpectedEngineDisconnection ARGS System.Object,DbgX.Interfaces.Events.UnexpectedEngineDisconnectionEventArgs
+EVENT System.EventHandler`1[DbgX.Interfaces.Events.TargetRefreshEventArgs] Refreshed ARGS System.Object,DbgX.Interfaces.Events.TargetRefreshEventArgs
+EVENT System.EventHandler`1[System.EventArgs] Restarted ARGS System.Object,System.EventArgs
+EVENT System.EventHandler`1[DbgX.OutputEventArgs] DmlOutput ARGS System.Object,DbgX.OutputEventArgs
+EVENT System.EventHandler`1[DbgX.OutputEventArgs] StatusOutput ARGS System.Object,DbgX.OutputEventArgs
+EVENT System.EventHandler`1[DbgX.XmlEventArgs] XmlOutput ARGS System.Object,DbgX.XmlEventArgs
+EVENT System.EventHandler`1[DbgX.XmlEventArgs] LocalXmlOutput ARGS System.Object,DbgX.XmlEventArgs
+EVENT System.EventHandler`1[System.EventArgs] InputStarted ARGS System.Object,System.EventArgs
+EVENT System.EventHandler`1[System.EventArgs] InputEnded ARGS System.Object,System.EventArgs
+REQUEST Void .ctor(System.String)

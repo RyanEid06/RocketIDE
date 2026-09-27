@@ -1,0 +1,186 @@
+[
+  {
+    "File": "baseline-format-ui.txt",
+    "Matches": true
+  },
+  {
+    "File": "baseline-format.jpg",
+    "Matches": true
+  },
+  {
+    "File": "baseline-quickfix-applied-ui.txt",
+    "Matches": true
+  },
+  {
+    "File": "baseline-quickfix-applied.jpg",
+    "Matches": true
+  },
+  {
+    "File": "baseline-quickfix-isolated-ui.txt",
+    "Matches": true
+  },
+  {
+    "File": "baseline-quickfix-ui.txt",
+    "Matches": true
+  },
+  {
+    "File": "baseline-quickfix.jpg",
+    "Matches": true
+  },
+  {
+    "File": "baseline-run-scrolled-ui.txt",
+    "Matches": true
+  },
+  {
+    "File": "baseline-run-tail-ui.txt",
+    "Matches": true
+  },
+  {
+    "File": "baseline-run-ui.txt",
+    "Matches": true
+  },
+  {
+    "File": "baseline-run.jpg",
+    "Matches": true
+  },
+  {
+    "File": "baseline-test-ui.txt",
+    "Matches": true
+  },
+  {
+    "File": "baseline-test.jpg",
+    "Matches": true
+  },
+  {
+    "File": "baseline-verify.log",
+    "Matches": true
+  },
+  {
+    "File": "dependency-hashes.json",
+    "Matches": true
+  },
+  {
+    "File": "final-verify.log",
+    "Matches": true
+  },
+  {
+    "File": "fixture-before-replay.json",
+    "Matches": true
+  },
+  {
+    "File": "focused.log",
+    "Matches": true
+  },
+  {
+    "File": "green-regressions.log",
+    "Matches": true
+  },
+  {
+    "File": "incremental-baseline-comparison.json",
+    "Matches": true
+  },
+  {
+    "File": "original-lanes-final.json",
+    "Matches": true
+  },
+  {
+    "File": "package-reviewed.log",
+    "Matches": true
+  },
+  {
+    "File": "preservation-results.json",
+    "Matches": true
+  },
+  {
+    "File": "quickfix-protocol-green.log",
+    "Matches": true
+  },
+  {
+    "File": "quickfix-protocol-red.json",
+    "Matches": true
+  },
+  {
+    "File": "quickfix-protocol-red.log",
+    "Matches": true
+  },
+  {
+    "File": "red-regressions.log",
+    "Matches": true
+  },
+  {
+    "File": "repaired-format-before.txt",
+    "Matches": true
+  },
+  {
+    "File": "repaired-format-ui.txt",
+    "Matches": true
+  },
+  {
+    "File": "repaired-format.jpg",
+    "Matches": true
+  },
+  {
+    "File": "repaired-quickfix-menu.txt",
+    "Matches": true
+  },
+  {
+    "File": "repaired-quickfix-ui.txt",
+    "Matches": true
+  },
+  {
+    "File": "repaired-quickfix.jpg",
+    "Matches": true
+  },
+  {
+    "File": "repaired-run-ui.txt",
+    "Matches": true
+  },
+  {
+    "File": "repaired-run.jpg",
+    "Matches": true
+  },
+  {
+    "File": "repaired-test-rerun.txt",
+    "Matches": true
+  },
+  {
+    "File": "repaired-test-ui.txt",
+    "Matches": true
+  },
+  {
+    "File": "repaired-test.jpg",
+    "Matches": true
+  },
+  {
+    "File": "reviewed-package-assets.json",
+    "Matches": true
+  },
+  {
+    "File": "rocket-baseline-incremental.log",
+    "Matches": true
+  },
+  {
+    "File": "rocket-final-build.log",
+    "Matches": true
+  },
+  {
+    "File": "rocket-final-six.log",
+    "Matches": true
+  },
+  {
+    "File": "rocket-focused-green.log",
+    "Matches": true
+  },
+  {
+    "File": "rocket-red.log",
+    "Matches": true
+  },
+  {
+    "File": "verify_quickfix.json",
+    "Matches": true
+  },
+  {
+    "File": "verify_quickfix.py",
+    "Matches": true
+  }
+]

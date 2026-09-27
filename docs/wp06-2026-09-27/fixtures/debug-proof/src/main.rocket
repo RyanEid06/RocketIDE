@@ -1,0 +1,16 @@
+extern fn Sleep(milliseconds: Int) -> Unit
+
+fn twice(value: Int) -> Int:
+    let doubled = value * 2
+    return doubled
+
+fn main() -> Int:
+    let seed = 21
+    let answer = twice(seed)
+    print(answer)
+    var tick = 0
+    while tick < 600:
+        unsafe:
+            Sleep(100)
+        tick = tick + 1
+    return 0

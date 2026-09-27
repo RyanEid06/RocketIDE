@@ -6,6 +6,7 @@ public enum RocketDebugSessionState
     Launching,
     Running,
     Stopped,
+    Terminating,
     Terminated,
     Faulted,
 }
@@ -33,7 +34,9 @@ public sealed record RocketDebugBreakpoint
     public string SourcePath { get; init; }
     public int Line { get; init; }
     public bool IsBound { get; init; }
+    public bool IsEnabled { get; init; } = true;
     public string? Message { get; init; }
+    public string Status => !IsEnabled ? "Disabled" : IsBound ? "Bound" : Message is null ? "Unbound" : "Error";
 }
 
 public sealed record RocketDebugThread(int Index, int SystemId, string DisplayName, bool IsCurrent);
@@ -46,6 +49,8 @@ public sealed record RocketDebugStackFrame(
     int? Line);
 
 public sealed record RocketDebugVariable(string Name, string? Type, string Value);
+
+public sealed record RocketDebugEvaluation(string Expression, string Value, bool IsAvailable);
 
 public sealed record RocketDebugStopLocation(string SourcePath, int Line, string Reason);
 

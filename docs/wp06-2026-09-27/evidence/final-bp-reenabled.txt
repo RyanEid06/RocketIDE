@@ -1,0 +1,171 @@
+Window: "main.rocket — RocketIDE", App: RocketIDE.exe.
+	0 window main.rocket — RocketIDE Secondary Actions: Raise
+		1 title bar (settable, string) Value: main.rocket — RocketIDE
+			2 menu bar System ID: MenuBar
+				3 menu item System
+			4 button Minimize
+			5 button Maximize
+			6 button Close
+		7 menu
+			8 menu item File
+				9 text _File
+			10 menu item Edit
+				11 text _Edit
+			12 menu item Selection
+				13 text _Selection
+			14 menu item View
+				15 text _View
+			16 menu item Navigate
+				17 text _Navigate
+			18 menu item Build
+				19 text _Build
+			20 menu item Run
+				21 text _Run
+			22 menu item Debug
+				23 text _Debug
+			24 menu item Tools
+				25 text _Tools
+			26 menu item Help
+				27 text _Help
+		28 button New file button Description: New file
+			29 text New
+		30 button Open file button Description: Open file
+			31 text Open
+		32 button Open folder button Description: Open folder
+			33 text Folder
+		34 button Save active file button Description: Save active file
+			35 text Save
+		36 button (disabled) Build Description: Build active Rocket target
+			37 text (disabled) Build
+		38 button (disabled) Run Description: Run active Rocket executable target
+			39 text (disabled) Run
+		40 button Start or continue Rocket debugging button Description: Start or continue Rocket debugging (F5)
+			41 text Debug
+		42 button (disabled) Pause Rocket debugging button Description: Pause Rocket debugging
+			43 text (disabled) Pause
+		44 button Stop Rocket debugging button Description: Stop Rocket debugging (Shift+F5)
+			45 text Stop Debug
+		46 button (disabled) Stop Rocket compiler or program button Description: Stop active Rocket compiler/program process tree
+			47 text (disabled) Stop
+		48 button (disabled) Test Description: Test active Rocket target
+			49 text (disabled) Test
+		50 status bar
+			51 text Rocket SDK: rocketc 3.0.0
+				52 text Rocket SDK: rocketc 3.0.0
+			53 separator (disabled)
+			54 text LSP: project · 1 files · 9 symbols
+				55 text LSP: project · 1 files · 9 symbols
+			56 separator (disabled)
+			57 text Target: debug-proof
+				58 text Target: debug-proof
+			59 separator (disabled)
+			60 text Ln 10, Col 1
+				61 text Ln 10, Col 1
+			62 separator (disabled)
+			63 text UTF-8
+				64 text UTF-8
+		65 button Refresh workspace Description: Refresh workspace
+			66 text ↻
+		67 text EXPLORER
+		68 tree view ID: ExplorerTree
+			69 tree view item (selectable) RocketIDE.App.ViewModels.Explorer.ExplorerNodeViewModel
+				70 button ID: Expander
+				71 text debug-proof
+				72 tree view item (selectable) RocketIDE.App.ViewModels.Explorer.ExplorerNodeViewModel
+					73 button ID: Expander
+					74 text src
+				75 tree view item (selectable) RocketIDE.App.ViewModels.Explorer.ExplorerNodeViewModel
+					76 text rocket.toml
+		77 thumb ID: ExplorerSplitter
+		78 custom ID: PrimaryEditorGroupHost
+			79 tab ID: Tabs
+				80 tab item (selectable) RocketIDE.App.ViewModels.EditorViewViewModel
+					81 text main.rocket
+					82 button Close editor view button Description: Close view
+						83 text ×
+					84 custom
+						85 document (settable, string) Value: extern fn Sleep(milliseconds: Int) -> Unit fn twice(value: Int) -> Int: let doubled = value * 2 return doubled fn main() -> Int: let seed = 21 let answer = twice(seed) print(answer) var tick = 0 while tick < 600: unsafe: Sleep(100) tick = tick + 1 return 0 ID: Editor
+							86 document (settable, string) Value: extern fn Sleep(milliseconds: Int) -> Unit fn twice(value: Int) -> Int: let doubled = value * 2 return doubled fn main() -> Int: let seed = 21 let answer = twice(seed) print(answer) var tick = 0 while tick < 600: unsafe: Sleep(100) tick = tick + 1 return 0
+								87 list view
+									88 dataitem ICSharpCode.AvalonEdit.Editing.LineNumberMargin
+									89 dataitem System.Windows.Shapes.Line
+									90 dataitem ICSharpCode.AvalonEdit.Folding.FoldingMargin
+							91 scroll bar (settable, float) Value: 0 ID: VerticalScrollBar
+								92 button ID: DecreaseButton
+								93 thumb
+								94 button ID: IncreaseButton
+		95 thumb ID: BottomPanelSplitter
+		96 tab ID: BottomTabs
+			97 tab item (selectable) PROBLEMS
+				98 text PROBLEMS
+			99 tab item (selectable) REFERENCES (0)
+				100 text REFERENCES (0)
+			101 tab item (selectable) OUTPUT
+				102 text OUTPUT
+			103 tab item (selectable) TESTS
+				104 text TESTS
+			105 tab item (selectable) SEARCH
+				106 text SEARCH
+			107 tab item (selectable) DEBUG
+				108 text DEBUG
+				878 button Restart Description: Stop, rebuild and debug the same target and configuration
+					879 text Restart
+				880 button Run to Cursor
+					881 text Run to Cursor
+				955 text Debugger: Stopped
+				956 tab ID: DebugWorkflowTabs
+					957 tab item (selectable) Inspection
+						958 text Inspection
+					992 tab item (selectable) Breakpoints
+						993 text Breakpoints
+						1071 button Go to Source
+							1072 text Go to Source
+						1073 button Remove
+							1074 text Remove
+						1075 button Remove All
+							1076 text Remove All
+						1077 datagrid ID: DebugBreakpointsList
+							1078 header
+								1079 header item Enabled
+									1080 text Enabled
+									1081 thumb ID: PART_HeaderGripper
+								1082 header item Source
+									1083 text Source
+									1084 thumb ID: PART_HeaderGripper
+								1085 header item Line
+									1086 text Line
+									1087 thumb ID: PART_HeaderGripper
+								1088 header item State
+									1089 text State
+									1090 thumb ID: PART_HeaderGripper
+								1091 header item Details
+									1092 text Details
+									1093 thumb ID: PART_HeaderGripper
+							1101 dataitem (selectable) RocketDebugBreakpoint { SourcePath = C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\debug-proof\src\main.rocket, Line = 9, IsBound = False, IsEnabled = False, Message = , Status = Disabled }
+								1102 custom
+									1103 check box Breakpoint enabled
+								1104 text C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\debug-proof\src\main.rocket
+								1105 text 9
+								1106 text Disabled
+								1107 text
+					994 tab item (selectable) Watches / Evaluate
+						995 text Watches / Evaluate
+
+Document text: ```
+extern fn Sleep(milliseconds: Int) -> Unit
+
+fn twice(value: Int) -> Int:
+    let doubled = value * 2
+    return doubled
+
+fn main() -> Int:
+    let seed = 21
+    let answer = twice(seed)
+    print(answer)
+    var tick = 0
+    while tick < 600:
+        unsafe:
+            Sleep(100)
+        tick = tick + 1
+    return 0
+```

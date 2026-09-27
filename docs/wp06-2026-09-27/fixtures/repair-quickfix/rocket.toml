@@ -1,0 +1,3 @@
+[package]
+name="wp06_repair_quickfix"
+entry="src/main.rocket"

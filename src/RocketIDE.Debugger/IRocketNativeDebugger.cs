@@ -12,6 +12,7 @@ public interface IRocketNativeDebugger : IAsyncDisposable
     IReadOnlyList<RocketDebugStackFrame> Frames { get; }
     IReadOnlyList<RocketDebugVariable> Locals { get; }
     RocketDebugStopLocation? CurrentLocation { get; }
+    bool HasTemporaryBreakpoint { get; }
 
     Task LaunchAsync(RocketDebugLaunchRequest request, CancellationToken cancellationToken);
     Task SetBreakpointsAsync(IReadOnlyList<RocketDebugBreakpoint> breakpoints, CancellationToken cancellationToken);
@@ -22,6 +23,8 @@ public interface IRocketNativeDebugger : IAsyncDisposable
     Task StepOutAsync(CancellationToken cancellationToken);
     Task SelectThreadAsync(int debuggerThreadIndex, CancellationToken cancellationToken);
     Task SelectFrameAsync(int frameIndex, CancellationToken cancellationToken);
+    Task<RocketDebugEvaluation> EvaluateAsync(string expression, CancellationToken cancellationToken);
+    Task RunToCursorAsync(string sourcePath, int line, CancellationToken cancellationToken);
     Task StopAsync(CancellationToken cancellationToken);
     void ForceTerminateOwnedProcesses();
 }

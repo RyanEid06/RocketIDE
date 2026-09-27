@@ -1,0 +1,19 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  RocketIDE.Debugger -> C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\src\RocketIDE.Debugger\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.dll
+  RocketIDE.Debugger.Tests -> C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.Tests.dll
+Test run for C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed ExitedProcessIsNotAnActiveDebuggee [28 ms]
+  Error Message:
+   Assertion failed. Expected value to be null.
+
+actual: 25476
+
+Assert.IsNull(DbgEngProtocol.ParseCurrentProcessId(".  0\tid: 6384\texited\tname: main.exe"))
+  Stack Trace:
+     at RocketIDE.Debugger.Tests.DbgEngProtocolTests.ExitedProcessIsNotAnActiveDebuggee() in C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\DbgEngProtocolTests.cs:line 11
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+Failed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: 44 ms - RocketIDE.Debugger.Tests.dll (net10.0)

@@ -1,9 +1,12 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using DbgX;
 using DbgX.Interfaces.Services;
+using DbgX.Interfaces.Events;
+using DbgX.Interfaces.Structs;
 using DbgX.Requests;
 using DbgX.Requests.Initialization;
 
@@ -13,30 +16,25 @@ public sealed class DbgXCommandTransport : IDebuggerCommandTransport
 {
     private readonly DebuggerSynchronizationContext _context;
     private readonly DebugEngine _engine;
+    private readonly DebuggerOwnedProcesses.EngineHostLease _engineHosts = new(Environment.ProcessId);
     private bool _disposed;
 
     private DbgXCommandTransport(DebuggerSynchronizationContext context)
     {
         _context = context;
         _engine = new DebugEngine();
+        _engineHosts.Capture();
         _engine.DmlOutput += Engine_DmlOutput;
     }
 
     public event EventHandler<RocketDebugOutputEventArgs>? OutputReceived;
 
-    public static async Task<DbgXCommandTransport> CreateAsync(CancellationToken cancellationToken = default)
+    public static Task<DbgXCommandTransport> CreateAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var context = new DebuggerSynchronizationContext();
-        try
-        {
-            return await InvokeAsync(context, () => Task.FromResult(new DbgXCommandTransport(context)))
-                .WaitAsync(TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false);
-        }
-        catch
-        {
-            context.Dispose();
-            throw;
-        }
+        var creation = InvokeAsync(context, () => Task.FromResult(new DbgXCommandTransport(context)));
+        return DebuggerCreation.AwaitAsync(creation, TimeSpan.FromSeconds(5), context.Dispose, cancellationToken);
     }
 
     public Task CreateProcessAsync(
@@ -51,9 +49,9 @@ public sealed class DbgXCommandTransport : IDebuggerCommandTransport
         var argumentText = WindowsArgumentQuoter.Join(arguments);
         return InvokeAsync(async () =>
         {
-            var options = new EngineOptions();
-            TrySetWorkingDirectory(options, workingDirectory);
-            await _engine.SendRequestAsync(new CreateProcessRequest(executablePath, argumentText, options));
+            var options = CreateLaunchOptions(executablePath, workingDirectory);
+            try { await _engine.SendRequestAsync(new CreateProcessRequest(executablePath, argumentText, options), cancellationToken); }
+            finally { _engineHosts.Capture(); }
             await _engine.SendRequestAsync(new ExecuteRequest(".prefer_dml 0"));
             await _engine.SendRequestAsync(new ExecuteRequest(".noshell"));
             return true;
@@ -64,8 +62,40 @@ public sealed class DbgXCommandTransport : IDebuggerCommandTransport
     {
         ThrowIfDisposed();
         ArgumentException.ThrowIfNullOrWhiteSpace(command);
-        return InvokeAsync(async () => await _engine.SendRequestAsync(new ExecuteToStringRequest(command)))
+        return InvokeAsync(async () => await _engine.SendRequestAsync(new ExecuteToStringRequest(command), cancellationToken))
             .WaitAsync(cancellationToken);
+    }
+
+    public Task ExecuteRunAsync(string command, CancellationToken cancellationToken)
+    {
+        ThrowIfDisposed();
+        return InvokeAsync(async () =>
+        {
+            var stopped = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var sawRunning = false;
+            void StateChanged(object? sender, PropertyChangedEventArgs e)
+            {
+                if (e.PropertyName != nameof(DebuggingState.RunningState)) return;
+                if (_engine.DebuggingState.RunningState == RunningState.Running) sawRunning = true;
+                else if (sawRunning) stopped.TrySetResult();
+            }
+            void Disconnected(object? sender, UnexpectedEngineDisconnectionEventArgs e) =>
+                stopped.TrySetException(new InvalidOperationException("The native debugger engine disconnected."));
+            _engine.DebuggingState.PropertyChanged += StateChanged;
+            _engine.UnexpectedEngineDisconnection += Disconnected;
+            try
+            {
+                await _engine.SendRequestAsync(new ExecuteToStringRequest(command), cancellationToken);
+                if (sawRunning || _engine.DebuggingState.RunningState == RunningState.Running)
+                    await stopped.Task.WaitAsync(cancellationToken);
+                return true;
+            }
+            finally
+            {
+                _engine.DebuggingState.PropertyChanged -= StateChanged;
+                _engine.UnexpectedEngineDisconnection -= Disconnected;
+            }
+        }).WaitAsync(cancellationToken);
     }
 
     public Task BreakAsync(int processId, CancellationToken cancellationToken)
@@ -93,11 +123,15 @@ public sealed class DbgXCommandTransport : IDebuggerCommandTransport
         _disposed = true;
         try
         {
-            await InvokeAsync(() =>
+            await InvokeAsync(async () =>
             {
                 _engine.DmlOutput -= Engine_DmlOutput;
-                _engine.Dispose();
-                return Task.FromResult(true);
+                // Dispose alone leaves DbgX's automatic engine recovery active.
+                // Shutdown first so a forced host termination cannot leave a
+                // replacement host behind after this transport has been retired.
+                try { await _engine.ShutdownAsync(250); }
+                finally { _engine.Dispose(); }
+                return true;
             }).WaitAsync(TimeSpan.FromMilliseconds(750)).ConfigureAwait(false);
         }
         catch (TimeoutException)
@@ -135,11 +169,25 @@ public sealed class DbgXCommandTransport : IDebuggerCommandTransport
         return completion.Task;
     }
 
+    internal static EngineOptions CreateLaunchOptions(string executablePath, string workingDirectory)
+    {
+        // Rocket ships its matching PDB beside the executable. The engine's default
+        // symbol-server fallback can stall stack inspection for minutes offline.
+        var options = new EngineOptions
+        {
+            SymPath = Path.GetDirectoryName(Path.GetFullPath(executablePath)),
+            SymOptIgnoreNtSympath = true,
+        };
+        TrySetWorkingDirectory(options, workingDirectory);
+        return options;
+    }
+
     private static void TrySetWorkingDirectory(EngineOptions options, string workingDirectory)
     {
         // DbgX has changed the name of this option across releases. Keep the compatibility shim
         // inside the adapter instead of leaking version-specific API into the rest of RocketIDE.
-        var property = options.GetType().GetProperty("WorkingDirectory", BindingFlags.Public | BindingFlags.Instance)
+        var property = options.GetType().GetProperty("StartDirectory", BindingFlags.Public | BindingFlags.Instance)
+            ?? options.GetType().GetProperty("WorkingDirectory", BindingFlags.Public | BindingFlags.Instance)
             ?? options.GetType().GetProperty("InitialDirectory", BindingFlags.Public | BindingFlags.Instance)
             ?? options.GetType().GetProperty("CurrentDirectory", BindingFlags.Public | BindingFlags.Instance);
         if (property?.CanWrite == true && property.PropertyType == typeof(string))
@@ -158,8 +206,8 @@ public sealed class DbgXCommandTransport : IDebuggerCommandTransport
 
     public void ForceTerminateOwnedProcesses()
     {
-        // EngHost is a child of this IDE process. Do not touch hosts owned by other apps.
-        DebuggerOwnedProcesses.KillEngineHosts(Environment.ProcessId);
+        // A delayed disposer must never discover and kill a subsequent session's host.
+        _engineHosts.Terminate();
     }
 
     internal sealed class DebuggerSynchronizationContext : SynchronizationContext, IDisposable

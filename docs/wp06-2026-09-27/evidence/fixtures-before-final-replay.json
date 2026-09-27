@@ -1,0 +1,38 @@
+[
+  {
+    "File": "C:\\Users\\Administrator\\Desktop\\Projects\\RocketIDE-Build\\wp06-20260927\\fixtures\\debug-proof\\rocket.toml",
+    "SHA256": "2882EFCEC5A53F03FD56A87AC649D5B4A5ECF639512B2F032DB800E76685E6DB"
+  },
+  {
+    "File": "C:\\Users\\Administrator\\Desktop\\Projects\\RocketIDE-Build\\wp06-20260927\\fixtures\\debug-proof\\src\\main.rocket",
+    "SHA256": "2F285E87B78ED51EA4247CB647CDA2D05D3F3CC065163D3D822EA3655860EB86"
+  },
+  {
+    "File": "C:\\Users\\Administrator\\Desktop\\Projects\\RocketIDE-Build\\wp06-20260927\\fixtures\\expression-proof\\rocket.toml",
+    "SHA256": "40BE948408964639A1E352503841114FC7EDA5206A65CE7BDEA4763D0359E5A2"
+  },
+  {
+    "File": "C:\\Users\\Administrator\\Desktop\\Projects\\RocketIDE-Build\\wp06-20260927\\fixtures\\expression-proof\\src\\member.rocket",
+    "SHA256": "10D794C07C9CD6F9753AA91E60EE9CE2A92965BAC5E4C34CCCD2A352DFEEC876"
+  },
+  {
+    "File": "C:\\Users\\Administrator\\Desktop\\Projects\\RocketIDE-Build\\wp06-20260927\\fixtures\\repair-basic\\rocket.toml",
+    "SHA256": "110096F9E3D41F9B3AEE20C844EF7C0817E64EA86FEB9EE899EA853661985593"
+  },
+  {
+    "File": "C:\\Users\\Administrator\\Desktop\\Projects\\RocketIDE-Build\\wp06-20260927\\fixtures\\repair-basic\\src\\main.rocket",
+    "SHA256": "2E167C4BDA104DB0617BDEA5F659287520D65942512AAE25D819E4483D29E646"
+  },
+  {
+    "File": "C:\\Users\\Administrator\\Desktop\\Projects\\RocketIDE-Build\\wp06-20260927\\fixtures\\repair-quickfix\\rocket.toml",
+    "SHA256": "1A4E12B709778329C00E1549EF2C0B0855CE1876B9D730F7DFA58C47132F7E95"
+  },
+  {
+    "File": "C:\\Users\\Administrator\\Desktop\\Projects\\RocketIDE-Build\\wp06-20260927\\fixtures\\repair-quickfix\\src\\main.rocket",
+    "SHA256": "269B54FFB7841E0000532B81ABFA7564D2BF7B04E1FCA36B339D2B2501E37DE7"
+  },
+  {
+    "File": "C:\\Users\\Administrator\\Desktop\\Projects\\RocketIDE-Build\\wp06-20260927\\fixtures\\repair-quickfix\\src\\math.rocket",
+    "SHA256": "7BB082862AD4B5CB1363103AF3CCE6132C48F058D7CF4C01BD7DB5F89587E690"
+  }
+]

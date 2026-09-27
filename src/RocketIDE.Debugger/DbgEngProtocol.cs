@@ -5,6 +5,38 @@ namespace RocketIDE.Debugger;
 
 public static partial class DbgEngProtocol
 {
+    public const int MaxExpressionLength = 128;
+    public const int MaxEvaluationLength = 4096;
+
+    public static bool IsSupportedExpression(string? expression) =>
+        expression is { Length: > 0 and <= MaxExpressionLength } && IdentifierRegex().IsMatch(expression);
+
+    public static RocketDebugEvaluation ParseEvaluation(string expression, string output)
+    {
+        var text = output.Trim();
+        var unavailable = string.IsNullOrWhiteSpace(text) ||
+            text.Contains("error", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Couldn't resolve", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("unavailable", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Unable to", StringComparison.OrdinalIgnoreCase);
+        if (unavailable)
+        {
+            var detail = SplitLines(text).LastOrDefault() ?? "No value in the selected frame.";
+            return new(expression, "Unavailable: " + detail[..Math.Min(detail.Length, MaxEvaluationLength - 13)], false);
+        }
+        return new(expression, text.Length > MaxEvaluationLength ? text[..(MaxEvaluationLength - 1)] + "…" : text, true);
+    }
+
+    public static string BuildLoadSymbolsCommand(string executablePath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
+        var module = Path.GetFileNameWithoutExtension(executablePath);
+        ValidateSourceBasename(module);
+        if (module.IndexOfAny(['*', '?']) >= 0)
+            throw new ArgumentException("Debugger module names cannot contain wildcards.", nameof(executablePath));
+        return $"ld \"{module}\"";
+    }
+
     public static string BuildSourceBreakpointCommand(string basename, int line)
     {
         ValidateSourceBasename(basename);
@@ -126,6 +158,7 @@ public static partial class DbgEngProtocol
         {
             var match = ProcessRegex().Match(line);
             if (!match.Success) continue;
+            if (Regex.IsMatch(line, @"\bexited\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)) return null;
             var value = match.Groups["pid"].Value;
             if (int.TryParse(value, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var pid)) return pid;
             if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out pid)) return pid;
@@ -163,4 +196,7 @@ public static partial class DbgEngProtocol
 
     [GeneratedRegex(@"^\s*\.\s*\d+\s+id:\s*(?<pid>[0-9a-fA-F]+)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex ProcessRegex();
+
+    [GeneratedRegex(@"\A[A-Za-z_][A-Za-z0-9_]*\z", RegexOptions.CultureInvariant)]
+    private static partial Regex IdentifierRegex();
 }

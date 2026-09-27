@@ -111,6 +111,8 @@
                 <MenuItem Header="_Start / Continue" InputGestureText="F5" IsEnabled="{Binding CanDebugStartContinue}" Tag="debug.startContinue" Click="RegisteredCommand_Click" />
                 <MenuItem Header="_Pause" InputGestureText="Pause" IsEnabled="{Binding CanDebugPause}" Tag="debug.pause" Click="RegisteredCommand_Click" />
                 <MenuItem Header="S_top" InputGestureText="Shift+F5" IsEnabled="{Binding CanDebugStop}" Tag="debug.stop" Click="RegisteredCommand_Click" />
+                <MenuItem Header="_Restart Debugging" InputGestureText="Ctrl+Shift+F6" IsEnabled="{Binding CanDebugRestart}" Tag="debug.restart" Click="RegisteredCommand_Click" />
+                <MenuItem Header="Run to _Cursor" InputGestureText="Ctrl+F10" IsEnabled="{Binding CanDebugRunToCursor}" Tag="debug.runToCursor" Click="RegisteredCommand_Click" />
                 <Separator />
                 <MenuItem Header="Toggle _Breakpoint" InputGestureText="F9" IsEnabled="{Binding CanDebugToggleBreakpoint}" Tag="debug.toggleBreakpoint" Click="RegisteredCommand_Click" />
                 <Separator />
@@ -406,20 +408,28 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Margin="4,0,4,6" Foreground="{DynamicResource IDE.TextMutedBrush}" Text="{Binding Debug.StatusText}" />
-                            <Grid Grid.Row="1">
+                            <DockPanel Grid.Row="0" Margin="4,0,4,6">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Content="Restart" Margin="6,0" IsEnabled="{Binding CanDebugRestart}" ToolTip="Stop, rebuild and debug the same target and configuration" Tag="debug.restart" Click="RegisteredCommand_Click" />
+                                    <Button Content="Run to Cursor" IsEnabled="{Binding CanDebugRunToCursor}" Tag="debug.runToCursor" Click="RegisteredCommand_Click" />
+                                </StackPanel>
+                                <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource IDE.TextMutedBrush}" Text="{Binding Debug.StatusText}" />
+                            </DockPanel>
+                            <TabControl x:Name="DebugWorkflowTabs" Grid.Row="1">
+                            <TabItem Header="Inspection">
+                            <Grid Margin="0,4,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="0.8*" MinWidth="160" />
                                     <ColumnDefinition Width="1.4*" MinWidth="220" />
                                     <ColumnDefinition Width="1.4*" MinWidth="220" />
                                 </Grid.ColumnDefinitions>
                                 <GroupBox Grid.Column="0" Header="Threads" Margin="0,0,6,0">
-                                    <ListView x:Name="DebugThreadsList" ItemsSource="{Binding Debug.Threads}" BorderThickness="0" Background="Transparent" MouseDoubleClick="DebugThreads_MouseDoubleClick">
+                                    <ListView x:Name="DebugThreadsList" ItemsSource="{Binding Debug.Threads}" IsEnabled="{Binding Debug.CanInspect}" BorderThickness="0" Background="Transparent" MouseDoubleClick="DebugThreads_MouseDoubleClick">
                                         <ListView.View><GridView><GridViewColumn Header="Thread" Width="180" DisplayMemberBinding="{Binding DisplayName}" /></GridView></ListView.View>
                                     </ListView>
                                 </GroupBox>
                                 <GroupBox Grid.Column="1" Header="Call Stack" Margin="0,0,6,0">
-                                    <ListView x:Name="DebugFramesList" ItemsSource="{Binding Debug.Frames}" BorderThickness="0" Background="Transparent" MouseDoubleClick="DebugFrames_MouseDoubleClick">
+                                    <ListView x:Name="DebugFramesList" ItemsSource="{Binding Debug.Frames}" IsEnabled="{Binding Debug.CanInspect}" BorderThickness="0" Background="Transparent" MouseDoubleClick="DebugFrames_MouseDoubleClick">
                                         <ListView.View><GridView>
                                             <GridViewColumn Header="#" Width="36" DisplayMemberBinding="{Binding Index}" />
                                             <GridViewColumn Header="Function" Width="190" DisplayMemberBinding="{Binding FunctionName}" />
@@ -437,6 +447,51 @@
                                     </ListView>
                                 </GroupBox>
                             </Grid>
+                            </TabItem>
+                            <TabItem Header="Breakpoints">
+                                <DockPanel Margin="4">
+                                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,5">
+                                        <Button Content="Go to Source" Click="DebugBreakpointNavigate_Click" />
+                                        <Button Content="Remove" Margin="8,0" IsEnabled="{Binding Debug.CanEditBreakpoints}" Click="DebugRemoveBreakpoint_Click" />
+                                        <Button Content="Remove All" IsEnabled="{Binding Debug.CanEditBreakpoints}" Click="DebugRemoveAllBreakpoints_Click" />
+                                    </StackPanel>
+                                    <ListView x:Name="DebugBreakpointsList" ItemsSource="{Binding Debug.Breakpoints}" MouseDoubleClick="DebugBreakpoints_MouseDoubleClick" Background="Transparent" BorderThickness="0">
+                                        <ListView.View><GridView>
+                                            <GridViewColumn Header="Enabled" Width="65"><GridViewColumn.CellTemplate><DataTemplate>
+                                                <CheckBox IsChecked="{Binding IsEnabled, Mode=OneWay}" IsEnabled="{Binding DataContext.Debug.CanEditBreakpoints, RelativeSource={RelativeSource AncestorType=Window}}" AutomationProperties.Name="Breakpoint enabled" Click="DebugBreakpointEnabled_Click" />
+                                            </DataTemplate></GridViewColumn.CellTemplate></GridViewColumn>
+                                            <GridViewColumn Header="Source" Width="400" DisplayMemberBinding="{Binding SourcePath}" />
+                                            <GridViewColumn Header="Line" Width="55" DisplayMemberBinding="{Binding Line}" />
+                                            <GridViewColumn Header="State" Width="80" DisplayMemberBinding="{Binding Status}" />
+                                            <GridViewColumn Header="Details" Width="500" DisplayMemberBinding="{Binding Message}" />
+                                        </GridView></ListView.View>
+                                    </ListView>
+                                </DockPanel>
+                            </TabItem>
+                            <TabItem Header="Watches / Evaluate">
+                                <DockPanel Margin="4">
+                                    <StackPanel DockPanel.Dock="Top">
+                                        <TextBlock Text="Debugger identifiers only: locals and parameters in the selected stopped frame. No members, operators or calls." Foreground="{DynamicResource IDE.TextMutedBrush}" TextWrapping="Wrap" />
+                                        <DockPanel Margin="0,4">
+                                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                                <Button Content="Evaluate" Margin="6,0" IsEnabled="{Binding Debug.CanInspect}" Click="DebugEvaluate_Click" />
+                                                <Button Content="Add Watch" Click="DebugAddWatch_Click" />
+                                                <Button Content="Remove Watch" Margin="6,0" Click="DebugRemoveWatch_Click" />
+                                                <Button Content="Refresh" IsEnabled="{Binding Debug.CanInspect}" Click="DebugRefreshWatches_Click" />
+                                            </StackPanel>
+                                            <TextBox x:Name="DebugExpressionInput" MaxLength="128" AutomationProperties.Name="Debugger identifier" ToolTip="Local or parameter identifier, up to 128 characters" />
+                                        </DockPanel>
+                                        <TextBlock Text="{Binding Debug.EvaluationText}" TextWrapping="Wrap" MaxHeight="50" ToolTip="{Binding Debug.EvaluationText}" />
+                                    </StackPanel>
+                                    <ListView x:Name="DebugWatchesList" ItemsSource="{Binding Debug.Watches}" Background="Transparent" BorderThickness="0">
+                                        <ListView.View><GridView>
+                                            <GridViewColumn Header="Identifier (16 max)" Width="200" DisplayMemberBinding="{Binding Expression}" />
+                                            <GridViewColumn Header="Value / availability" Width="750" DisplayMemberBinding="{Binding Value}" />
+                                        </GridView></ListView.View>
+                                    </ListView>
+                                </DockPanel>
+                            </TabItem>
+                            </TabControl>
                         </Grid>
                     </TabItem>
                 </TabControl>

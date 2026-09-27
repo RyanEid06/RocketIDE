@@ -1,0 +1,52 @@
+[
+  {
+    "Path": "C:\\Users\\Administrator\\.codex\\worktrees\\rocketide-deferred-acceptance\\RocketIDE\\docs\\deferred-acceptance-audit-2026-09-26\\ACCEPTANCE_SUMMARY.md",
+    "Length": 5137,
+    "SHA256": "76237A666A6639C07D92D128A6A20586BB3304F3E7FFE80D2E68F451C3AD8D33"
+  },
+  {
+    "Path": "C:\\Users\\Administrator\\.codex\\worktrees\\rocketide-deferred-acceptance\\RocketIDE\\docs\\deferred-acceptance-audit-2026-09-26\\AUDIT_PROGRESS.md",
+    "Length": 6703,
+    "SHA256": "9A70A447008FF7B7091CAE5F1E762413341C8F58778E1E5A19F3AB2617B3936A"
+  },
+  {
+    "Path": "C:\\Users\\Administrator\\.codex\\worktrees\\rocketide-deferred-acceptance\\RocketIDE\\docs\\deferred-acceptance-audit-2026-09-26\\BUG_REPORTS.md",
+    "Length": 7356,
+    "SHA256": "24578B885A1F97DC9FB02E88A7F14F32D4F70C48CB43F683D183693DB2D15BDA"
+  },
+  {
+    "Path": "C:\\Users\\Administrator\\.codex\\worktrees\\rocketide-deferred-acceptance\\RocketIDE\\docs\\deferred-acceptance-audit-2026-09-26\\DEFERRED_TEST_MATRIX.md",
+    "Length": 17260,
+    "SHA256": "6B39CD6E9780F6745C6C53095F2F7CEA08D7F5B0C1781918860B17B6C45E373D"
+  },
+  {
+    "Path": "C:\\Users\\Administrator\\.codex\\worktrees\\rocketide-deferred-acceptance\\RocketIDE\\docs\\deferred-acceptance-audit-2026-09-26\\FIX_HANDOFF.md",
+    "Length": 5351,
+    "SHA256": "361924C0FF4529C94ECC9238FD2BA0FA352D5AE55B257C899AC2A536BFBFA79C"
+  },
+  {
+    "Path": "C:\\Users\\Administrator\\.codex\\worktrees\\rocketide-deferred-acceptance\\RocketIDE\\docs\\deferred-acceptance-audit-2026-09-26\\HIGHER_MODEL_BUG_FIX_PROMPT.md",
+    "Length": 5508,
+    "SHA256": "249A7188F51A46B817764F8806A17BD4C0598F2226E9CF6CB8AA546F74A2F836"
+  },
+  {
+    "Path": "C:\\Users\\Administrator\\.codex\\worktrees\\rocketide-deferred-acceptance\\RocketIDE\\docs\\deferred-acceptance-audit-2026-09-26\\evidence\\closure-2026-09-26.md",
+    "Length": 10750,
+    "SHA256": "5609CBC676F5B71912480D632FF86DE4EF25299667A27B8EF8B8756C3F4DD3A2"
+  },
+  {
+    "Path": "C:\\Users\\Administrator\\.codex\\worktrees\\rocketide-deferred-acceptance\\RocketIDE\\docs\\deferred-acceptance-audit-2026-09-26\\evidence\\continuation-2026-09-27.md",
+    "Length": 5199,
+    "SHA256": "1A788715A0C9335A76AAA3926C4E17B8DAF361AE115D347DB67B4681908CA157"
+  },
+  {
+    "Path": "C:\\Users\\Administrator\\.codex\\worktrees\\rocketide-deferred-acceptance\\RocketIDE\\docs\\deferred-acceptance-audit-2026-09-26\\evidence\\ui-run-output-missing.png",
+    "Length": 117981,
+    "SHA256": "E40FEF72567064EECB95F4AF17B0B897CF868D0BEF70995D745A4811F8514743"
+  },
+  {
+    "Path": "C:\\Users\\Administrator\\.codex\\worktrees\\rocketide-deferred-acceptance\\RocketIDE\\docs\\deferred-acceptance-audit-2026-09-26\\evidence\\ui-test-panel-stuck.png",
+    "Length": 90682,
+    "SHA256": "D888050442DD62EBCF5B8C48A72C880C0B8FC717BEB635841868A49CE31E75E8"
+  }
+]

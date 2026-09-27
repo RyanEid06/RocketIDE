@@ -1,0 +1,21 @@
+Test project C:/Users/Administrator/Desktop/Projects/RocketIDE-Build/rocket-wp06-prerequisite/out/build/wp06-gate
+    Start 11: language_server
+1/6 Test #11: language_server ..................   Passed    0.88 sec
+    Start 12: analysis_queue
+2/6 Test #12: analysis_queue ...................   Passed    0.21 sec
+    Start 13: language_server_analysis
+3/6 Test #13: language_server_analysis .........   Passed    0.44 sec
+    Start 14: language_server_incremental
+4/6 Test #14: language_server_incremental ......   Passed   38.31 sec
+    Start 15: workspace_state
+5/6 Test #15: workspace_state ..................   Passed    0.52 sec
+    Start 16: formatter
+6/6 Test #16: formatter ........................   Passed    0.12 sec
+
+100% tests passed, 0 tests failed out of 6
+
+Label Time Summary:
+hardening    =   1.01 sec*proc (2 tests)
+phase20      =   1.01 sec*proc (2 tests)
+
+Total Test time (real) =  41.83 sec

@@ -6,6 +6,13 @@ namespace RocketIDE.Debugger.Tests;
 public sealed class DbgEngProtocolTests
 {
     [TestMethod]
+    public void ExitedProcessIsNotAnActiveDebuggee()
+    {
+        Assert.IsNull(DbgEngProtocol.ParseCurrentProcessId(".  0\tid: 6384\texited\tname: main.exe"));
+        Assert.AreEqual(0x6384, DbgEngProtocol.ParseCurrentProcessId(".  0\tid: 6384\tcreate\tname: main.exe"));
+    }
+
+    [TestMethod]
     public void BreakpointCommandUsesSourceLineExpressionAndRejectsInjection()
     {
         Assert.AreEqual("bp `main.rocket:27`", DbgEngProtocol.BuildSourceBreakpointCommand("main.rocket", 27));

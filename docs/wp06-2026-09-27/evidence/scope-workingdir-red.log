@@ -1,0 +1,30 @@
+  RocketIDE.Debugger -> C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\src\RocketIDE.Debugger\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.dll
+  RocketIDE.Debugger.Tests -> C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.Tests.dll
+Test run for C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed LaunchSetsTheRequestedWorkingDirectoryOnTheInstalledDbgXOptions [27 ms]
+  Error Message:
+   Assertion failed. Expected values to be equal.
+
+expected: "C:\\Users\\Administrator\\AppData\\Local\\Temp\\"
+actual:   null
+
+Assert.AreEqual(directory, options.StartDirectory)
+  Stack Trace:
+     at RocketIDE.Debugger.Tests.DbgXLaunchConfigurationTests.LaunchSetsTheRequestedWorkingDirectoryOnTheInstalledDbgXOptions() in C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\DbgXLaunchConfigurationTests.cs:line 19
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed LaunchConfiguresSourcesBindsBreakpointsAndStopsAtRocketLocation [24 ms]
+  Error Message:
+   Assertion failed. Expected condition to be true.
+Thread selection must reset the local-variable scope to its top frame.
+
+actual: false
+
+Assert.IsTrue(<condition>)
+  Stack Trace:
+     at RocketIDE.Debugger.Tests.RocketNativeDebuggerTests.LaunchConfiguresSourcesBindsBreakpointsAndStopsAtRocketLocation() in C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\RocketNativeDebuggerTests.cs:line 52
+   at RocketIDE.Debugger.Tests.RocketNativeDebuggerTests.LaunchConfiguresSourcesBindsBreakpointsAndStopsAtRocketLocation() in C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\RocketNativeDebuggerTests.cs:line 52
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.ExecuteInternalAsync(Object[] arguments, CancellationTokenSource timeoutTokenSource)
+
+Failed!  - Failed:     2, Passed:     0, Skipped:     0, Total:     2, Duration: 71 ms - RocketIDE.Debugger.Tests.dll (net10.0)

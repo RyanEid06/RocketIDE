@@ -1,0 +1,31 @@
+[1/28] Building CXX object CMakeFiles\rocket_runtime.dir\src\runtime.cpp.obj
+C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\rocket-wp06-prerequisite\src\runtime.cpp(305): warning C4996: 'getenv': This function or variable may be unsafe. Consider using _dupenv_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\rocket-wp06-prerequisite\src\runtime.cpp(317): warning C4996: 'getenv': This function or variable may be unsafe. Consider using _dupenv_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+[2/28] Building CXX object CMakeFiles\rocketc_core.dir\src\target.cpp.obj
+[3/28] Building CXX object CMakeFiles\rocket_runtime.dir\src\stdlib.cpp.obj
+[4/28] Building CXX object CMakeFiles\rocketc_core.dir\src\toolchain.cpp.obj
+C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\rocket-wp06-prerequisite\src\toolchain.cpp(162): warning C4996: 'std::filesystem::u8path': warning STL4021: The std::filesystem::u8path() overloads are deprecated in C++20. The constructors of std::filesystem::path provide equivalent functionality via construction from u8string, u8string_view, or iterators with value_type char8_t. You can define _SILENCE_CXX20_U8PATH_DEPRECATION_WARNING or _SILENCE_ALL_CXX20_DEPRECATION_WARNINGS to suppress this warning.
+[5/28] Building CXX object CMakeFiles\rocketc_core.dir\src\lexer.cpp.obj
+[6/28] Building CXX object CMakeFiles\rocketc_core.dir\src\ast_clone.cpp.obj
+[7/28] Building CXX object CMakeFiles\rocketc_core.dir\src\parser.cpp.obj
+[8/28] Building CXX object CMakeFiles\rocketc_core.dir\src\workspace_state.cpp.obj
+[9/28] Building CXX object CMakeFiles\rocketc_core.dir\src\dependency_graph.cpp.obj
+[10/28] Building CXX object CMakeFiles\rocketc_core.dir\src\document_structure.cpp.obj
+[11/28] Building CXX object CMakeFiles\rocketc_core.dir\src\module_loader.cpp.obj
+[12/28] Building CXX object CMakeFiles\rocketc_core.dir\src\formatter.cpp.obj
+[13/28] Building CXX object CMakeFiles\rocketc_core.dir\src\language_server.cpp.obj
+[14/28] Building CXX object CMakeFiles\rocketc_core.dir\src\package.cpp.obj
+[15/28] Building CXX object CMakeFiles\rocketc_core.dir\src\package_docs.cpp.obj
+[16/28] Building CXX object CMakeFiles\rocketc_core.dir\src\package_registry.cpp.obj
+[17/28] Building CXX object CMakeFiles\rocketc_core.dir\src\package_git.cpp.obj
+[18/28] Building CXX object CMakeFiles\rocketc_core.dir\src\type.cpp.obj
+[19/28] Building CXX object CMakeFiles\rocketc_core.dir\src\native.cpp.obj
+[20/28] Building CXX object CMakeFiles\rocketc_core.dir\src\sema.cpp.obj
+[21/28] Building CXX object CMakeFiles\rocketc_core.dir\src\mir.cpp.obj
+[22/28] Building CXX object CMakeFiles\rocketc_core.dir\src\codegen.cpp.obj
+[23/28] Building CXX object CMakeFiles\rocketc_core.dir\src\llvm_codegen.cpp.obj
+[24/28] Linking CXX static library rocket_runtime.lib
+[25/28] Building CXX object CMakeFiles\rocketc.dir\src\main.cpp.obj
+[26/28] Building CXX object CMakeFiles\rocketc_core.dir\src\hir.cpp.obj
+[27/28] Linking CXX static library rocketc_core.lib
+[28/28] Linking CXX executable rocketc.exe

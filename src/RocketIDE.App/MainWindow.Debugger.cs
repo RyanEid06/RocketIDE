@@ -7,6 +7,7 @@ using RocketIDE.App.Commands;
 using RocketIDE.Core.Diagnostics;
 using RocketIDE.Debugger;
 using RocketIDE.Infrastructure.Processes;
+using RocketIDE.Infrastructure.Settings;
 using RocketIDE.Rocket.Compiler;
 using RocketIDE.Rocket.Debugger;
 
@@ -16,6 +17,7 @@ public partial class MainWindow
 {
     private IRocketNativeDebugger? _nativeDebugger;
     private CancellationTokenSource? _debugOperationCancellation;
+    private DebugLaunchConfiguration? _lastDebugLaunch;
 
     private async void DebugStartContinue_Click(object sender, RoutedEventArgs e)
     {
@@ -34,6 +36,11 @@ public partial class MainWindow
 
             await StartDebugSessionAsync();
         }
+        catch (OperationCanceledException)
+        {
+            if (_nativeDebugger?.State != RocketDebugSessionState.Faulted)
+                _viewModel.Debug.ApplyState(RocketDebugSessionState.Terminated, "Debugger: launch cancelled.");
+        }
         catch (Exception exception) when (IsExpectedDebuggerException(exception))
         {
             AppendRocketOutput($"Rocket debugger failed: {exception.Message}");
@@ -42,7 +49,6 @@ public partial class MainWindow
         }
         finally
         {
-            _debugOperationCancellation = null;
             UpdateRocketCommandAvailability();
         }
     }
@@ -62,12 +68,9 @@ public partial class MainWindow
 
     private async void DebugStop_Click(object sender, RoutedEventArgs e)
     {
-        _debugOperationCancellation?.Cancel();
-        _activeRocketCommandService?.StopActive();
-        if (_nativeDebugger is null) return;
         try
         {
-            await _nativeDebugger.StopAsync(CancellationToken.None);
+            await StopDebugSessionAsync();
         }
         catch (Exception exception) when (IsExpectedDebuggerException(exception))
         {
@@ -89,31 +92,13 @@ public partial class MainWindow
             return;
         }
 
-        var before = _viewModel.Debug.Breakpoints.ToArray();
-        var updated = _viewModel.Debug.ToggleBreakpoint(document.Path, target.CaretLine);
-        RefreshDebugEditorPresentation();
-        if (_nativeDebugger?.State != RocketDebugSessionState.Stopped)
-        {
-            return;
-        }
-
-        try
-        {
-            await _nativeDebugger.SetBreakpointsAsync(updated, CancellationToken.None);
-            _viewModel.Debug.ApplyBoundBreakpoints(_nativeDebugger.Breakpoints);
-            RefreshDebugEditorPresentation();
-        }
-        catch (Exception exception) when (IsExpectedDebuggerException(exception))
-        {
-            _viewModel.Debug.ApplyBoundBreakpoints(before);
-            RefreshDebugEditorPresentation();
-            AppendRocketOutput($"Toggle breakpoint failed: {exception.Message}");
-        }
+        await ChangeDebugBreakpointsAsync(() => _viewModel.Debug.ToggleBreakpoint(document.Path, target.CaretLine));
     }
 
     private async void DebugThreads_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (_nativeDebugger is null || DebugThreadsList.SelectedItem is not RocketDebugThread thread) return;
+        if (_nativeDebugger is null || !_viewModel.Debug.CanInspect || DebugThreadsList.SelectedItem is not RocketDebugThread thread) return;
+        var revision = _viewModel.Debug.BeginInspection();
         try
         {
             await _nativeDebugger.SelectThreadAsync(thread.Index, CancellationToken.None);
@@ -122,11 +107,13 @@ public partial class MainWindow
         {
             AppendRocketOutput($"Select debugger thread failed: {exception.Message}");
         }
+        finally { _viewModel.Debug.EndInspection(revision); }
     }
 
     private async void DebugFrames_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (_nativeDebugger is null || DebugFramesList.SelectedItem is not RocketDebugStackFrame frame) return;
+        if (_nativeDebugger is null || !_viewModel.Debug.CanInspect || DebugFramesList.SelectedItem is not RocketDebugStackFrame frame) return;
+        var revision = _viewModel.Debug.BeginInspection();
         try
         {
             await _nativeDebugger.SelectFrameAsync(frame.Index, CancellationToken.None);
@@ -135,9 +122,10 @@ public partial class MainWindow
         {
             AppendRocketOutput($"Select debugger frame failed: {exception.Message}");
         }
+        finally { _viewModel.Debug.EndInspection(revision); }
     }
 
-    private async Task StartDebugSessionAsync()
+    private async Task StartDebugSessionAsync(DebugLaunchConfiguration? restart = null)
     {
         if (_lifetime.IsStopping) return;
         if (Interlocked.CompareExchange(ref _rocketCommandRunning, 1, 0) != 0)
@@ -150,11 +138,12 @@ public partial class MainWindow
         _debugOperationCancellation = cancellation;
         _rocketCommandCancellation = cancellation;
         _viewModel.SetRocketCommandRunning(true);
+        _viewModel.Debug.ApplyState(RocketDebugSessionState.Launching, "Debugger: building target…");
         RocketDebugArtifactPaths? paths = null;
         IReadOnlyList<string> arguments = [];
         try
         {
-            var activePath = GetRocketCommandActivePath()
+            var activePath = restart?.InputPath ?? GetRocketCommandActivePath()
                 ?? throw new InvalidOperationException("Open a Rocket executable target before debugging.");
             var target = _targetDiscovery.Discover(activePath)
                 ?? throw new InvalidOperationException("The active file does not resolve to a Rocket target.");
@@ -168,7 +157,9 @@ public partial class MainWindow
                 return;
             }
 
-            var settings = await GetRocketToolSettingsAsync(cancellation.Token);
+            var settings = restart?.Settings ?? await GetRocketToolSettingsAsync(cancellation.Token);
+            _lastDebugLaunch = new DebugLaunchConfiguration(activePath, settings);
+            _viewModel.SetHasDebugLaunch(true);
             arguments = string.IsNullOrWhiteSpace(settings.ProgramArguments)
                 ? []
                 : WindowsCommandLine.ParseArguments(settings.ProgramArguments);
@@ -219,15 +210,18 @@ public partial class MainWindow
             _viewModel.SetRocketCommandRunning(false);
             Interlocked.Exchange(ref _rocketCommandRunning, 0);
             UpdateRocketCommandAvailability();
+            if (paths is null && _viewModel.Debug.State == RocketDebugSessionState.Launching)
+                _viewModel.Debug.ApplyState(RocketDebugSessionState.Terminated, "Debugger: build did not launch a target.");
+            if (paths is null && ReferenceEquals(_debugOperationCancellation, cancellation)) _debugOperationCancellation = null;
         }
 
         if (paths is null) return;
-        cancellation.Token.ThrowIfCancellationRequested();
-        var debugger = await EnsureNativeDebuggerAsync(cancellation.Token);
-        ShowDebugPanel();
-        _outputBuffer.BeginCommand("Debug", paths.ExecutablePath);
         try
         {
+            cancellation.Token.ThrowIfCancellationRequested();
+            var debugger = await EnsureNativeDebuggerAsync(cancellation.Token);
+            ShowDebugPanel();
+            _outputBuffer.BeginCommand("Debug", paths.ExecutablePath);
             await debugger.LaunchAsync(new RocketDebugLaunchRequest(
                 paths.ExecutablePath,
                 paths.PdbPath,
@@ -245,7 +239,7 @@ public partial class MainWindow
 
     private async Task ExecuteDebugStepAsync(string operation, Func<IRocketNativeDebugger, Task> action)
     {
-        if (_nativeDebugger is null || !_viewModel.Debug.IsStopped) return;
+        if (_nativeDebugger is null || !_viewModel.Debug.CanInspect) return;
         try
         {
             await action(_nativeDebugger);
@@ -270,6 +264,12 @@ public partial class MainWindow
         }
 
         var transport = await DbgXCommandTransport.CreateAsync(cancellationToken);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            await transport.DisposeAsync();
+            transport.ForceTerminateOwnedProcesses();
+            cancellationToken.ThrowIfCancellationRequested();
+        }
         var debugger = new RocketNativeDebugger(transport);
         debugger.StateChanged += Debugger_StateChanged;
         debugger.OutputReceived += Debugger_OutputReceived;
@@ -281,8 +281,10 @@ public partial class MainWindow
     private void Debugger_StateChanged(object? sender, RocketDebugStateChangedEventArgs e) =>
         Dispatcher.BeginInvoke(() =>
         {
-            if (sender is IRocketNativeDebugger debugger) _viewModel.Debug.ApplySnapshot(debugger);
-            _viewModel.Debug.ApplyState(e.State, e.Message);
+            if (!ReferenceEquals(sender, _nativeDebugger) || _lifetime.IsStopping || sender is not IRocketNativeDebugger debugger) return;
+            // Queued native state events may be superseded before WPF processes them.
+            if (e.State != debugger.State) return;
+            _viewModel.Debug.ApplyState(debugger.State, e.Message);
             RefreshDebugEditorPresentation();
             UpdateRocketCommandAvailability();
         });
@@ -296,10 +298,12 @@ public partial class MainWindow
     private void Debugger_Stopped(object? sender, RocketDebugStoppedEventArgs e) =>
         Dispatcher.BeginInvoke(async () =>
         {
-            if (sender is IRocketNativeDebugger debugger) _viewModel.Debug.ApplySnapshot(debugger);
+            if (!ReferenceEquals(sender, _nativeDebugger) || _lifetime.IsStopping || sender is not IRocketNativeDebugger debugger || debugger.State != RocketDebugSessionState.Stopped) return;
+            _viewModel.Debug.ApplySnapshot(debugger);
             RefreshDebugEditorPresentation();
             if (e.Location is not null) await NavigateToDebugLocationAsync(e.Location);
             ShowDebugPanel();
+            await RefreshDebugWatchesAsync();
         });
 
     private async Task NavigateToDebugLocationAsync(RocketDebugStopLocation location)
@@ -313,13 +317,10 @@ public partial class MainWindow
 
     private void RefreshDebugEditorPresentation()
     {
-        var current = _nativeDebugger?.CurrentLocation;
+        var current = _nativeDebugger?.State == RocketDebugSessionState.Stopped ? _nativeDebugger.CurrentLocation : null;
         foreach (var document in _viewModel.Documents)
         {
-            var lines = _viewModel.Debug.Breakpoints
-                .Where(item => string.Equals(item.SourcePath, document.Path, StringComparison.OrdinalIgnoreCase))
-                .Select(item => item.Line)
-                .ToArray();
+            var lines = _viewModel.Debug.GetBreakpointLines(document.Path);
             var currentLine = current is not null && string.Equals(current.SourcePath, document.Path, StringComparison.OrdinalIgnoreCase)
                 ? current.Line
                 : (int?)null;
@@ -355,6 +356,8 @@ public partial class MainWindow
         {
             ModifierKeys.None => key.ToString(),
             ModifierKeys.Shift => $"Shift+{key}",
+            ModifierKeys.Control => $"Ctrl+{key}",
+            ModifierKeys.Control | ModifierKeys.Shift => $"Ctrl+Shift+{key}",
             _ => string.Empty,
         };
         if (string.IsNullOrEmpty(gesture)) return false;
@@ -370,6 +373,8 @@ public partial class MainWindow
             case RocketCommandRegistry.DebugStepOver: DebugStepOver_Click(this, new RoutedEventArgs()); break;
             case RocketCommandRegistry.DebugStepInto: DebugStepInto_Click(this, new RoutedEventArgs()); break;
             case RocketCommandRegistry.DebugStepOut: DebugStepOut_Click(this, new RoutedEventArgs()); break;
+            case RocketCommandRegistry.DebugRestart: DebugRestart_Click(this, new RoutedEventArgs()); break;
+            case RocketCommandRegistry.DebugRunToCursor: DebugRunToCursor_Click(this, new RoutedEventArgs()); break;
             default: return false;
         }
         return true;

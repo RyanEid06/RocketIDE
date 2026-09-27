@@ -1,0 +1,12 @@
+[1/12] Building CXX object CMakeFiles\rocketc_analysis_queue_tests.dir\tests\analysis_queue_tests.cpp.obj
+[2/12] Building CXX object CMakeFiles\rocketc_language_server_tests.dir\tests\language_server_tests.cpp.obj
+[3/12] Building CXX object CMakeFiles\rocketc_language_server_incremental_tests.dir\tests\language_server_incremental_tests.cpp.obj
+[4/12] Building CXX object CMakeFiles\rocketc_language_server_analysis_tests.dir\tests\language_server_analysis_tests.cpp.obj
+[5/12] Building CXX object CMakeFiles\rocketc_formatter_tests.dir\tests\formatter_tests.cpp.obj
+[6/12] Linking CXX executable rocketc_language_server_tests.exe
+[7/12] Linking CXX executable rocketc_analysis_queue_tests.exe
+[8/12] Building CXX object CMakeFiles\rocketc_workspace_state_tests.dir\tests\workspace_state_tests.cpp.obj
+[9/12] Linking CXX executable rocketc_language_server_analysis_tests.exe
+[10/12] Linking CXX executable rocketc_language_server_incremental_tests.exe
+[11/12] Linking CXX executable rocketc_workspace_state_tests.exe
+[12/12] Linking CXX executable rocketc_formatter_tests.exe

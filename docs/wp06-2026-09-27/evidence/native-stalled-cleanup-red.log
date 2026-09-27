@@ -1,0 +1,25 @@
+  Determining projects to restore...
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\src\RocketIDE.Debugger\RocketIDE.Debugger.csproj (in 331 ms).
+  1 of 2 projects are up-to-date for restore.
+  RocketIDE.Debugger -> C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\src\RocketIDE.Debugger\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.dll
+  RocketIDE.Debugger.Tests -> C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.Tests.dll
+Test run for C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed StalledEngineCleanupDoesNotLeaveAnAutomaticallyRestartedHost [2 s]
+  Error Message:
+   Assertion failed. Expected values to be equal.
+DbgX must not leave its automatic replacement engine after forced cleanup.
+
+expected: 0
+actual:   1
+
+Assert.AreEqual(0, remaining.Length)
+  Stack Trace:
+     at RocketIDE.Debugger.Tests.DbgXNativeLifecycleTests.StalledEngineCleanupDoesNotLeaveAnAutomaticallyRestartedHost() in C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\DbgXNativeLifecycleTests.cs:line 28
+   at RocketIDE.Debugger.Tests.DbgXNativeLifecycleTests.StalledEngineCleanupDoesNotLeaveAnAutomaticallyRestartedHost() in C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\DbgXNativeLifecycleTests.cs:line 30
+   at Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.Execution.TestMethodInfo.ExecuteInternalAsync(Object[] arguments, CancellationTokenSource timeoutTokenSource)
+
+Total tests: 1
+     Failed: 1
+Test Run Failed.
+ Total time: 2.7208 Seconds

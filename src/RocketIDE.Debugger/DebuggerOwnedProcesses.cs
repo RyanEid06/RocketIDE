@@ -6,6 +6,57 @@ namespace RocketIDE.Debugger;
 
 internal static class DebuggerOwnedProcesses
 {
+    internal sealed class EngineHostLease
+    {
+        private readonly int _ownerId;
+        private readonly HashSet<int> _preexisting;
+        private readonly List<Process> _hosts = [];
+        private readonly object _gate = new();
+        private bool _sealed;
+
+        internal EngineHostLease(int ownerId)
+        {
+            _ownerId = ownerId;
+            _preexisting = FindOwnedEngineHosts(ownerId, SnapshotProcesses()).ToHashSet();
+        }
+
+        internal void Capture()
+        {
+            lock (_gate)
+            {
+                if (_sealed || _hosts.Count != 0) return;
+                foreach (var id in FindOwnedEngineHosts(_ownerId, SnapshotProcesses()).Where(id => !_preexisting.Contains(id)))
+                {
+                    Process? process = null;
+                    try
+                    {
+                        process = Process.GetProcessById(id);
+                        _ = process.Handle; // Retain identity even if Windows later reuses the PID.
+                        _hosts.Add(process);
+                    }
+                    catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or Win32Exception)
+                    { process?.Dispose(); }
+                }
+            }
+        }
+
+        internal void Terminate()
+        {
+            lock (_gate)
+            {
+                if (_sealed) return;
+                Capture();
+                _sealed = true;
+                foreach (var process in _hosts)
+                {
+                    try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+                    catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or Win32Exception) { }
+                    finally { process.Dispose(); }
+                }
+            }
+        }
+    }
+
     internal sealed record ProcessEntry(int Id, int ParentId, string Name);
 
     internal static IReadOnlyList<int> FindOwnedEngineHosts(int ideProcessId, IEnumerable<ProcessEntry> processes)
@@ -46,7 +97,7 @@ internal static class DebuggerOwnedProcesses
         }
     }
 
-    private static IReadOnlyList<ProcessEntry> SnapshotProcesses()
+    internal static IReadOnlyList<ProcessEntry> SnapshotProcesses()
     {
         if (!OperatingSystem.IsWindows()) return [];
         var snapshot = CreateToolhelp32Snapshot(0x00000002, 0);

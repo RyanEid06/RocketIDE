@@ -1,0 +1,19 @@
+using System.Diagnostics;
+using RocketIDE.Debugger;
+var clock = Stopwatch.StartNew();
+void Log(string message) => Console.WriteLine($"{clock.Elapsed.TotalSeconds:F3}s {message}");
+using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+var transport = await DbgXCommandTransport.CreateAsync(deadline.Token);
+transport.OutputReceived += (_, e) => Log("OUTPUT " + e.Text);
+try
+{
+    await transport.CreateProcessAsync(args[0], [], Path.GetDirectoryName(args[0])!, deadline.Token);
+    foreach (var command in new[] { ".expr /s masm", ".lines -e", "l+t", "ld main", "bp `member.rocket:8`", "g", "|", "dv /t", "?? pair", "?? pair.left", "?? pair->left", "?? total", "?? missing", "?? (", "bl" })
+    {
+        Log("COMMAND " + command);
+        Log(await transport.ExecuteAsync(command, deadline.Token));
+    }
+}
+catch (Exception exception) { Log(exception.ToString()); }
+finally { await transport.DisposeAsync(); transport.ForceTerminateOwnedProcesses(); Log("DISPOSE end"); }
+

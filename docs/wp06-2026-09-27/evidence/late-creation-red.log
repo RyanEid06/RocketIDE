@@ -1,0 +1,5 @@
+  Determining projects to restore...
+  Restored C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\src\RocketIDE.Debugger\RocketIDE.Debugger.csproj (in 329 ms).
+  1 of 2 projects are up-to-date for restore.
+  RocketIDE.Debugger -> C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\src\RocketIDE.Debugger\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.dll
+C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\DebuggerCreationTests.cs(14,23): error CS0103: The name 'DebuggerCreation' does not exist in the current context [C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\RocketIDE.Debugger.Tests.csproj]

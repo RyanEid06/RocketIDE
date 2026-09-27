@@ -1,0 +1,201 @@
+Window: "main.rocket — RocketIDE", App: RocketIDE.exe.
+	0 window main.rocket — RocketIDE Secondary Actions: Raise
+		1 title bar (settable, string) Value: main.rocket — RocketIDE
+			2 menu bar System ID: MenuBar
+				3 menu item System
+			4 button Minimize
+			5 button Maximize
+			6 button Close
+		7 menu
+			8 menu item File
+				9 text _File
+			10 menu item Edit
+				11 text _Edit
+			12 menu item Selection
+				13 text _Selection
+			14 menu item View
+				15 text _View
+			16 menu item Navigate
+				17 text _Navigate
+			18 menu item Build
+				19 text _Build
+			20 menu item Run
+				21 text _Run
+			22 menu item Debug
+				23 text _Debug
+			24 menu item Tools
+				25 text _Tools
+			26 menu item Help
+				27 text _Help
+		28 button New file button Description: New file
+			29 text New
+		30 button Open file button Description: Open file
+			31 text Open
+		32 button Open folder button Description: Open folder
+			33 text Folder
+		34 button Save active file button Description: Save active file
+			35 text Save
+		36 button (disabled) Build Description: Build active Rocket target
+			37 text (disabled) Build
+		38 button (disabled) Run Description: Run active Rocket executable target
+			39 text (disabled) Run
+		40 button Start or continue Rocket debugging button Description: Start or continue Rocket debugging (F5)
+			41 text Debug
+		42 button (disabled) Pause Rocket debugging button Description: Pause Rocket debugging
+			43 text (disabled) Pause
+		44 button Stop Rocket debugging button Description: Stop Rocket debugging (Shift+F5)
+			45 text Stop Debug
+		46 button (disabled) Stop Rocket compiler or program button Description: Stop active Rocket compiler/program process tree
+			47 text (disabled) Stop
+		48 button (disabled) Test Description: Test active Rocket target
+			49 text (disabled) Test
+		50 status bar
+			51 text Rocket SDK: rocketc 3.0.0
+				52 text Rocket SDK: rocketc 3.0.0
+			53 separator (disabled)
+			54 text LSP: project · 1 files · 9 symbols
+				55 text LSP: project · 1 files · 9 symbols
+			56 separator (disabled)
+			57 text Target: debug-proof
+				58 text Target: debug-proof
+			59 separator (disabled)
+			60 text Ln 9, Col 1
+				61 text Ln 9, Col 1
+			62 separator (disabled)
+			63 text UTF-8
+				64 text UTF-8
+		65 button Refresh workspace Description: Refresh workspace
+			66 text ↻
+		67 text EXPLORER
+		68 tree view ID: ExplorerTree
+			69 tree view item (selectable) RocketIDE.App.ViewModels.Explorer.ExplorerNodeViewModel
+				70 button ID: Expander
+				71 text debug-proof
+				72 tree view item (selectable) RocketIDE.App.ViewModels.Explorer.ExplorerNodeViewModel
+					73 button ID: Expander
+					74 text src
+				75 tree view item (selectable) RocketIDE.App.ViewModels.Explorer.ExplorerNodeViewModel
+					76 text rocket.toml
+		77 thumb ID: ExplorerSplitter
+		78 custom ID: PrimaryEditorGroupHost
+			79 tab ID: Tabs
+				80 tab item (selectable) RocketIDE.App.ViewModels.EditorViewViewModel
+					81 text main.rocket
+					82 button Close editor view button Description: Close view
+						83 text ×
+					84 custom
+						85 document (settable, string) Value: extern fn Sleep(milliseconds: Int) -> Unit fn twice(value: Int) -> Int: let doubled = value * 2 return doubled fn main() -> Int: let seed = 21 let answer = twice(seed) print(answer) var tick = 0 while tick < 600: unsafe: Sleep(100) tick = tick + 1 return 0 ID: Editor
+							86 document (settable, string) Value: extern fn Sleep(milliseconds: Int) -> Unit fn twice(value: Int) -> Int: let doubled = value * 2 return doubled fn main() -> Int: let seed = 21 let answer = twice(seed) print(answer) var tick = 0 while tick < 600: unsafe: Sleep(100) tick = tick + 1 return 0
+								87 list view
+									88 dataitem ICSharpCode.AvalonEdit.Editing.LineNumberMargin
+									89 dataitem System.Windows.Shapes.Line
+									90 dataitem ICSharpCode.AvalonEdit.Folding.FoldingMargin
+		91 thumb ID: BottomPanelSplitter
+		92 tab ID: BottomTabs
+			93 tab item (selectable) PROBLEMS
+				94 text PROBLEMS
+			95 tab item (selectable) REFERENCES (0)
+				96 text REFERENCES (0)
+			97 tab item (selectable) OUTPUT
+				98 text OUTPUT
+			99 tab item (selectable) TESTS
+				100 text TESTS
+			101 tab item (selectable) SEARCH
+				102 text SEARCH
+			103 tab item (selectable) DEBUG
+				104 text DEBUG
+				153 text Debugger: Stopped
+				154 group Threads
+					155 text Threads
+					156 datagrid ID: DebugThreadsList
+						157 header
+							158 header item Thread
+								159 text Thread
+								160 thumb ID: PART_HeaderGripper
+						187 dataitem (selectable) RocketDebugThread { Index = 0, SystemId = 24588, DisplayName = Thread 0 (0x600c), IsCurrent = True }
+							328 text Thread 0 (0x600c)
+				161 group Call Stack
+					162 text Call Stack
+					163 datagrid ID: DebugFramesList
+						164 header
+							165 header item #
+								166 text #
+								167 thumb ID: PART_HeaderGripper
+							168 header item Function
+								169 text Function
+								170 thumb ID: PART_HeaderGripper
+							171 header item Line
+								172 text Line
+								173 thumb ID: PART_HeaderGripper
+						264 dataitem (selectable) RocketDebugStackFrame { Index = 0, FunctionName = main!twice+0x1b, InstructionPointer = , SourcePath = C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\debug-proof\src\main.rocket, Line = 4 }
+							329 text 0
+							330 text main!twice+0x1b
+							331 text 4
+						230 dataitem (selectable) RocketDebugStackFrame { Index = 1, FunctionName = main!main+0x49, InstructionPointer = , SourcePath = C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\debug-proof\src\main.rocket, Line = 9 }
+							332 text 1
+							333 text main!main+0x49
+							334 text 9
+						234 dataitem (selectable) RocketDebugStackFrame { Index = 2, FunctionName = main!main+0xe, InstructionPointer = , SourcePath = , Line = }
+							335 text 2
+							336 text main!main+0xe
+							337 text
+						238 dataitem (selectable) RocketDebugStackFrame { Index = 3, FunctionName = (Inline Function) --------`-------- main!invoke_main+0x22, InstructionPointer = , SourcePath = , Line = }
+							338 text 3
+							339 text (Inline Function) --------`-------- main!invoke_main+0x22
+							340 text
+						242 dataitem (selectable) RocketDebugStackFrame { Index = 4, FunctionName = main!__scrt_common_main_seh+0x10f, InstructionPointer = , SourcePath = , Line = }
+							341 text 4
+							342 text main!__scrt_common_main_seh+0x10f
+							343 text
+						246 dataitem (selectable) RocketDebugStackFrame { Index = 5, FunctionName = KERNEL32!BaseThreadInitThunk+0x17, InstructionPointer = , SourcePath = , Line = }
+							344 text 5
+							345 text KERNEL32!BaseThreadInitThunk+0x17
+							346 text
+						250 dataitem (selectable) RocketDebugStackFrame { Index = 6, FunctionName = ntdll!RtlUserThreadStart+0x2c, InstructionPointer = , SourcePath = , Line = }
+							347 text 6
+							348 text ntdll!RtlUserThreadStart+0x2c
+							349 text
+				174 group Locals
+					175 text Locals
+					176 datagrid
+						177 header
+							178 header item Name
+								179 text Name
+								180 thumb ID: PART_HeaderGripper
+							181 header item Type
+								182 text Type
+								183 thumb ID: PART_HeaderGripper
+							184 header item Value
+								185 text Value
+								186 thumb ID: PART_HeaderGripper
+						316 dataitem (selectable) RocketDebugVariable { Name = seed, Type = int64, Value = 0n21 }
+							350 text seed
+							351 text int64
+							352 text 0n21
+						320 dataitem (selectable) RocketDebugVariable { Name = answer, Type = int64, Value = 0n0 }
+							353 text answer
+							354 text int64
+							355 text 0n0
+						324 dataitem (selectable) RocketDebugVariable { Name = tick, Type = int64, Value = 0n0 }
+							356 text tick
+							357 text int64
+							358 text 0n0
+
+Document text: ```
+extern fn Sleep(milliseconds: Int) -> Unit
+
+fn twice(value: Int) -> Int:
+    let doubled = value * 2
+    return doubled
+
+fn main() -> Int:
+    let seed = 21
+    let answer = twice(seed)
+    print(answer)
+    var tick = 0
+    while tick < 600:
+        unsafe:
+            Sleep(100)
+        tick = tick + 1
+    return 0
+```

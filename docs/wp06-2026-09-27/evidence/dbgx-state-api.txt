@@ -1,0 +1,20 @@
+DbgX.DebuggingState
+PROPERTY System.String PersistentEngineSettings
+PROPERTY DbgX.Interfaces.Enums.TargetType TargetType
+PROPERTY DbgX.Interfaces.Enums.EngineConnectionState ConnectionState
+PROPERTY Boolean ConnectedToProcessServer
+PROPERTY DbgX.Interfaces.Structs.RunningState RunningState
+PROPERTY Boolean EngineBusy
+PROPERTY Boolean InitialBreak
+PROPERTY Boolean PreferDML
+PROPERTY Boolean PreferOpeningTraceFilesFromDumps
+PROPERTY DbgX.Interfaces.Services.CodeLevel CodeLevel
+PROPERTY DbgX.Interfaces.Structs.ProcessorArch EffectiveProcessorArchitecture
+PROPERTY DbgX.Interfaces.Structs.ProcessorArch ActualProcessorArchitecture
+PROPERTY Boolean SupportsScripting
+PROPERTY System.String SymbolPath
+PROPERTY System.String SourcePath
+EVENT System.ComponentModel.PropertyChangedEventHandler PropertyChanged
+DbgX.Interfaces.Events.TargetRefreshEventArgs
+PROPERTY DbgX.Interfaces.Events.RefreshKind Kinds
+PROPERTY Boolean ConnectionStateChanged

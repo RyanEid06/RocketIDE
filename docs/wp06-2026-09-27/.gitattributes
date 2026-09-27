@@ -1,0 +1,5 @@
+# Preserve raw captures, fixtures and their SHA-256 identities across checkouts.
+.gitattributes text eol=lf
+evidence/** -text
+fixtures/** -text
+EVIDENCE_MANIFEST.json -text

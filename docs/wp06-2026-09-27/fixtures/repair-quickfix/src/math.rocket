@@ -1,0 +1,2 @@
+pub fn doubled(value:Int)->Int:
+    return value*2

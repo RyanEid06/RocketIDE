@@ -26,6 +26,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private bool _rocketCommandRunning;
     private bool _hasRocketCommandTarget;
     private bool _rocketRunAvailable;
+    public bool HasDebugLaunch { get; private set; }
+    public void SetHasDebugLaunch(bool value) { HasDebugLaunch = value; RaiseRocketCommandProperties(); }
 
     public MainWindowViewModel(IWorkspaceFileSystem workspaceFileSystem, IWorkspaceSearchService? searchService = null)
     {
@@ -91,7 +93,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             Debug.IsActive,
             Debug.IsRunning,
             Debug.IsStopped,
-            ActiveDocument is not null && IsRocketPath(ActiveDocument.Path)));
+            ActiveDocument is not null && IsRocketPath(ActiveDocument.Path),
+            Debug.State == RocketDebugSessionState.Terminating,
+            Debug.State == RocketDebugSessionState.Launching,
+            Debug.IsInspecting,
+            HasDebugLaunch));
 
     public ObservableCollection<string> RecentWorkspaces { get; } = new();
 
@@ -133,6 +139,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public bool CanDebugStepOver => GetCommandState(RocketCommandRegistry.DebugStepOver).IsEnabled;
     public bool CanDebugStepInto => GetCommandState(RocketCommandRegistry.DebugStepInto).IsEnabled;
     public bool CanDebugStepOut => GetCommandState(RocketCommandRegistry.DebugStepOut).IsEnabled;
+    public bool CanDebugRestart => GetCommandState(RocketCommandRegistry.DebugRestart).IsEnabled;
+    public bool CanDebugRunToCursor => GetCommandState(RocketCommandRegistry.DebugRunToCursor).IsEnabled;
 
     public void SetRocketCommandAvailability(bool hasTarget, bool canRun)
     {
@@ -381,6 +389,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(CanDebugStepOver));
         OnPropertyChanged(nameof(CanDebugStepInto));
         OnPropertyChanged(nameof(CanDebugStepOut));
+        OnPropertyChanged(nameof(CanDebugRestart));
+        OnPropertyChanged(nameof(CanDebugRunToCursor));
     }
 
     public void RaiseCommandStateChanged() => RaiseRocketCommandProperties();

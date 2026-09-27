@@ -1,0 +1,116 @@
+[
+  {
+    "Path": "C:/Users/Administrator/Desktop/Projects/RocketIDE",
+    "Head": "f0e37d9ee9f14a0e5139de484883e0c985687da1",
+    "Branch": "main",
+    "Status": [],
+    "Diff": []
+  },
+  {
+    "Path": "C:/Users/Administrator/.codex/worktrees/rocketide-bug001-004/RocketIDE",
+    "Head": "0de2e223a60911d5d4269ee82af276c4cea10d7a",
+    "Branch": "codex/rocketide-bug001-004",
+    "Status": [],
+    "Diff": []
+  },
+  {
+    "Path": "C:/Users/Administrator/.codex/worktrees/rocketide-deferred-acceptance/RocketIDE",
+    "Head": "d2e82e59a40c5296ca53c4ddf70a2d5edd210536",
+    "Branch": "codex/rocketide-deferred-acceptance",
+    "Status": [
+      " M docs/deferred-acceptance-audit-2026-09-26/ACCEPTANCE_SUMMARY.md",
+      " M docs/deferred-acceptance-audit-2026-09-26/AUDIT_PROGRESS.md",
+      " M docs/deferred-acceptance-audit-2026-09-26/BUG_REPORTS.md",
+      " M docs/deferred-acceptance-audit-2026-09-26/DEFERRED_TEST_MATRIX.md",
+      " M docs/deferred-acceptance-audit-2026-09-26/FIX_HANDOFF.md",
+      "?? docs/deferred-acceptance-audit-2026-09-26/HIGHER_MODEL_BUG_FIX_PROMPT.md",
+      "?? docs/deferred-acceptance-audit-2026-09-26/evidence/closure-2026-09-26.md",
+      "?? docs/deferred-acceptance-audit-2026-09-26/evidence/continuation-2026-09-27.md"
+    ],
+    "Diff": [
+      " .../ACCEPTANCE_SUMMARY.md                          | 28 +++++++---",
+      " .../AUDIT_PROGRESS.md                              | 13 +++++",
+      " .../BUG_REPORTS.md                                 | 60 ++++++++++++++++++++++",
+      " .../DEFERRED_TEST_MATRIX.md                        | 43 ++++++++--------",
+      " .../FIX_HANDOFF.md                                 | 23 +++++++--",
+      " 5 files changed, 135 insertions(+), 32 deletions(-)"
+    ]
+  },
+  {
+    "Path": "C:/Users/Administrator/.codex/worktrees/rocketide-final-wp06/RocketIDE",
+    "Head": "0de2e223a60911d5d4269ee82af276c4cea10d7a",
+    "Branch": null,
+    "Status": [],
+    "Diff": []
+  },
+  {
+    "Path": "C:/Users/Administrator/Desktop/Projects/RocketIDE/.worktrees/rocketide-final-wp02-wp07",
+    "Head": "8013d109632687687ca99612cdde881421aa192c",
+    "Branch": null,
+    "Status": [],
+    "Diff": []
+  },
+  {
+    "Path": "C:/Users/Administrator/Desktop/Projects/RocketIDE-WP03",
+    "Head": "23fbb86c0f948fef45bdc7fda2f45c1c6fc187ef",
+    "Branch": null,
+    "Status": [],
+    "Diff": []
+  },
+  {
+    "Path": "C:/Users/Administrator/Desktop/Projects/RocketIDE-WP05",
+    "Head": "6561264e5acc820a8560f65fca2d36b889be3a5f",
+    "Branch": null,
+    "Status": [],
+    "Diff": []
+  },
+  {
+    "Path": "C:/Users/Administrator/Desktop/Projects/Rocket",
+    "Head": "10f295dd000b93fe50d254be21fedffd17892aeb",
+    "Branch": "master",
+    "Status": [],
+    "Diff": []
+  },
+  {
+    "Path": "C:/Users/Administrator/Desktop/Projects/Rocket/out/w/a",
+    "Head": "fe2a85e499c5107752bca31837d09bcd607d393d",
+    "Branch": null,
+    "Status": [],
+    "Diff": []
+  },
+  {
+    "Path": "C:/Users/Administrator/Desktop/Projects/Rocket/out/w/lsp",
+    "Head": "1ad63fea58abecaea632ec6ab57e741fbf165c1b",
+    "Branch": "codex/rocketide-final-wp01-lsp",
+    "Status": [],
+    "Diff": []
+  },
+  {
+    "Path": "C:/Users/Administrator/Desktop/Projects/Rocket/out/worktrees/rocket-lsp-fuzzy-symbols",
+    "Head": "f1086f3e9f57678a39608a30df4fa73021af701f",
+    "Branch": "codex/rocket-lsp-fuzzy-symbols",
+    "Status": [],
+    "Diff": []
+  },
+  {
+    "Path": "C:/Users/Administrator/Desktop/Projects/Rocket/out/worktrees/rocket3-ryan-wave-a",
+    "Head": "fe2a85e499c5107752bca31837d09bcd607d393d",
+    "Branch": null,
+    "Status": [],
+    "Diff": []
+  },
+  {
+    "Path": "C:/Users/Administrator/Desktop/Projects/Rocket/out/worktrees/rocket35-eddie",
+    "Head": "2a03b7358399d70efac5a9bb056851c0ff3521d4",
+    "Branch": "rocket35/eddie",
+    "Status": [],
+    "Diff": []
+  },
+  {
+    "Path": "C:/Users/Administrator/Desktop/Projects/RocketIDE-Build/rocket-bug003",
+    "Head": "c2268ca1c241c8d20777000364bc1488fa6cb1ee",
+    "Branch": "codex/rocketide-bug003",
+    "Status": [],
+    "Diff": []
+  }
+]

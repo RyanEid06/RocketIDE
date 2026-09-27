@@ -1,0 +1,278 @@
+0.001s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] InitialBreak = 
+0.010s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] InitialModuleBreak = 
+0.010s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] FinalBreak = 
+0.010s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] DebugChildProcesses = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] Noninvasive = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] NoDebugHeap = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] Verbose = 
+0.011s OPTION System.String StartDirectory = 
+0.011s OPTION System.Nullable`1[[System.UInt64, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] SignalEventHandle = 
+0.011s OPTION System.Nullable`1[[System.UInt32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] SymbolOptionsOverride = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] ShouldOverrideSymbolOptions = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] SymOptExactSymbols = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] SymOptFailCriticalErrors = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] SymOptIgnoreCvRec = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] SymOptIgnoreNtSympath = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] SymOptNoCpp = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] SymOptNoUnqualifiedLoads = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] SymOptAutoPublics = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] SymOptDebug = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] Elevate = 
+0.011s OPTION System.String SymPath = 
+0.011s OPTION System.String SrcPath = 
+0.011s OPTION System.String ImageSearchPath = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] Restartable = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] UseImplicitCommandLine = 
+0.011s OPTION System.Nullable`1[[DbgX.Interfaces.Services.EngineArchitecture, DbgX.Interfaces.Internal, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]] EngineBitness = 
+0.011s OPTION System.Nullable`1[[DbgX.Interfaces.Services.ProcessorArchitecture, DbgX.Interfaces.Internal, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]] TargetArchitecture = 
+0.011s OPTION System.Nullable`1[[DbgX.Interfaces.Services.LoggingMode, DbgX.Interfaces.Internal, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]] LoggingMode = 
+0.011s OPTION System.String LogFile = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] OpenTraceFilesFromDumps = 
+0.011s OPTION System.Nullable`1[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] SecureMode = 
+0.011s OPTION DbgX.Interfaces.Services.TargetDebugEventConfiguration[] EventConfiguration = 
+0.149s CREATE begin
+0.628s OUTPUT 
+************* Preparing the environment for Debugger Extensions Gallery repositories **************
+   ExtensionRepository : Implicit
+   UseExperimentalFeatureForNugetShare : true
+   AllowNugetExeUpdate : true
+   NonInteractiveNuget : true
+   AllowNugetMSCredentialProviderInstall : true
+   AllowParallelInitializationOfLocalRepositories : true
+
+   -- Configuring repositories
+      ----&gt; Repository : LocalInstalled, Enabled: true
+      ----&gt; Repository : UserExtensions, Enabled: true
+
+&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; Preparing the environment for Debugger Extensions Gallery repositories completed, duration 0.000 seconds
+
+************* Waiting for Debugger Extensions Gallery to Initialize **************
+
+0.649s OUTPUT 
+&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; Waiting for Debugger Extensions Gallery to Initialize completed, duration 0.016 seconds
+   ----&gt; Repository : LocalInstalled, Enabled: true, Packages count: 0
+   ----&gt; Repository : UserExtensions, Enabled: true, Packages count: 0
+
+Microsoft (R) Windows Debugger Version 10.0.29617.1000 AMD64
+Copyright (c) Microsoft Corporation. All rights reserved.
+
+
+0.649s OUTPUT CommandLine: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\debug-proof\.rocketc\targets\windows-x64\main.exe
+Starting directory: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\debug-proof\.rocketc\targets\windows-x64
+
+0.660s OUTPUT Unable to add extension DLL: ntsdexts
+
+0.661s OUTPUT Unable to add extension DLL: uext
+
+0.662s OUTPUT Unable to add extension DLL: exts
+
+0.664s OUTPUT 
+************* Path validation summary **************
+Response                         Time (ms)     Location
+Deferred                                       srv*
+
+0.664s OUTPUT Symbol search path is: srv*
+Executable search path is: 
+
+0.664s OUTPUT 
++------------------------------------------------------------------------+
+| This target supports Hardware-enforced Stack Protection. A HW based    |
+| "Shadow Stack" may be available to assist in debugging and analysis.   |
+| See aka.ms/userhsp for more info.                                      |
+|                                                                        |
+| <link cmd="dps @ssp">dps @ssp</link>                                                               |
+|                                                                        |
++------------------------------------------------------------------------+
+
+
+0.664s OUTPUT ModLoad: 00007ff6`f2ea0000 00007ff6`f3099000   main.exe
+
+0.665s OUTPUT ModLoad: 00007ffd`8fca0000 00007ffd`8ff07000   ntdll.dll
+
+0.666s OUTPUT ModLoad: 00007ffd`8e700000 00007ffd`8e7cb000   C:\WINDOWS\System32\KERNEL32.DLL
+
+0.666s OUTPUT ModLoad: 00007ffd`8d240000 00007ffd`8d642000   C:\WINDOWS\System32\KERNELBASE.dll
+
+0.969s OUTPUT (a98.6aa0): Break instruction exception - code 80000003 (first chance)
+
+1.011s OUTPUT ntdll!LdrpDoDebuggerBreak+0x35
+1.011s OUTPUT :
+00007ffd`8fdc2239 cc              int     3
+
+1.015s OUTPUT 0:000&gt; .prefer_dml 0
+
+1.015s OUTPUT DML versions of commands off by default
+
+1.016s OUTPUT 0:000&gt; .noshell
+
+1.016s OUTPUT Shell commands disabled
+
+1.016s CREATE end
+1.022s COMMAND .sympath C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\debug-proof\.rocketc\targets\windows-x64
+1.029s Symbol search path is: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\debug-proof\.rocketc\targets\windows-x64
+Expanded Symbol search path is: c:\users\administrator\desktop\projects\rocketide-build\wp06-20260927\fixtures\debug-proof\.rocketc\targets\windows-x64
+
+************* Path validation summary **************
+Response                         Time (ms)     Location
+OK                                             C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\debug-proof\.rocketc\targets\windows-x64
+
+1.029s COMMAND .expr /s masm
+1.029s Current expression evaluator: MASM - Microsoft Assembler expressions
+
+1.029s COMMAND .lines -e
+1.029s Line number information will be loaded
+
+1.029s COMMAND l+t
+1.030s Source options are 1:
+     1/t - Step/trace by source line
+
+1.030s COMMAND .srcpath+ "C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\debug-proof\src"
+1.030s Source search path is: C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\debug-proof\src
+
+************* Path validation summary **************
+Response                         Time (ms)     Location
+OK                                             C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\wp06-20260927\fixtures\debug-proof\src
+
+1.030s COMMAND |
+1.030s .  0	id: a98	create	name: main.exe
+
+1.030s COMMAND ld "main"
+1.045s *** WARNING: Unable to verify checksum for main.exe
+Symbols loaded for main
+
+1.045s COMMAND bc *
+1.045s 
+1.045s COMMAND bp `main.rocket:9`
+1.045s 
+1.045s COMMAND g
+1.046s 
+1.046s COMMAND |
+1.046s OUTPUT Breakpoint 0 hit
+
+1.050s OUTPUT main!main+0x3f:
+00007ff6`f2ea107f b915000000      mov     ecx,15h
+
+1.050s .  0	id: a98	create	name: main.exe
+
+1.050s COMMAND ?? seed
+1.055s int64 0n21
+
+1.055s COMMAND ?? answer
+1.055s int64 0n0
+
+1.055s COMMAND ?? missing
+1.201s *************************************************************************
+***                                                                   ***
+***                                                                   ***
+***    Either you specified an unqualified symbol, or your debugger   ***
+***    doesn't have full symbol information.  Unqualified symbol      ***
+***    resolution is turned off by default. Please either specify a   ***
+***    fully qualified symbol module!symbolname, or enable resolution ***
+***    of unqualified symbols by typing ".symopt- 100". Note that     ***
+***    enabling unqualified symbol resolution with network symbol     ***
+***    server shares in the symbol path may cause the debugger to     ***
+***    appear to hang for long periods of time when an incorrect      ***
+***    symbol name is typed or the network symbol server is down.     ***
+***                                                                   ***
+***    For some commands to work properly, your symbol path           ***
+***    must point to .pdb files that have full type information.      ***
+***                                                                   ***
+***    Certain .pdb files (such as the public OS symbols) do not      ***
+***    contain the required information.  Contact the group that      ***
+***    provided you with these symbols if you need this command to    ***
+***    work.                                                          ***
+***                                                                   ***
+***    Type referenced: missing                                       ***
+***                                                                   ***
+*************************************************************************
+Couldn't resolve error at 'missing'
+
+1.201s COMMAND ?? (
+1.201s Syntax error at '<EOL>'
+
+1.201s COMMAND t
+1.201s 
+1.201s COMMAND |
+1.202s OUTPUT main!twice:
+00007ff6`f2ea1000 4883ec38        sub     rsp,38h
+
+1.203s .  0	id: a98	create	name: main.exe
+
+1.203s COMMAND p
+1.203s 
+1.203s COMMAND |
+1.204s OUTPUT main!twice+0x1b:
+00007ff6`f2ea101b 488b442430      mov     rax,qword ptr [rsp+30h] ss:000000a0`562ffcf0=0000000000000015
+
+1.204s .  0	id: a98	create	name: main.exe
+
+1.204s COMMAND dv /t
+1.205s int64 value = 0n21
+int64 doubled = 0n0
+
+1.205s COMMAND ?? value
+1.205s int64 0n21
+
+1.205s COMMAND .frame 1
+1.205s 01 000000a0`562ffd00 00007ff6`f2ea10fe     main!main+0x49 [rocket:\source\main.rocket @ 9]
+
+1.205s COMMAND dv /t
+1.206s int64 seed = 0n21
+int64 answer = 0n0
+int64 tick = 0n0
+
+1.206s COMMAND ?? seed
+1.206s int64 0n21
+
+1.206s COMMAND ~0s
+1.206s main!twice+0x1b:
+00007ff6`f2ea101b 488b442430      mov     rax,qword ptr [rsp+30h] ss:000000a0`562ffcf0=0000000000000015
+
+1.206s COMMAND .frame 0
+1.206s 00 000000a0`562ffcc0 00007ff6`f2ea1089     main!twice+0x1b [rocket:\source\main.rocket @ 4]
+
+1.206s COMMAND dv /t
+1.207s int64 value = 0n21
+int64 doubled = 0n0
+
+1.207s CONTINUE for running evaluation probe
+1.687s RUNNING EVAL unavailable: queued until stop, deadline expired
+1.687s PAUSE begin
+1.688s AFTER PAUSE |
+1.688s OUTPUT (a98.2fe4): Break instruction exception - code 80000003 (first chance)
+
+1.689s OUTPUT ntdll!DbgBreakPoint:
+00007ffd`8fdc3ab0 cc              int     3
+
+1.823s .  0	id: a98	create	name: main.exe
+
+1.823s AFTER PAUSE ~
+1.824s    0  Id: a98.6aa0 Suspend: 1 Teb: 000000a0`56160000 Unfrozen
+.  1  Id: a98.2fe4 Suspend: 1 Teb: 000000a0`56162000 Unfrozen
+
+1.824s AFTER PAUSE ~0s
+1.824s ntdll!NtDelayExecution+0x14:
+00007ffd`8fe01444 c3              ret
+
+1.824s AFTER PAUSE .frame 0
+1.825s 00 000000a0`562ffc38 00007ffd`8fd73924     ntdll!NtDelayExecution+0x14
+
+1.825s AFTER PAUSE kn
+1.833s  # Child-SP          RetAddr               Call Site
+00 000000a0`562ffc38 00007ffd`8fd73924     ntdll!NtDelayExecution+0x14
+01 000000a0`562ffc40 00007ffd`8d2cbb01     ntdll!RtlDelayExecution+0x34
+02 000000a0`562ffc70 00007ff6`f2ea10cc     KERNELBASE!SleepEx+0x91
+03 000000a0`562ffd00 00007ff6`f2ea10fe     main!main+0x8c [rocket:\source\main.rocket @ 15]
+04 000000a0`562ffd60 00007ff6`f2fa1d8f     main!main+0xe
+05 (Inline Function) --------`--------     main!invoke_main+0x22 [D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl @ 78]
+06 000000a0`562ffd90 00007ffd`8e72cd87     main!__scrt_common_main_seh+0x10f [D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl @ 288]
+07 000000a0`562ffdd0 00007ffd`8fd4caec     KERNEL32!BaseThreadInitThunk+0x17
+08 000000a0`562ffe00 00000000`00000000     ntdll!RtlUserThreadStart+0x2c
+
+1.833s AFTER PAUSE dv /t
+1.833s Unable to enumerate locals, Win32 error 0n318
+Private symbols (symbols.pri) are required for locals.
+Type ".hh dbgerr005" for details.
+
+1.833s DISPOSE begin
+1.850s DISPOSE end
