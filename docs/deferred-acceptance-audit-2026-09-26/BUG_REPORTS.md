@@ -78,3 +78,63 @@ The IDE Output view captured for this run also showed only prior LSP/Build entri
 
 TestsViewModel.BeginRun initializes the footer to “Test run started…” and Apply changes it on test-summary. MainWindow.RocketCommands.cs owns command completion and routes structured output. Inspect how process errors/nonzero exits without a test-summary are presented and how command output reaches the Output view. This report does not prescribe a code change.
 
+## BUG-003 — Quick Fix command returns no action for an indexed public declaration
+
+- Priority: P2
+- Area: IDE-WP09 Quick Fixes / Rocket LSP integration
+- Classification: UI/system integration defect
+- Reproduced: Yes, on the audit-worktree Release build
+- App SHA-256: 946A35B1905FE0C104F984B3B6F54B778B050724C62F6F523374C2370640A853
+- LSP: rocket-lsp 1.0.0, SHA-256 C5986606E98016589E7BF3611DE60964634D7AF3A8171CCD5F83F4064FBDFE1B
+- Fixture: `C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\audit-closure\A21-quickfix`
+
+### Reproduction
+
+1. Open the disposable project. Explorer shows `src/main.rocket` and `src/math.rocket`; status reports project indexing with 3 files and 7 symbols.
+2. `main.rocket` contains `return doubled(21)`; `math.rocket` declares `pub fn doubled(value: Int) -> Int`.
+3. Problems shows R4002, `unknown function or constructor 'doubled'`, on line 2, column 17.
+4. Place the caret on `doubled` (status line 2, column 16) and invoke Edit → Quick Fixes (server-provided).
+5. Repeat with the caret on the same diagnostic.
+
+### Expected
+
+The indexed public declaration in `math.rocket` allows the LSP to offer the matching import quick fix; the IDE should show the action and apply its workspace edit when selected.
+
+### Actual
+
+Both invocations set the status bar to “LSP: no server-provided code actions.” No action picker appeared and no edit was applied. No fixture changes were saved.
+
+### Handoff notes
+
+Reproduce on the exact app/LSP binaries above. Inspect the outgoing `textDocument/codeAction` request, diagnostics included in its context, the server response, and UI presentation. The audit only establishes that the integrated UI produced no action for this fixture; it does not isolate whether the request, server result, or UI filtering is the cause.
+
+## BUG-004 — Format Document leaves valid noncanonical source unchanged
+
+- Priority: P2
+- Area: IDE-WP09 Format Document / Rocket LSP integration
+- Classification: UI/system integration defect
+- Reproduced: Yes, on the audit-worktree Release build
+- App SHA-256: 946A35B1905FE0C104F984B3B6F54B778B050724C62F6F523374C2370640A853
+- LSP: rocket-lsp 1.0.0, SHA-256 C5986606E98016589E7BF3611DE60964634D7AF3A8171CCD5F83F4064FBDFE1B
+- Fixture: `C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\audit-closure\A21-quickfix\src\math.rocket`
+
+### Reproduction
+
+1. Open the disposable project and activate `math.rocket` in the editor.
+2. Replace the buffer with valid but noncanonical source: `pub fn doubled(value:Int)->Int:` followed by `    return value*2`.
+3. Confirm target A21-quickfix and caret line 2, column 19.
+4. Invoke Edit → Format Document.
+5. Inspect the buffer.
+
+### Expected
+
+The formatter canonicalizes spaces around parameter/type separators, the return arrow, and the multiplication operator. The Rocket formatter tests specify those canonical forms, for example `fn choose(first: Int, second: Int = first + 1) -> Int:` and `return negative + 2`.
+
+### Actual
+
+The document remained `pub fn doubled(value:Int)->Int:` / `return value*2`; no formatting edit appeared. The tab remained dirty from the unsaved probe, confirming the buffer was still open and the comparison was against the edited contents. The test edit was not saved.
+
+### Handoff notes
+
+Repeat on the recorded app and LSP binaries. Inspect whether the IDE sends `textDocument/formatting`, whether the LSP returns edits, and whether the document applies them. The observed UI result does not localize the failure boundary.
+

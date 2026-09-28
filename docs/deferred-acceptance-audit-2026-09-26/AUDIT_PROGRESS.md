@@ -44,3 +44,16 @@ Followed ROCKETIDE_ALL_DEFERRED_ACCEPTANCE_PROMPT.md in full. The audit was rest
 - package-20260926: portable ZIP and SHA-256.
 
 
+
+
+## Report-only continuation - 2026-09-26
+
+A17 and A39 were freshly executed/queried and marked PASS. A21/A22 reproduced BUG-003/BUG-004. A28/A29 recovery and A26 bounded large-workspace checks passed. Spot checks were also recorded for A33/A43/A46 and A34/A47; their broad acceptance rows remain NOT RUN. A38 moved to BLOCKED because no clean Windows VM is available. Exact evidence and limits are in evidence/closure-2026-09-26.md. Current matrix totals are 26 PASS, 4 FAIL, 3 BLOCKED, 12 NOT RUN, and 2 NOT APPLICABLE. No product or existing test changes were made.
+
+The complete repair prompt for a higher model is HIGHER_MODEL_BUG_FIX_PROMPT.md. The next task is authorized to repair BUG-001 through BUG-004 and verify them; it must not start WP06 implementation. WP06 remains queued behind the four-bug repair/retest gate and a decision on the remaining deferred acceptance rows.
+
+
+
+## Deferred acceptance continuation - 2026-09-27
+
+The remaining 12 rows were revisited where feasible. Partial observations for A33/A34/A35/A36/A40/A42/A43/A46/A47 are documented in evidence/continuation-2026-09-27.md and in their matrix rows; A27/A31/A37 retain specific unrun limits; A35 has a packaged launch/stop smoke but not the complete debugger workflow. No row met its full remaining acceptance criteria, so totals stay 26 PASS, 4 FAIL, 3 BLOCKED, 12 NOT RUN, 2 NOT APPLICABLE. %LOCALAPPDATA%\\RocketIDE was restored from the saved snapshot and verified at 71/71 files with zero path/length/SHA-256 mismatches. No product/tests were changed and WP06 was not started. The A36 partial probe closed the UI but left the audit app and LSP responsive; only those path-verified audit processes were stopped.
