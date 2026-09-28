@@ -18,6 +18,7 @@
     "sha256": "a5e1966a322ec19e391a775ef1909fec32a51b36b3869215a0117fc24fcb174c",
     "url": "https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-win-x64-1.0.0.zip"
   },
-  "sdk_url": "https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/Rocket-SDK-3.0.0-windows-x64.zip"
+  "sdk_url": "https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/Rocket-SDK-3.0.0-windows-x64.zip",
+  "sdk_sha256": "32198d4a79069527976bbe547add236ca37f1aec80620e2866a30d461b92fd2e"
 }
 
