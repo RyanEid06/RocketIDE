@@ -1,9 +1,23 @@
 {
   "product": "RocketIDE",
-  "package_url": "https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-win-x64-1.0.0.zip",
+  "version": "1.0.0",
   "platform": "win-x64",
   "source_commit": "f54a7b2cd72dabaa5a327b61685bf53bbe81d5d2",
+  "developer_branch": "master",
+  "package_url": "https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-win-x64-1.0.0.zip",
   "package_sha256": "a5e1966a322ec19e391a775ef1909fec32a51b36b3869215a0117fc24fcb174c",
-  "version": "1.0.0",
-  "developer_branch": "main"
+  "installer": {
+    "filename": "RocketIDE-Setup-1.0.0.exe",
+    "size": 92843222,
+    "sha256": "edcf2fa265f5663b2420286ca8b62b14d8e98f1af62927272d8d2ce02e59e8b1",
+    "url": "https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-Setup-1.0.0.exe"
+  },
+  "portable": {
+    "filename": "RocketIDE-win-x64-1.0.0.zip",
+    "size": 138389551,
+    "sha256": "a5e1966a322ec19e391a775ef1909fec32a51b36b3869215a0117fc24fcb174c",
+    "url": "https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-win-x64-1.0.0.zip"
+  },
+  "sdk_url": "https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/Rocket-SDK-3.0.0-windows-x64.zip"
 }
+
