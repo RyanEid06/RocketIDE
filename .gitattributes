@@ -1,2 +1,6 @@
 # Preserve the exact bytes of the verified consumer package on every checkout.
 app/** -text
+/README.md text eol=lf
+/RELEASE.json text eol=lf
+/.gitattributes text eol=lf
+/SHA256SUMS.txt text eol=lf
