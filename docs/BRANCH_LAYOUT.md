@@ -11,4 +11,4 @@ Frozen tags are rocketide-v1.0.0 (product source f54a7b2cd72dabaa5a327b61685bf53
 
 The published portable package remains frozen at its tested source identity; the installer wraps that exact payload and does not rebuild the IDE. A future runtime change requires its own verification and release decision.
 
-Current release status is in [the acceptance report](release-1.0.0/ACCEPTANCE_REPORT.md). Dated records describe their original snapshots; [FILE_RENAMES.json](FILE_RENAMES.json) resolves old evidence paths. Completed one-time transfer scripts, duplicate package inputs and archived upload workflows were removed from the current tree; their exact versions remain in history at a194aaf170263195f44540d7a339568ce442caaf. They are not the release procedure for future versions.
+The frozen application is available from the [latest public release](https://github.com/RyanEid06/Rocket-RocketIDE/releases/tag/v3.0.0). The `consumer` branch contains the released app package; `master` contains source and contributor documentation.

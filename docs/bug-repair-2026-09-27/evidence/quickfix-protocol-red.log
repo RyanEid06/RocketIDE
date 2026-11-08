@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "C:\Users\Administrator\Desktop\Projects\RocketIDE-Build\bug-repair-2026-09-27\verify_quickfix.py", line 79, in <module>
-    assert len(edits) == 2, edits
-           ^^^^^^^^^^^^^^^
-AssertionError: [{'newText': 'import math\n', 'range': {'end': {'character': 0, 'line': 0}, 'start': {'character': 0, 'line': 0}}}]

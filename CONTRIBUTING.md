@@ -4,7 +4,7 @@ These engineering rules apply to every contributor and coding agent. Read them b
 
 ## Mission
 
-Build a production-quality Windows desktop IDE for the Rocket programming language by executing `ROADMAP.md` in dependency order.
+Build and maintain a production-quality Windows desktop IDE for the Rocket programming language.
 
 Engineering discipline is evidence-based. Do not substitute optimistic claims, visual polish, or generated code volume for verification.
 
@@ -33,7 +33,7 @@ Engineering discipline is evidence-based. Do not substitute optimistic claims, v
    Editing or generating code is not proof that a WPF `.exe` works. A WP that affects buildable code is not complete until the Windows GitHub Actions workflow passes, or the same verification commands have run successfully on a real Windows development machine and the evidence is recorded.
 
 5. **Do not modify the Rocket compiler repository from this repository.**
-   If an IDE feature requires a missing Rocket capability, add an entry under `Upstream Rocket requests` in `ROADMAP.md` with prefix `ROCKET-UPSTREAM-REQUEST:`. Continue with graceful degradation where possible. Do not invent incompatible IDE-only behavior.
+   If an IDE feature requires a missing Rocket capability, keep the compiler repository unchanged and degrade gracefully where possible. Do not invent incompatible IDE-only behavior.
 
 6. **Preserve project boundaries.**
    - `RocketIDE.Core`: domain models and interfaces; no WPF, no process APIs.

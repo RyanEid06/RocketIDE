@@ -1,3 +1,0 @@
-[package]
-name = "wp06_debug_proof"
-entry = "src/main.rocket"

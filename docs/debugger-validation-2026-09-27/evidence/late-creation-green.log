@@ -1,8 +1,0 @@
-  Determining projects to restore...
-  All projects are up-to-date for restore.
-  RocketIDE.Debugger -> C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\src\RocketIDE.Debugger\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.dll
-  RocketIDE.Debugger.Tests -> C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.Tests.dll
-Test run for C:\Users\Administrator\.codex\worktrees\rocketide-final-wp06\RocketIDE\tests\RocketIDE.Debugger.Tests\bin\Release\net10.0-windows10.0.19041.0\RocketIDE.Debugger.Tests.dll (.NETCoreApp,Version=v10.0)
-A total of 1 test files matched the specified pattern.
-
-Passed!  - Failed:     0, Passed:    39, Skipped:     0, Total:    39, Duration: 677 ms - RocketIDE.Debugger.Tests.dll (net10.0)

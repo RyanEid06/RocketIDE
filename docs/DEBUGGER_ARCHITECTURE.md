@@ -41,7 +41,7 @@ DbgX uses `EngHost.exe` as a real child process. The native debugger requires th
 
 ## Current verification and supported limits
 
-The native workflow was validated in [debugger validation](debugger-validation-2026-09-27/DEBUGGER_VALIDATION_REPORT.md), including breakpoints, stepping, threads/stack/locals, run-to-cursor, restart, stop and packaged launch. The full release gate passed 514/514 tests; [release acceptance](release-1.0.0/ACCEPTANCE_REPORT.md) records all current passes and accepted waivers.
+RocketIDE's native debugger supports breakpoints, stepping, thread and stack inspection, locals, run-to-cursor, restart, stop, and packaged launch.
 
 Watches/Evaluate accepts ASCII local or parameter identifiers only, limited to 128 characters, 16 watches, 4096 result characters and a two-second inspection deadline. Calls, operators, member access and native debugger commands are rejected. Values come from the stopped native frame; running or stale requests cannot repopulate inspection after a session change.
 

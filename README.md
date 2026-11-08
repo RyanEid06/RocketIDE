@@ -1,76 +1,36 @@
 # RocketIDE
 
-RocketIDE is a Windows-only desktop IDE built specifically for the Rocket programming language.
+RocketIDE is a Windows desktop IDE for the [Rocket programming language](https://github.com/RyanEid06/Rocket). It provides a focused editor and native development tools for Rocket projects.
 
-The goal is not to clone Visual Studio or VS Code. RocketIDE aims to provide a focused, polished environment for creating, navigating, editing, diagnosing, building, running, testing, formatting, and maintaining real multi-file Rocket projects.
+## Download RocketIDE 1.0.0
 
-## Project status
+The official Windows x64 installer and portable package are available in the [latest Rocket release](https://github.com/RyanEid06/Rocket-RocketIDE/releases/tag/v3.0.0):
 
-RocketIDE 1.0.0 for Windows x64 is available as a per-user installer and as a portable package. Release 1.0.0 is closed with **34 acceptance checks passed and 13 explicitly waived/accepted**. The full local verification gate passed **514/514 tests**; package replay and public download verification are recorded in the [acceptance report](docs/release-1.0.0/ACCEPTANCE_REPORT.md).
+- [Download the Windows installer](https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-Setup-1.0.0.exe)
+- [Download the portable ZIP](https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-win-x64-1.0.0.zip)
 
-- `main` contains the full developer source, tests, documentation and all fixes through Release 1.0.0, including the Target Information CLI adapter regression fix.
-- [`consumer`](https://github.com/RyanEid06/RocketIDE/tree/consumer) contains only the released app folder, a short README, release metadata, checksums and required Git attributes.
-- [Download the Windows installer](https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-Setup-1.0.0.exe) or [Portable ZIP](https://github.com/RyanEid06/Rocket-RocketIDE/releases/download/v3.0.0/RocketIDE-win-x64-1.0.0.zip). The installer follows Windows light/dark mode and offers a per-user folder, shortcuts, launch on Finish, and normal Windows uninstall support. The portable ZIP remains unchanged.
-- RocketIDE does not include the Rocket SDK. Install or configure a compatible SDK from **Tools > Rocket SDK Settings**.
+The installer provides a per-user installation and normal Windows uninstall support. For the portable version, extract the ZIP and run `RocketIDE.exe`. Both packages are self-contained and do not require a separate .NET runtime installation.
 
-The source and consumer release tags preserve the frozen 1.0.0 identities. Subsequent branch organization and documentation updates do not change the published binaries. See [branch layout](docs/BRANCH_LAYOUT.md) for the current repository arrangement; earlier acceptance reports record the branch names at release time.
+## Features
 
-## Read this first
+- Multi-file Rocket editing with completion, diagnostics, syntax highlighting, and formatting
+- Navigation, symbol search, references, rename, code actions, and project exploration
+- Build, run, test, and formatting workflows using Rocket's compiler and language server
+- Native debugging, split editing, search, and session recovery
 
-1. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for mandatory engineering and verification rules.
-2. Read [`docs/ROCKET_IDE_DESIGN_SPEC.md`](docs/ROCKET_IDE_DESIGN_SPEC.md) for the product architecture and scope.
-3. Read [`docs/ROCKET_INTEGRATION_CONTRACT.md`](docs/ROCKET_INTEGRATION_CONTRACT.md) before touching Rocket compiler or language-server integration.
-4. Read [the documentation index](docs/README.md) and [`ROADMAP.md`](ROADMAP.md) for completed scope, accepted limitations and future-work boundaries.
+RocketIDE is a native **Windows x64** application built with C# 14, .NET 10, WPF, and AvalonEdit. Rocket compiler and language-server behavior comes from `rocketc` and `rocket-lsp`.
 
-## Technology
+## Install the Rocket SDK
 
-- Windows x64 first
-- C# 14
-- .NET 10
-- WPF
-- AvalonEdit
-- MSTest
-- `rocket-lsp.exe` for editor semantics
-- `rocketc.exe` for compiler and tooling commands
-- Microsoft DbgX/DbgEng for standalone native Rocket debugging
+RocketIDE does not include the Rocket SDK. Download an official package from the [Rocket 3.0.0 release](https://github.com/RyanEid06/Rocket-RocketIDE/releases/tag/v3.0.0), then configure it in **Tools > Rocket SDK Settings**.
 
-## Core principle
+## Build from source
 
-RocketIDE is a **client of Rocket tooling**, not another implementation of Rocket.
+On Windows with the .NET 10 SDK installed, build the solution from the repository root:
 
-Do not create an IDE-local Rocket parser, type checker, semantic model, diagnostic engine, formatter, or package resolver just to make a feature appear to work. Semantic behavior comes from `rocket-lsp`. Build, test, and tooling behavior comes from `rocketc`.
-
-Workspace-local Rocket binaries are treated as untrusted project content. If developing Rocket itself, explicitly trust that checkout once under **Tools > Rocket SDK Settings** before RocketIDE may probe or start its checkout-local `rocketc.exe` / `rocket-lsp.exe`; trust is stored per-user, not in the repository.
-
-## Development workflow
-
-For each approved maintenance change:
-
-1. Start from the latest verified repository state.
-2. Implement only the approved change and its necessary prerequisites.
-3. Add or update focused tests for behavioral changes.
-4. Run the relevant focused tests.
-5. Run `scripts/verify.ps1` on Windows.
-6. Push the branch/commit and require `.github/workflows/windows-ci.yml` to pass.
-7. Review the resulting diff and CI evidence.
-8. Update the `ROADMAP.md` ledger to `DONE` only after the gate passes.
-
-## Repository layout
-
-```text
-RocketIDE/
-  .github/workflows/      Windows CI
-  docs/                   architecture and Rocket integration contracts
-  references/rocket-current/
-                          read-only snapshots from the Rocket repository
-  scripts/                verification tooling
-  src/RocketIDE.App/      WPF application and presentation layer
-  src/RocketIDE.Core/     UI-independent domain models and interfaces
-  src/RocketIDE.Rocket/   Rocket LSP/compiler/tool adapters
-  src/RocketIDE.Infrastructure/
-                          filesystem, processes, settings, recovery, logging
-  src/RocketIDE.Debugger/ native debugger transport, protocol, session state
-  tests/                  project-aligned automated tests, including debugger tests
-  CONTRIBUTING.md         engineering rules
-  ROADMAP.md              current release status and historical progress ledger
+```powershell
+dotnet restore .\RocketIDE.sln
+dotnet build .\RocketIDE.sln --configuration Release
 ```
+
+See [distribution and packaging](docs/DISTRIBUTION.md), [architecture](docs/ROCKET_IDE_DESIGN_SPEC.md), [Rocket integration](docs/ROCKET_INTEGRATION_CONTRACT.md), and [debugger architecture](docs/DEBUGGER_ARCHITECTURE.md) for more detail.
